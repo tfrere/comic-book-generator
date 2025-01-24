@@ -1,93 +1,38 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from typing import List, Optional
 import os
 from dotenv import load_dotenv
-from langchain_mistralai.chat_models import ChatMistralAI
-from langchain.output_parsers import PydanticOutputParser
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
-from langchain.schema import HumanMessage, SystemMessage
+from game_logic import GameState, StoryGenerator, MAX_RADIATION
 
 # Load environment variables
 load_dotenv()
+
+# API configuration
+API_HOST = os.getenv("API_HOST", "0.0.0.0")
+API_PORT = int(os.getenv("API_PORT", "8000"))
 
 app = FastAPI(title="Echoes of Influence")
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",  # Vite dev server
+        f"http://localhost:{API_PORT}",  # API port
+        "https://huggingface.co",  # HF main domain
+        "https://*.hf.space",      # HF Spaces domains
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Game state
-story_beat = 0
-
-# Define the structure we want the LLM to output
-class StorySegment(BaseModel):
-    story_text: str = Field(description="The next segment of the story")
-    choices: List[str] = Field(description="Exactly two possible choices for the player", min_items=2, max_items=2)
-    is_death: bool = Field(description="Whether this segment ends in Sarah's death", default=False)
-
-# Initialize the parser
-parser = PydanticOutputParser(pydantic_object=StorySegment)
-
-# Initialize Mistral Chat Model
-chat_model = ChatMistralAI(
-    mistral_api_key=os.getenv("MISTRAL_API_KEY"),
-    model="mistral-small",
-    temperature=0.7
-)
-
-# Create the system prompt
-system_template = """You are narrating a brutal and unforgiving dystopian story about Sarah, a former engineer on a suicide mission to deliver medical supplies through a deadly radiation-filled wasteland.
-
-Core story elements:
-- Sarah is deeply traumatized by the AI uprising that killed most of humanity
-- She abandoned her sister during the Great Collapse, leaving her to die
-- She's on a suicide mission, but a quick death is not redemption
-- The radiation is lethal and gets worse with each step
-- Wrong choices lead to immediate and graphic deaths
-- The environment is extremely hostile (raiders, malfunctioning AI systems, radiation storms)
-
-Death conditions (implement these strictly):
-- Any direct exposure to high radiation zones is lethal within minutes
-- Trusting the wrong people leads to death
-- Using corrupted AI systems can kill instantly
-- Hesitating too long in dangerous situations is fatal
-- Taking too many risks in succession leads to death
-
-Each response must contain:
-1. A tense story segment that puts Sarah in mortal danger
-2. Exactly two possible choices that represent different approaches:
-   - Each choice must have clear potential consequences
-   - At least one choice should always carry a significant risk of death
-   - Choices should reflect:
-     * Brutal pragmatism vs Emotional responses
-     * Quick but dangerous vs Slow but safer routes
-     * Trust vs Paranoia
-     * Using AI systems vs Manual alternatives
-
-If a choice would realistically lead to death, you MUST end the story with a detailed death scene and set is_death to true.
-
-{format_instructions}"""
-
-human_template = """Current story beat: {story_beat}
-Previous choice: {previous_choice}
-
-Generate the next story segment and choices. Remember: this is a brutal and unforgiving world where wrong choices lead to death."""
-
-# Create the chat prompt
-prompt = ChatPromptTemplate(
-    messages=[
-        SystemMessagePromptTemplate.from_template(system_template),
-        HumanMessagePromptTemplate.from_template(human_template)
-    ],
-    partial_variables={"format_instructions": parser.get_format_instructions()}
-)
+# Initialize game components
+game_state = GameState()
+story_generator = StoryGenerator(api_key=os.getenv("MISTRAL_API_KEY"))
 
 class Choice(BaseModel):
     id: int
@@ -97,61 +42,67 @@ class StoryResponse(BaseModel):
     story_text: str
     choices: List[Choice]
     is_death: bool = False
+    radiation_level: int
 
 class ChatMessage(BaseModel):
     message: str
     choice_id: Optional[int] = None
 
-@app.get("/")
-async def read_root():
-    return {"message": "Welcome to Echoes of Influence"}
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "game_state": {
+            "story_beat": game_state.story_beat,
+            "radiation_level": game_state.radiation_level
+        }
+    }
 
-@app.post("/chat", response_model=StoryResponse)
+@app.post("/api/chat", response_model=StoryResponse)
 async def chat_endpoint(chat_message: ChatMessage):
-    global story_beat
-    
     try:
-        # Prepare the context
+        # Handle restart
         if chat_message.message.lower() == "restart":
-            story_beat = 0
+            game_state.reset()
             previous_choice = "none"
-        elif chat_message.choice_id is not None:
-            previous_choice = f"Choice {chat_message.choice_id}"
         else:
-            previous_choice = "none"
+            previous_choice = f"Choice {chat_message.choice_id}" if chat_message.choice_id else "none"
 
-        # Get the formatted messages
-        messages = prompt.format_messages(
-            story_beat=story_beat,
-            previous_choice=previous_choice
-        )
-
-        # Get response from the model
-        response = chat_model.invoke(messages)
+        # Generate story segment
+        story_segment = story_generator.generate_story_segment(game_state, previous_choice)
         
-        # Parse the response
-        parsed_response = parser.parse(response.content)
+        # Update radiation level
+        game_state.radiation_level += story_segment.radiation_increase
+        
+        # Check for radiation death
+        if game_state.radiation_level >= MAX_RADIATION:
+            story_segment = story_generator.process_radiation_death(story_segment)
         
         # Only increment story beat if not dead
-        if not parsed_response.is_death:
-            story_beat += 1
+        if not story_segment.is_death:
+            game_state.story_beat += 1
 
         # Convert to response format
-        choices = [] if parsed_response.is_death else [
+        choices = [] if story_segment.is_death else [
             Choice(id=i, text=choice.strip())
-            for i, choice in enumerate(parsed_response.choices, 1)
+            for i, choice in enumerate(story_segment.choices, 1)
         ]
 
         return StoryResponse(
-            story_text=parsed_response.story_text,
+            story_text=story_segment.story_text,
             choices=choices,
-            is_death=parsed_response.is_death
+            is_death=story_segment.is_death,
+            radiation_level=game_state.radiation_level
         )
 
     except Exception as e:
         print(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Mount static files (this should be after all API routes)
+app.mount("/", StaticFiles(directory="../client/dist", html=True), name="static")
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True) 
+    uvicorn.run("server:app", host=API_HOST, port=API_PORT, reload=True) 
