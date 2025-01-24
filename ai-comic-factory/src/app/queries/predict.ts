@@ -1,19 +1,12 @@
 "use server"
 
-import { LLMEngine, LLMPredictionFunctionParams } from "@/types"
-import { defaultLLMEngineName, getLLMEngineFunction } from "./getLLMEngineFunction"
+import { LLMPredictionFunctionParams } from '@/types';
+
+import { defaultLLMEngineFunction } from './getLLMEngineFunction';
 
 export async function predict(params: LLMPredictionFunctionParams): Promise<string> {
-  const { llmVendorConfig: { vendor } } = params
-  // LLMVendor = what the user configure in the UI (eg. a dropdown item called default server)
-  // LLMEngine = the actual engine to use (eg. hugging face)
-  const llmEngineName: LLMEngine =
-    vendor === "ANTHROPIC" ? "ANTHROPIC" :
-    vendor === "GROQ" ? "GROQ" :
-    vendor === "OPENAI" ? "OPENAI" :
-    defaultLLMEngineName
-
-  const llmEngineFunction = getLLMEngineFunction(llmEngineName)
+  // const llmEngineName = defaultLLMEngineName
+  const llmEngineFunction = defaultLLMEngineFunction
 
   // console.log("predict: using " + llmEngineName)
   const results = await llmEngineFunction(params)
