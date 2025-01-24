@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Container,
   Paper,
@@ -20,6 +20,29 @@ function App() {
   const [storySegments, setStorySegments] = useState([]);
   const [currentChoices, setCurrentChoices] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const isInitializedRef = useRef(false);
+
+  const generateImageForStory = async (storyText) => {
+    try {
+      console.log("Generating image for story:", storyText);
+      const response = await axios.post(`${API_URL}/api/generate-image`, {
+        prompt: `Comic book style scene: ${storyText}`,
+        width: 512,
+        height: 512,
+      });
+
+      console.log("Image generation response:", response.data);
+
+      if (response.data.success) {
+        console.log("Image URL length:", response.data.image_base64.length);
+        return response.data.image_base64;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error generating image:", error);
+      return null;
+    }
+  };
 
   const handleStoryAction = async (action, choiceId = null) => {
     setIsLoading(true);
@@ -29,12 +52,20 @@ function App() {
         choice_id: choiceId,
       });
 
+      // Générer l'image pour ce segment
+      const imageUrl = await generateImageForStory(response.data.story_text);
+      console.log(
+        "Generated image URL:",
+        imageUrl ? "Image received" : "No image"
+      );
+
       if (action === "restart") {
         setStorySegments([
           {
             text: response.data.story_text,
             isChoice: false,
             isDeath: response.data.is_death,
+            imageUrl: imageUrl,
           },
         ]);
       } else {
@@ -44,6 +75,7 @@ function App() {
             text: response.data.story_text,
             isChoice: false,
             isDeath: response.data.is_death,
+            imageUrl: imageUrl,
           },
         ]);
       }
@@ -62,8 +94,11 @@ function App() {
 
   // Start the story when the component mounts
   useEffect(() => {
-    handleStoryAction("restart");
-  }, []);
+    if (!isInitializedRef.current) {
+      handleStoryAction("restart");
+      isInitializedRef.current = true;
+    }
+  }, []); // Empty dependency array since we're using a ref
 
   const handleChoice = async (choiceId) => {
     // Add the chosen option to the story
@@ -114,6 +149,8 @@ function App() {
               sx={{
                 justifyContent: segment.isChoice ? "flex-end" : "flex-start",
                 display: "flex",
+                flexDirection: "column",
+                alignItems: segment.isChoice ? "flex-end" : "flex-start",
               }}
             >
               <Paper
@@ -146,6 +183,19 @@ function App() {
                     color: segment.isChoice ? "inherit" : "primary",
                   }}
                 />
+                {!segment.isChoice && segment.imageUrl && (
+                  <Box sx={{ mt: 2, width: "100%", textAlign: "center" }}>
+                    <img
+                      src={segment.imageUrl}
+                      alt="Story scene"
+                      style={{
+                        maxWidth: "100%",
+                        height: "auto",
+                        borderRadius: "4px",
+                      }}
+                    />
+                  </Box>
+                )}
               </Paper>
             </ListItem>
           ))}
