@@ -30,7 +30,9 @@ COPY --from=client-build /app/dist ./static
 
 # Environment variables
 ENV API_HOST=0.0.0.0 \
-    API_PORT=7860
+    API_PORT=7860 \
+    STATIC_FILES_DIR=static \
+    DOCKER_ENV=true
 
 # Create cache directory and set permissions
 RUN mkdir -p /app/cache && chown -R user:user /app/cache

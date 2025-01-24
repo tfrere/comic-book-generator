@@ -5,7 +5,12 @@ from pydantic import BaseModel
 from typing import List, Optional
 import os
 from dotenv import load_dotenv
-from game_logic import GameState, StoryGenerator, MAX_RADIATION
+
+# Choose import based on environment
+if os.getenv("DOCKER_ENV"):
+    from server.game.game_logic import GameState, StoryGenerator, MAX_RADIATION
+else:
+    from game.game_logic import GameState, StoryGenerator, MAX_RADIATION
 
 # Load environment variables
 load_dotenv()
@@ -13,6 +18,7 @@ load_dotenv()
 # API configuration
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
+STATIC_FILES_DIR = os.getenv("STATIC_FILES_DIR", "../client/dist")
 
 app = FastAPI(title="Echoes of Influence")
 
@@ -101,8 +107,8 @@ async def chat_endpoint(chat_message: ChatMessage):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Mount static files (this should be after all API routes)
-app.mount("/", StaticFiles(directory="../client/dist", html=True), name="static")
+app.mount("/", StaticFiles(directory=STATIC_FILES_DIR, html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host=API_HOST, port=API_PORT, reload=True) 
+    uvicorn.run("server.server:app", host=API_HOST, port=API_PORT, reload=True) 
