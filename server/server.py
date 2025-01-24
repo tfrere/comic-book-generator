@@ -30,6 +30,7 @@ app.add_middleware(
         f"http://localhost:{API_PORT}",  # API port
         "https://huggingface.co",  # HF main domain
         "https://*.hf.space",      # HF Spaces domains
+        "https://mistral-ai-game-jam-dont-lookup.hf.space"  # Our HF Space URL
     ],
     allow_credentials=True,
     allow_methods=["*"],

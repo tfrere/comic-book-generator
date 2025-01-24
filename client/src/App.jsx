@@ -13,6 +13,9 @@ import {
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import axios from "axios";
 
+// Get API URL from environment or default to localhost in development
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 function App() {
   const [storySegments, setStorySegments] = useState([]);
   const [currentChoices, setCurrentChoices] = useState([]);
@@ -21,7 +24,7 @@ function App() {
   const handleStoryAction = async (action, choiceId = null) => {
     setIsLoading(true);
     try {
-      const response = await axios.post("http://localhost:8000/api/chat", {
+      const response = await axios.post(`${API_URL}/api/chat`, {
         message: action,
         choice_id: choiceId,
       });

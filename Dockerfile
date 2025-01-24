@@ -3,6 +3,7 @@ WORKDIR /app
 COPY client/package*.json ./
 RUN npm install
 COPY client/ ./
+ENV VITE_API_URL=https://mistral-ai-game-jam-dont-lookup.hf.space
 RUN npm run build
 
 FROM python:3.9-slim
