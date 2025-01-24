@@ -1,50 +1,69 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Container,
   Paper,
-  TextField,
   Button,
   Box,
   Typography,
   List,
   ListItem,
   ListItemText,
+  LinearProgress,
+  ButtonGroup,
 } from "@mui/material";
-import SendIcon from "@mui/icons-material/Send";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import axios from "axios";
 
 function App() {
-  const [message, setMessage] = useState("");
-  const [chatHistory, setChatHistory] = useState([]);
+  const [storySegments, setStorySegments] = useState([]);
+  const [currentChoices, setCurrentChoices] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!message.trim()) return;
+  // Start the story when the component mounts
+  useEffect(() => {
+    handleStoryAction("start");
+  }, []);
 
-    const userMessage = message;
-    setMessage("");
-    setChatHistory((prev) => [...prev, { text: userMessage, isUser: true }]);
+  const handleStoryAction = async (action, choiceId = null) => {
     setIsLoading(true);
-
     try {
       const response = await axios.post("http://localhost:8000/chat", {
-        message: userMessage,
+        message: action,
+        choice_id: choiceId,
       });
 
-      setChatHistory((prev) => [
-        ...prev,
-        { text: response.data.response, isUser: false },
-      ]);
+      if (action === "restart") {
+        setStorySegments([{ text: response.data.story_text, isChoice: false }]);
+      } else {
+        setStorySegments((prev) => [
+          ...prev,
+          { text: response.data.story_text, isChoice: false },
+        ]);
+      }
+
+      setCurrentChoices(response.data.choices);
     } catch (error) {
       console.error("Error:", error);
-      setChatHistory((prev) => [
+      setStorySegments((prev) => [
         ...prev,
-        { text: "Désolé, une erreur s'est produite.", isUser: false },
+        { text: "Connection lost with the storyteller...", isChoice: false },
       ]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleChoice = async (choiceId) => {
+    // Add the chosen option to the story
+    setStorySegments((prev) => [
+      ...prev,
+      {
+        text: currentChoices.find((c) => c.id === choiceId).text,
+        isChoice: true,
+      },
+    ]);
+    // Continue the story with this choice
+    await handleStoryAction("choice", choiceId);
   };
 
   return (
@@ -53,53 +72,75 @@ function App() {
         elevation={3}
         sx={{ height: "80vh", display: "flex", flexDirection: "column", p: 2 }}
       >
-        <Typography variant="h4" component="h1" gutterBottom align="center">
-          Chat with AI
-        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <Typography variant="h4" component="h1">
+            Echoes of Influence
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<RestartAltIcon />}
+            onClick={() => handleStoryAction("restart")}
+            disabled={isLoading}
+          >
+            Restart
+          </Button>
+        </Box>
+
+        {isLoading && <LinearProgress sx={{ mb: 2 }} />}
 
         <List sx={{ flexGrow: 1, overflow: "auto", mb: 2 }}>
-          {chatHistory.map((msg, index) => (
+          {storySegments.map((segment, index) => (
             <ListItem
               key={index}
-              sx={{ justifyContent: msg.isUser ? "flex-end" : "flex-start" }}
+              sx={{
+                justifyContent: segment.isChoice ? "flex-end" : "flex-start",
+                display: "flex",
+              }}
             >
               <Paper
                 elevation={1}
                 sx={{
                   p: 2,
-                  maxWidth: "70%",
-                  bgcolor: msg.isUser ? "primary.light" : "grey.100",
-                  color: msg.isUser ? "white" : "text.primary",
+                  maxWidth: "80%",
+                  bgcolor: segment.isChoice ? "primary.light" : "grey.100",
+                  color: segment.isChoice ? "white" : "text.primary",
                 }}
               >
-                <ListItemText primary={msg.text} />
+                <ListItemText
+                  primary={segment.isChoice ? "Your Choice" : "Story"}
+                  secondary={segment.text}
+                  primaryTypographyProps={{
+                    variant: "subtitle2",
+                    color: segment.isChoice ? "inherit" : "primary",
+                  }}
+                />
               </Paper>
             </ListItem>
           ))}
         </List>
 
-        <Box
-          component="form"
-          onSubmit={handleSubmit}
-          sx={{ display: "flex", gap: 1 }}
-        >
-          <TextField
-            fullWidth
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Tapez votre message..."
-            disabled={isLoading}
-            variant="outlined"
-          />
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={isLoading}
-            endIcon={<SendIcon />}
-          >
-            Envoyer
-          </Button>
-        </Box>
+        {currentChoices.length > 0 && (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+            {currentChoices.map((choice) => (
+              <Button
+                key={choice.id}
+                variant="contained"
+                onClick={() => handleChoice(choice.id)}
+                disabled={isLoading}
+                sx={{ minWidth: "200px" }}
+              >
+                {choice.text}
+              </Button>
+            ))}
+          </Box>
+        )}
       </Paper>
     </Container>
   );
