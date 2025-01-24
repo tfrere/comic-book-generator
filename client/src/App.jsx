@@ -65,6 +65,8 @@ function App() {
             text: response.data.story_text,
             isChoice: false,
             isDeath: response.data.is_death,
+            isVictory: response.data.is_victory,
+            radiationLevel: response.data.radiation_level,
             imageUrl: imageUrl,
           },
         ]);
@@ -75,6 +77,8 @@ function App() {
             text: response.data.story_text,
             isChoice: false,
             isDeath: response.data.is_death,
+            isVictory: response.data.is_victory,
+            radiationLevel: response.data.radiation_level,
             imageUrl: imageUrl,
           },
         ]);
@@ -130,14 +134,45 @@ function App() {
           <Typography variant="h4" component="h1">
             Echoes of Influence
           </Typography>
-          <Button
-            variant="outlined"
-            startIcon={<RestartAltIcon />}
-            onClick={() => handleStoryAction("restart")}
-            disabled={isLoading}
-          >
-            Restart
-          </Button>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                bgcolor: "warning.main",
+                color: "white",
+                px: 2,
+                py: 1,
+                borderRadius: 1,
+                "& .radiation-value": {
+                  color:
+                    storySegments.length > 0 &&
+                    storySegments[storySegments.length - 1].radiationLevel >= 7
+                      ? "error.light"
+                      : "inherit",
+                },
+              }}
+            >
+              <Typography variant="body1" component="span">
+                Radiation:{" "}
+                <span className="radiation-value">
+                  {storySegments.length > 0
+                    ? `${
+                        storySegments[storySegments.length - 1].radiationLevel
+                      }/10`
+                    : "0/10"}
+                </span>
+              </Typography>
+            </Box>
+            <Button
+              variant="outlined"
+              startIcon={<RestartAltIcon />}
+              onClick={() => handleStoryAction("restart")}
+              disabled={isLoading}
+            >
+              Restart
+            </Button>
+          </Box>
         </Box>
 
         {isLoading && <LinearProgress sx={{ mb: 2 }} />}
@@ -160,11 +195,13 @@ function App() {
                   maxWidth: "80%",
                   bgcolor: segment.isDeath
                     ? "error.light"
+                    : segment.isVictory
+                    ? "success.light"
                     : segment.isChoice
                     ? "primary.light"
                     : "grey.100",
                   color:
-                    segment.isDeath || segment.isChoice
+                    segment.isDeath || segment.isVictory || segment.isChoice
                       ? "white"
                       : "text.primary",
                 }}
@@ -173,6 +210,8 @@ function App() {
                   primary={
                     segment.isDeath
                       ? "DEATH"
+                      : segment.isVictory
+                      ? "VICTOIRE"
                       : segment.isChoice
                       ? "Your Choice"
                       : "Story"

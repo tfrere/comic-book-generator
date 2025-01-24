@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import requests
 import base64
 import time
+import random
 
 # Choose import based on environment
 if os.getenv("DOCKER_ENV"):
@@ -60,6 +61,7 @@ class StoryResponse(BaseModel):
     story_text: str
     choices: List[Choice]
     is_death: bool = False
+    is_victory: bool = False
     radiation_level: int
 
 class ChatMessage(BaseModel):
@@ -111,17 +113,37 @@ async def chat_endpoint(chat_message: ChatMessage):
         print("Updated radiation level:", game_state.radiation_level)
         
         # Check for radiation death
-        if game_state.radiation_level >= MAX_RADIATION:
-            story_segment = story_generator.process_radiation_death(story_segment)
-            print("Processed radiation death")
+        is_death = game_state.radiation_level >= MAX_RADIATION
+        if is_death:
+            story_segment.story_text += f"""
+
+MORT PAR RADIATION: Le corps de Sarah ne peut plus supporter ce niveau de radiation ({game_state.radiation_level}/10). 
+Ses cellules se désagrègent alors qu'elle s'effondre, l'esprit rempli de regrets concernant sa sœur. 
+Les fournitures médicales qu'elle transportait n'atteindront jamais leur destination. 
+Sa mission s'arrête ici, une autre victime du tueur invisible des terres désolées."""
+            story_segment.choices = []
         
-        # Only increment story beat if not dead
-        if not story_segment.is_death:
+        # Check for victory condition
+        if not is_death and game_state.story_beat >= 5:
+            # Chance de victoire augmente avec le nombre de steps
+            victory_chance = (game_state.story_beat - 4) * 0.2  # 20% de chance par step après le 5ème
+            if random.random() < victory_chance:
+                story_segment.is_victory = True
+                story_segment.story_text = f"""Sarah l'a fait ! Elle a trouvé un bunker sécurisé avec des survivants. 
+                À l'intérieur, elle découvre une communauté organisée qui a réussi à maintenir un semblant de civilisation. 
+                Ils ont même un système de décontamination ! Son niveau de radiation : {game_state.radiation_level}/10.
+                Elle peut enfin se reposer et peut-être un jour, reconstruire un monde meilleur.
+                
+                VICTOIRE !"""
+                story_segment.choices = []
+        
+        # Only increment story beat if not dead and not victory
+        if not is_death and not story_segment.is_victory:
             game_state.story_beat += 1
             print("Incremented story beat to:", game_state.story_beat)
 
         # Convert to response format
-        choices = [] if story_segment.is_death else [
+        choices = [] if is_death or story_segment.is_victory else [
             Choice(id=i, text=choice.strip())
             for i, choice in enumerate(story_segment.choices, 1)
         ]
@@ -129,7 +151,8 @@ async def chat_endpoint(chat_message: ChatMessage):
         response = StoryResponse(
             story_text=story_segment.story_text,
             choices=choices,
-            is_death=story_segment.is_death,
+            is_death=is_death,
+            is_victory=story_segment.is_victory,
             radiation_level=game_state.radiation_level
         )
         print("Sending response:", response)
@@ -141,40 +164,6 @@ async def chat_endpoint(chat_message: ChatMessage):
         print("Traceback:", traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
-async def transform_story_to_art_prompt(story_text: str) -> str:
-    try:
-        from langchain_mistralai.chat_models import ChatMistralAI
-        from langchain.schema import HumanMessage, SystemMessage
-
-        chat = ChatMistralAI(
-            api_key=mistral_api_key,
-            model="mistral-small"
-        )
-
-        messages = [
-            SystemMessage(content="""Tu es un expert en prompts pour la génération d'images. 
-            Transforme l'histoire en un prompt court et précis.
-            
-            Format strict:
-            "color comic panel, style of Hergé, [scène principale en 5-7 mots], french comic panel"
-            
-            Exemple:
-            "color comic panel, style of Hergé, detective running through dark alley, french comic panel"
-            
-            Règles:
-            - Maximum 20 mots pour décrire la scène
-            - Pas d'adjectifs superflus
-            - Capture l'action principale uniquement"""),
-            HumanMessage(content=f"Transforme en prompt court: {story_text}")
-        ]
-
-        response = chat.invoke(messages)
-        return response.content
-
-    except Exception as e:
-        print(f"Error transforming prompt: {str(e)}")
-        return story_text
-
 @app.post("/api/generate-image", response_model=ImageGenerationResponse)
 async def generate_image(request: ImageGenerationRequest):
     try:
@@ -184,12 +173,12 @@ async def generate_image(request: ImageGenerationRequest):
                 error="HF_API_KEY is not configured in .env file"
             )
 
-        # Transformer le prompt en prompt artistique
+        # Transform the prompt into an artistic prompt
         original_prompt = request.prompt
-        # Enlever le préfixe pour la transformation
+        # Remove prefix for transformation
         story_text = original_prompt.replace("moebius style scene: ", "").strip()
-        art_prompt = await transform_story_to_art_prompt(story_text)
-        # Réappliquer le préfixe
+        art_prompt = await story_generator.transform_story_to_art_prompt(story_text)
+        # Reapply prefix
         final_prompt = f"moebius style scene: {art_prompt}"
         print("Original prompt:", original_prompt)
         print("Transformed art prompt:", final_prompt)
