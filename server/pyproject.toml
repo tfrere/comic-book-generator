@@ -10,7 +10,8 @@ fastapi = "^0.109.0"
 uvicorn = "^0.27.0"
 python-dotenv = "^1.0.0"
 elevenlabs = "^0.2.26"
-httpx = "^0.26.0"
+langchain = "^0.3.15"
+langchain-mistralai = "^0.2.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"

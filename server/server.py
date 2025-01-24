@@ -1,43 +1,45 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from elevenlabs import generate, set_api_key
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
-from typing import List
-import httpx
+from langchain_mistralai.chat_models import ChatMistralAI
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import ConversationChain
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 # Load environment variables
 load_dotenv()
-
-# Configure Elevenlabs
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
-VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID")
-MODEL_ID = os.getenv("ELEVENLABS_MODEL_ID", "eleven_monolingual_v1")
-ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1"
-
-set_api_key(ELEVENLABS_API_KEY)
 
 app = FastAPI(title="Mon API FastAPI")
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],  # React app URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-class TextToSpeechRequest(BaseModel):
-    text: str
+# Initialize Mistral Chat Model
+chat_model = ChatMistralAI(
+    mistral_api_key=os.getenv("MISTRAL_API_KEY"),
+    model="mistral-tiny",  # You can change this to other models like "mistral-small" or "mistral-medium"
+    streaming=True,
+    callbacks=[StreamingStdOutCallbackHandler()]
+)
 
-class Message(BaseModel):
-    role: str
-    content: str
+# Initialize conversation memory
+memory = ConversationBufferMemory()
+conversation = ConversationChain(
+    llm=chat_model,
+    memory=memory,
+    verbose=True
+)
 
-class ChatRequest(BaseModel):
-    messages: List[Message]
+class ChatMessage(BaseModel):
+    message: str
 
 @app.get("/")
 async def read_root():
@@ -47,62 +49,12 @@ async def read_root():
 async def health_check():
     return {"status": "ok"}
 
-@app.post("/text-to-speech")
-async def text_to_speech(request: TextToSpeechRequest):
-    try:
-        audio = generate(
-            text=request.text,
-            voice=VOICE_ID,
-            model=MODEL_ID
-        )
-        return {"audio": audio}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/chat")
-async def chat(request: ChatRequest):
+async def chat_endpoint(chat_message: ChatMessage):
     try:
-        # Préparer le dernier message
-        last_message = request.messages[-1].content
-
-        # Headers pour l'API Elevenlabs
-        headers = {
-            "xi-api-key": ELEVENLABS_API_KEY,
-            "Content-Type": "application/json",
-        }
-
-        # Appeler l'API Elevenlabs pour la génération de texte
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{ELEVENLABS_API_URL}/text-generation",
-                headers=headers,
-                json={
-                    "text": last_message,
-                    "model_id": MODEL_ID
-                }
-            )
-            
-            if response.status_code != 200:
-                raise HTTPException(
-                    status_code=500, 
-                    detail="Erreur lors de l'appel à l'API Elevenlabs Text Generation"
-                )
-            
-            response_data = response.json()
-            response_text = response_data["text"]
-
-            # Générer l'audio avec la réponse
-            audio = generate(
-                text=response_text,
-                voice=VOICE_ID,
-                model=MODEL_ID
-            )
-            
-            return {
-                "text": response_text,
-                "audio": audio
-            }
-
+        # Get response from the model
+        response = conversation.predict(input=chat_message.message)
+        return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

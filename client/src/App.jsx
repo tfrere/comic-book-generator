@@ -1,136 +1,104 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Container,
   Paper,
   TextField,
-  IconButton,
+  Button,
+  Box,
+  Typography,
   List,
   ListItem,
   ListItemText,
-  Typography,
-  Box,
-  CircularProgress,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
-import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import axios from "axios";
 
 function App() {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  const [message, setMessage] = useState("");
+  const [chatHistory, setChatHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!message.trim()) return;
 
-    const newMessage = { role: "user", content: input };
-    setMessages([...messages, newMessage]);
-    setInput("");
+    const userMessage = message;
+    setMessage("");
+    setChatHistory((prev) => [...prev, { text: userMessage, isUser: true }]);
     setIsLoading(true);
 
     try {
-      const response = await axios.post("/api/chat", {
-        messages: [...messages, newMessage],
+      const response = await axios.post("http://localhost:8000/chat", {
+        message: userMessage,
       });
 
-      const assistantMessage = {
-        role: "assistant",
-        content: response.data.text,
-        audio: response.data.audio,
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
+      setChatHistory((prev) => [
+        ...prev,
+        { text: response.data.response, isUser: false },
+      ]);
     } catch (error) {
       console.error("Error:", error);
+      setChatHistory((prev) => [
+        ...prev,
+        { text: "Désolé, une erreur s'est produite.", isUser: false },
+      ]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const playAudio = (audioData) => {
-    const audio = new Audio(`data:audio/mpeg;base64,${audioData}`);
-    audio.play();
-  };
-
   return (
-    <Container maxWidth="md" sx={{ height: "100vh", py: 4 }}>
+    <Container maxWidth="md" sx={{ mt: 4 }}>
       <Paper
         elevation={3}
-        sx={{ height: "100%", display: "flex", flexDirection: "column" }}
+        sx={{ height: "80vh", display: "flex", flexDirection: "column", p: 2 }}
       >
-        <Typography
-          variant="h4"
-          sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}
-        >
-          Chat avec IA
+        <Typography variant="h4" component="h1" gutterBottom align="center">
+          Chat with AI
         </Typography>
 
-        <List sx={{ flexGrow: 1, overflow: "auto", p: 2 }}>
-          {messages.map((message, index) => (
+        <List sx={{ flexGrow: 1, overflow: "auto", mb: 2 }}>
+          {chatHistory.map((msg, index) => (
             <ListItem
               key={index}
-              sx={{
-                flexDirection: "column",
-                alignItems: message.role === "user" ? "flex-end" : "flex-start",
-                mb: 2,
-              }}
+              sx={{ justifyContent: msg.isUser ? "flex-end" : "flex-start" }}
             >
-              <Box
+              <Paper
+                elevation={1}
                 sx={{
-                  maxWidth: "70%",
-                  backgroundColor:
-                    message.role === "user" ? "primary.main" : "grey.200",
-                  borderRadius: 2,
                   p: 2,
+                  maxWidth: "70%",
+                  bgcolor: msg.isUser ? "primary.light" : "grey.100",
+                  color: msg.isUser ? "white" : "text.primary",
                 }}
               >
-                <ListItemText
-                  primary={message.content}
-                  sx={{
-                    "& .MuiListItemText-primary": {
-                      color: message.role === "user" ? "white" : "black",
-                    },
-                  }}
-                />
-              </Box>
-              {message.audio && (
-                <IconButton
-                  onClick={() => playAudio(message.audio)}
-                  sx={{ mt: 1 }}
-                >
-                  <VolumeUpIcon />
-                </IconButton>
-              )}
+                <ListItemText primary={msg.text} />
+              </Paper>
             </ListItem>
           ))}
         </List>
 
         <Box
-          sx={{
-            p: 2,
-            borderTop: 1,
-            borderColor: "divider",
-            position: "relative",
-          }}
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{ display: "flex", gap: 1 }}
         >
           <TextField
             fullWidth
-            variant="outlined"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
             placeholder="Tapez votre message..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
             disabled={isLoading}
-            multiline
-            maxRows={4}
-            InputProps={{
-              endAdornment: (
-                <IconButton onClick={handleSend} disabled={isLoading}>
-                  {isLoading ? <CircularProgress size={24} /> : <SendIcon />}
-                </IconButton>
-              ),
-            }}
+            variant="outlined"
           />
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={isLoading}
+            endIcon={<SendIcon />}
+          >
+            Envoyer
+          </Button>
         </Box>
       </Paper>
     </Container>
