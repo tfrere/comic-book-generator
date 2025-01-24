@@ -39,7 +39,13 @@ app.add_middleware(
 
 # Initialize game components
 game_state = GameState()
-story_generator = StoryGenerator(api_key=os.getenv("MISTRAL_API_KEY"))
+
+# Check for API key
+mistral_api_key = os.getenv("MISTRAL_API_KEY")
+if not mistral_api_key:
+    raise ValueError("MISTRAL_API_KEY environment variable is not set")
+
+story_generator = StoryGenerator(api_key=mistral_api_key)
 
 class Choice(BaseModel):
     id: int
