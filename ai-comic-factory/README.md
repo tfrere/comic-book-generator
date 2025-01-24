@@ -13,6 +13,15 @@ hf_oauth_expiration_minutes: 43200
 hf_oauth_scopes: [inference-api]
 ---
 
+### Start the application
+
+```bash
+# Install dependencies
+npm install
+
+# Start the application
+npm run dev
+```
 # AI Comic Factory
 
 Last release: AI Comic Factory 1.2
