@@ -22,7 +22,10 @@ import { LAYOUTS } from "../../layouts/config";
 import html2canvas from "html2canvas";
 
 // Get API URL from environment or default to localhost in development
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const isHFSpace = window.location.hostname.includes("hf.space");
+const API_URL = isHFSpace
+  ? "" // URL relative pour HF Spaces
+  : import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // Generate a unique client ID
 const CLIENT_ID = `client_${Math.random().toString(36).substring(2)}`;
@@ -32,6 +35,10 @@ const api = axios.create({
   headers: {
     "x-client-id": CLIENT_ID,
   },
+  // Ajouter baseURL pour HF Spaces
+  ...(isHFSpace && {
+    baseURL: window.location.origin,
+  }),
 });
 
 // Function to convert text with ** to Chip elements
