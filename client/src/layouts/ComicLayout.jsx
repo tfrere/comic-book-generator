@@ -1,88 +1,16 @@
-import { Box, CircularProgress, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 import { LAYOUTS } from "./config";
 import { groupSegmentsIntoLayouts } from "./utils";
 import { useEffect, useRef } from "react";
-
-// Component for displaying a single panel
-function Panel({ segment, panel }) {
-  return (
-    <Box
-      sx={{
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        gridColumn: panel.gridColumn,
-        gridRow: panel.gridRow,
-        bgcolor: "white",
-        border: "1px solid",
-        borderColor: "grey.200",
-        borderRadius: "8px",
-        overflow: "hidden",
-      }}
-    >
-      {segment ? (
-        <>
-          {segment.image_base64 ? (
-            <img
-              src={`data:image/jpeg;base64,${segment.image_base64}`}
-              alt="Story scene"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                borderRadius: "8px",
-                opacity: 0,
-                transition: "opacity 0.5s ease-in-out",
-              }}
-              onLoad={(e) => {
-                e.target.style.opacity = "1";
-              }}
-            />
-          ) : (
-            <Box
-              sx={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexDirection: "column",
-                gap: 1,
-              }}
-            >
-              {!segment.imageRequestCancelled && (
-                <CircularProgress sx={{ opacity: 0.3 }} />
-              )}
-              {segment.imageRequestCancelled && (
-                <Typography variant="caption" color="text.secondary">
-                  Image non chargée
-                </Typography>
-              )}
-            </Box>
-          )}
-          <Box
-            sx={{
-              position: "absolute",
-              bottom: "20px",
-              left: "20px",
-              right: "20px",
-              backgroundColor: "rgba(255, 255, 255, 0.9)",
-              fontSize: ".9rem",
-              padding: "24px",
-              borderRadius: "8px",
-              boxShadow: "0 -2px 4px rgba(0,0,0,0.1)",
-            }}
-          >
-            {segment.text}
-          </Box>
-        </>
-      ) : null}
-    </Box>
-  );
-}
+import { Panel } from "./Panel";
 
 // Component for displaying a page of panels
 function ComicPage({ layout, layoutIndex }) {
+  // Calculer le nombre total d'images dans tous les segments de ce layout
+  const totalImages = layout.segments.reduce((total, segment) => {
+    return total + (segment.images?.length || 0);
+  }, 0);
+
   return (
     <Box
       key={layoutIndex}
@@ -100,13 +28,33 @@ function ComicPage({ layout, layoutIndex }) {
         flexShrink: 0,
       }}
     >
-      {LAYOUTS[layout.type].panels.map((panel, panelIndex) => (
-        <Panel
-          key={panelIndex}
-          panel={panel}
-          segment={layout.segments[panelIndex]}
-        />
-      ))}
+      {LAYOUTS[layout.type].panels
+        .slice(0, totalImages)
+        .map((panel, panelIndex) => {
+          // Trouver le segment qui contient l'image pour ce panel
+          let currentImageIndex = 0;
+          let targetSegment = null;
+          let targetImageIndex = 0;
+
+          for (const segment of layout.segments) {
+            const segmentImageCount = segment.images?.length || 0;
+            if (currentImageIndex + segmentImageCount > panelIndex) {
+              targetSegment = segment;
+              targetImageIndex = panelIndex - currentImageIndex;
+              break;
+            }
+            currentImageIndex += segmentImageCount;
+          }
+
+          return (
+            <Panel
+              key={panelIndex}
+              panel={panel}
+              segment={targetSegment}
+              panelIndex={targetImageIndex}
+            />
+          );
+        })}
     </Box>
   );
 }

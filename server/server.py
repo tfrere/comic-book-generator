@@ -102,6 +102,7 @@ class StoryResponse(BaseModel):
     is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
     is_first_step: bool = Field(description="Whether this is the first step of the story", default=False)
     is_last_step: bool = Field(description="Whether this is the last step (victory or death)", default=False)
+    image_prompts: List[str] = Field(description="List of 1 to 3 comic panel descriptions that illustrate the key moments of the scene", min_items=1, max_items=3)
 
 class ChatMessage(BaseModel):
     message: str
@@ -120,6 +121,11 @@ class ImageGenerationResponse(BaseModel):
 class TextToSpeechRequest(BaseModel):
     text: str
     voice_id: str = "nPczCjzI2devNBz1zQrb"  # Default voice ID (Rachel)
+
+class DirectImageGenerationRequest(BaseModel):
+    prompt: str = Field(description="The prompt to use directly for image generation")
+    width: int = Field(description="Width of the image to generate")
+    height: int = Field(description="Height of the image to generate")
 
 async def get_test_image(client_id: str, width=1024, height=1024):
     """Get a random image from Lorem Picsum"""
@@ -152,72 +158,84 @@ async def chat_endpoint(chat_message: ChatMessage):
         
         # Handle restart
         if chat_message.message.lower() == "restart":
+            print("Handling restart - Resetting game state")
             game_state.reset()
             previous_choice = "none"
+            print(f"After reset - story_beat: {game_state.story_beat}")
         else:
             previous_choice = f"Choice {chat_message.choice_id}" if chat_message.choice_id else "none"
 
         print("Previous choice:", previous_choice)
+        print("Current story beat:", game_state.story_beat)
 
         # Generate story segment
-        story_segment = await story_generator.generate_story_segment(game_state, previous_choice)
-        print("Generated story segment:", story_segment)
+        llm_response = await story_generator.generate_story_segment(game_state, previous_choice)
+        print("Generated story segment:", llm_response)
         
         # Update radiation level
-        game_state.radiation_level += story_segment.radiation_increase
+        game_state.radiation_level += llm_response.radiation_increase
         print("Updated radiation level:", game_state.radiation_level)
         
         # Check for radiation death
         is_death = game_state.radiation_level >= MAX_RADIATION
         if is_death:
-            story_segment.story_text += f"""
+            llm_response.story_text += f"""
 
 MORT PAR RADIATION: Le corps de Sarah ne peut plus supporter ce niveau de radiation ({game_state.radiation_level}/10). 
 Ses cellules se désagrègent alors qu'elle s'effondre, l'esprit rempli de regrets concernant sa sœur. 
 Les fournitures médicales qu'elle transportait n'atteindront jamais leur destination. 
 Sa mission s'arrête ici, une autre victime du tueur invisible des terres désolées."""
-            story_segment.choices = []
+            llm_response.choices = []
+            # Pour la mort, on ne garde qu'un seul prompt d'image
+            if len(llm_response.image_prompts) > 1:
+                llm_response.image_prompts = [llm_response.image_prompts[0]]
         
+        # Add segment to history (before victory check to include final state)
+        game_state.add_to_history(llm_response.story_text, previous_choice, llm_response.image_prompts)
+
         # Check for victory condition
         if not is_death and game_state.story_beat >= 5:
             # Chance de victoire augmente avec le nombre de steps
             victory_chance = (game_state.story_beat - 4) * 0.2  # 20% de chance par step après le 5ème
             if random.random() < victory_chance:
-                story_segment.is_victory = True
-                story_segment.story_text = f"""Sarah l'a fait ! Elle a trouvé un bunker sécurisé avec des survivants. 
+                llm_response.is_victory = True
+                llm_response.story_text = f"""Sarah l'a fait ! Elle a trouvé un bunker sécurisé avec des survivants. 
                 À l'intérieur, elle découvre une communauté organisée qui a réussi à maintenir un semblant de civilisation. 
                 Ils ont même un système de décontamination ! Son niveau de radiation : {game_state.radiation_level}/10.
                 Elle peut enfin se reposer et peut-être un jour, reconstruire un monde meilleur.
                 
                 VICTOIRE !"""
-                story_segment.choices = []
-        
-        # Only increment story beat if not dead and not victory
-        if not is_death and not story_segment.is_victory:
-            game_state.story_beat += 1
-            print("Incremented story beat to:", game_state.story_beat)
+                llm_response.choices = []
+                # Pour la victoire, on ne garde qu'un seul prompt d'image
+                if len(llm_response.image_prompts) > 1:
+                    llm_response.image_prompts = [llm_response.image_prompts[0]]
 
-        # Convert to response format
-        choices = [] if is_death or story_segment.is_victory else [
+        # Pour la première étape, on ne garde qu'un seul prompt d'image
+        if game_state.story_beat == 0 and len(llm_response.image_prompts) > 1:
+            llm_response.image_prompts = [llm_response.image_prompts[0]]
+        
+        # Convert LLM choices to API choices format
+        choices = [] if is_death or llm_response.is_victory else [
             Choice(id=i, text=choice.strip())
-            for i, choice in enumerate(story_segment.choices, 1)
+            for i, choice in enumerate(llm_response.choices, 1)
         ]
 
-        # Determine if this is the first step
-        is_first_step = chat_message.message == "restart"
-        
-        # Determine if this is the last step (victory or death)
-        is_last_step = game_state.radiation_level >= MAX_RADIATION or story_segment.is_victory
-
-        # Return the response with the new fields
+        # Convert LLM response to API response format
         response = StoryResponse(
-            story_text=story_segment.story_text,
+            story_text=llm_response.story_text,
             choices=choices,
             radiation_level=game_state.radiation_level,
-            is_victory=story_segment.is_victory,
-            is_first_step=is_first_step,
-            is_last_step=is_last_step
+            is_victory=llm_response.is_victory,
+            is_first_step=game_state.story_beat == 0,
+            is_last_step=is_death or llm_response.is_victory,
+            image_prompts=llm_response.image_prompts
         )
+        
+        # Only increment story beat if not dead and not victory
+        if not is_death and not llm_response.is_victory:
+            game_state.story_beat += 1
+            print("Incremented story beat to:", game_state.story_beat)
+            
         print("Sending response:", response)
         return response
 
@@ -303,9 +321,7 @@ async def test_chat_endpoint(request: Request, chat_message: ChatMessage):
                 story_text=story_text,
                 choices=choices,
                 radiation_level=radiation_level,
-                is_victory=is_last_step and radiation_level < 30,
-                is_first_step=is_first_step,
-                is_last_step=is_last_step
+                is_victory=is_last_step and radiation_level < 30
             )
         
         # Create and store the new request
@@ -399,6 +415,38 @@ async def text_to_speech(request: TextToSpeechRequest):
     except Exception as e:
         print(f"Error in text_to_speech: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/generate-image-direct")
+async def generate_image_direct(request: DirectImageGenerationRequest):
+    try:
+        print(f"Generating image directly with dimensions: {request.width}x{request.height}")
+        print(f"Using prompt: {request.prompt}")
+
+        # Generate image using Flux client directly without transforming the prompt
+        image_bytes = await flux_client.generate_image(
+            prompt=request.prompt,
+            width=request.width,
+            height=request.height
+        )
+        
+        if image_bytes:
+            print(f"Received image bytes of length: {len(image_bytes)}")
+            if isinstance(image_bytes, str):
+                print("Warning: image_bytes is a string, converting to bytes")
+                image_bytes = image_bytes.encode('utf-8')
+            base64_image = base64.b64encode(image_bytes).decode('utf-8').strip('"')
+            print(f"Converted to base64 string of length: {len(base64_image)}")
+            return {"success": True, "image_base64": base64_image}
+        else:
+            print("No image bytes received from Flux client")
+            return {"success": False, "error": "Failed to generate image"}
+
+    except Exception as e:
+        print(f"Error generating image: {str(e)}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return {"success": False, "error": str(e)}
 
 @app.on_event("shutdown")
 async def shutdown_event():

@@ -1,6 +1,7 @@
 import os
 import requests
 import asyncio
+import aiohttp
 from typing import Optional
 from langchain_mistralai.chat_models import ChatMistralAI
 from langchain.schema import SystemMessage, HumanMessage
@@ -62,8 +63,14 @@ class FluxClient:
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.endpoint = os.getenv("FLUX_ENDPOINT")
+        self._session = None
     
-    def generate_image(self, 
+    async def _get_session(self):
+        if self._session is None:
+            self._session = aiohttp.ClientSession()
+        return self._session
+    
+    async def generate_image(self, 
                       prompt: str, 
                       width: int, 
                       height: int,
@@ -78,44 +85,54 @@ class FluxClient:
             print(f"Sending request to Hugging Face API: {self.endpoint}")
             print(f"Headers: Authorization: Bearer {self.api_key[:4]}...")
             print(f"Request body: {prompt[:100]}...")
+
+            prefix =  "François Schuiten comic book artist."
             
-            response = requests.post(
+            
+            session = await self._get_session()
+            async with session.post(
                 self.endpoint,
                 headers={
                     "Authorization": f"Bearer {self.api_key}",
                     "Accept": "image/jpeg"
                 },
                 json={
-                    "inputs": prompt,
+                    "inputs": "in the style of " + prefix + " --- content: " + prompt,
                     "parameters": {
                         "num_inference_steps": num_inference_steps,
                         "guidance_scale": guidance_scale,
                         "width": width,
                         "height": height,
-                        "negative_prompt": "speech bubble, caption, subtitle"
+                        "negative_prompt": "Bubbles, text, caption. Do not include bright or clean clothing."
                     }
                 }
-            )
-            
-            print(f"Response status code: {response.status_code}")
-            print(f"Response headers: {response.headers}")
-            print(f"Response content type: {response.headers.get('content-type', 'unknown')}")
-            
-            if response.status_code == 200:
-                content_length = len(response.content)
-                print(f"Received successful response with content length: {content_length}")
-                if isinstance(response.content, bytes):
-                    print("Response content is bytes (correct)")
+            ) as response:
+                print(f"Response status code: {response.status}")
+                print(f"Response headers: {response.headers}")
+                print(f"Response content type: {response.headers.get('content-type', 'unknown')}")
+                
+                if response.status == 200:
+                    content = await response.read()
+                    content_length = len(content)
+                    print(f"Received successful response with content length: {content_length}")
+                    if isinstance(content, bytes):
+                        print("Response content is bytes (correct)")
+                    else:
+                        print(f"Warning: Response content is {type(content)}")
+                    return content
                 else:
-                    print(f"Warning: Response content is {type(response.content)}")
-                return response.content
-            else:
-                print(f"Error from Flux API: {response.status_code}")
-                print(f"Response content: {response.content}")
-                return None
+                    error_content = await response.text()
+                    print(f"Error from Flux API: {response.status}")
+                    print(f"Response content: {error_content}")
+                    return None
                 
         except Exception as e:
             print(f"Error in FluxClient.generate_image: {str(e)}")
             import traceback
             print(f"Traceback: {traceback.format_exc()}")
-            return None 
+            return None
+            
+    async def close(self):
+        if self._session:
+            await self._session.close()
+            # self._session = None where there is a post apocalypse scene, and my main character is a tough female survivor in a post-apocalyptic world with short, messy hair, dirt-smeared skin, and rugged clothing. She wears a leather jacket, utility pants, and carries makeshift weapons she is infront of an abandoned hospital
