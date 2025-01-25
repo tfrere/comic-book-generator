@@ -12,8 +12,8 @@ export function groupSegmentsIntoLayouts(segments) {
   let currentPanelIndex = 0;
 
   segments.forEach((segment) => {
-    // Si c'est le premier segment, créer un layout COVER
-    if (segment.is_first_step) {
+    // Si c'est le premier segment ou le dernier (mort/victoire), créer un layout COVER
+    if (segment.is_first_step || segment.is_last_step) {
       currentLayout = { type: "COVER", segments: [segment] };
       layouts.push(currentLayout);
       currentPanelIndex = segment.images?.length || 0;
@@ -53,17 +53,13 @@ export function groupSegmentsIntoLayouts(segments) {
 export function getNextPanelDimensions(segments) {
   const nonChoiceSegments = segments.filter((segment) => !segment.isChoice);
 
-  // Si c'est le premier segment, utiliser le format COVER
+  // Si c'est le premier segment ou le dernier (mort/victoire), utiliser le format COVER
   if (
     nonChoiceSegments.length === 0 ||
-    (nonChoiceSegments.length === 1 && nonChoiceSegments[0].is_first_step)
+    (nonChoiceSegments.length === 1 && nonChoiceSegments[0].is_first_step) ||
+    (nonChoiceSegments.length > 0 &&
+      nonChoiceSegments[nonChoiceSegments.length - 1].is_last_step)
   ) {
-    return LAYOUTS.COVER.panels[0];
-  }
-
-  // Si c'est le dernier segment et c'est une mort ou victoire, utiliser le format COVER
-  const lastSegment = nonChoiceSegments[nonChoiceSegments.length - 1];
-  if (lastSegment.is_last_step) {
     return LAYOUTS.COVER.panels[0];
   }
 

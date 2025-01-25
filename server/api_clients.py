@@ -87,6 +87,7 @@ class FluxClient:
             print(f"Request body: {prompt[:100]}...")
 
             prefix =  "François Schuiten comic book artist."
+            "Bubbles, text, caption. Do not include bright or clean clothing."
             
             
             session = await self._get_session()
