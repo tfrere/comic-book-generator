@@ -55,7 +55,7 @@ class StoryGenerator:
         
         self.chat_model = ChatMistralAI(
             mistral_api_key=api_key,
-            model="mistral-small",
+            model="ft:ministral-3b-latest:82f3f89c:20250125:12222969",
             temperature=0.7
         )
         
