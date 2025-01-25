@@ -10,7 +10,11 @@ import {
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import axios from "axios";
 import { ComicLayout } from "./layouts/ComicLayout";
-import { getNextPanelDimensions } from "./layouts/utils";
+import {
+  getNextPanelDimensions,
+  groupSegmentsIntoLayouts,
+} from "./layouts/utils";
+import { LAYOUTS } from "./layouts/config";
 
 // Get API URL from environment or default to localhost in development
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -43,123 +47,171 @@ function App() {
   const [currentChoices, setCurrentChoices] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(false);
-  const isInitializedRef = useRef(false);
   const currentImageRequestRef = useRef(null);
   const pendingImageRequests = useRef(new Set()); // Track pending image requests
   const audioRef = useRef(new Audio());
 
-  const generateImageForStory = async (storyText, segmentIndex) => {
+  // Start the story on first render
+  useEffect(() => {
+    handleStoryAction("restart");
+  }, []); // Empty dependency array for first render only
+
+  const generateImagesForStory = async (
+    imagePrompts,
+    segmentIndex,
+    currentSegments
+  ) => {
     try {
-      // Cancel previous request if it exists
-      if (currentImageRequestRef.current) {
-        currentImageRequestRef.current.abort();
-      }
-
-      // Add this segment to pending requests
-      pendingImageRequests.current.add(segmentIndex);
-
-      console.log("Generating image for story:", storyText);
-      const dimensions = getNextPanelDimensions(storySegments);
-      console.log("[DEBUG] Story segments:", storySegments);
-      console.log("[DEBUG] Dimensions object:", dimensions);
-      console.log(
-        "[DEBUG] Width:",
-        dimensions?.width,
-        "Height:",
-        dimensions?.height
-      );
-
-      if (!dimensions || !dimensions.width || !dimensions.height) {
-        console.error("[ERROR] Invalid dimensions:", dimensions);
-        pendingImageRequests.current.delete(segmentIndex);
-        return null;
-      }
-
-      // Create new AbortController for this request
-      const abortController = new AbortController();
-      currentImageRequestRef.current = abortController;
-
-      const response = await api.post(
-        `${API_URL}/api/${isDebugMode ? "test/" : ""}generate-image`,
-        {
-          prompt: `Comic book style scene: ${storyText}`,
-          width: dimensions.width,
-          height: dimensions.height,
-        },
-        {
-          signal: abortController.signal,
-        }
-      );
-
-      // Remove from pending requests
-      pendingImageRequests.current.delete(segmentIndex);
-
-      if (response.data.success) {
-        return response.data.image_base64;
-      }
-      return null;
-    } catch (error) {
-      if (axios.isCancel(error)) {
-        console.log("Image request cancelled for segment", segmentIndex);
-        // On met quand même à jour le segment pour arrêter le spinner
-        setStorySegments((prev) => {
-          const updatedSegments = [...prev];
-          if (updatedSegments[segmentIndex]) {
-            updatedSegments[segmentIndex] = {
-              ...updatedSegments[segmentIndex],
-              image_base64: null,
-              imageRequestCancelled: true, // Flag pour indiquer que la requête a été annulée
-            };
-          }
-          return updatedSegments;
-        });
-      } else {
-        console.error("Error generating image:", error);
-      }
-      pendingImageRequests.current.delete(segmentIndex);
-      return null;
-    }
-  };
-
-  const playAudio = async (text) => {
-    try {
-      console.log("Requesting audio for text:", text);
-      const response = await api.post(`${API_URL}/api/text-to-speech`, {
-        text: text,
+      console.log("[generateImagesForStory] Starting with:", {
+        promptsCount: imagePrompts.length,
+        segmentIndex,
+        segmentsCount: currentSegments.length,
       });
+      console.log("Image prompts:", imagePrompts);
+      console.log("Current segments:", currentSegments);
 
-      if (response.data.success) {
-        console.log("Audio received successfully");
-        // Arrêter l'audio en cours s'il y en a un
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+      let localSegments = [...currentSegments];
 
-        // Créer et jouer le nouvel audio
-        const audioBlob = await fetch(
-          `data:audio/mpeg;base64,${response.data.audio_base64}`
-        ).then((r) => r.blob());
-        console.log("Audio blob created:", audioBlob.size, "bytes");
+      // Traiter chaque prompt un par un
+      for (
+        let promptIndex = 0;
+        promptIndex < imagePrompts.length;
+        promptIndex++
+      ) {
+        // Recalculer le layout actuel pour chaque image
+        const layouts = groupSegmentsIntoLayouts(localSegments);
+        console.log("[Layout] Current layouts:", layouts);
+        const currentLayout = layouts[layouts.length - 1];
+        const layoutType = currentLayout?.type || "COVER";
+        console.log("[Layout] Current type:", layoutType);
 
-        const audioUrl = URL.createObjectURL(audioBlob);
-        audioRef.current.src = audioUrl;
-        audioRef.current.volume = 1.0; // S'assurer que le volume est au maximum
+        // Vérifier si nous avons de la place dans le layout actuel
+        const currentSegmentImages =
+          currentLayout.segments[currentLayout.segments.length - 1].images ||
+          [];
+        const actualImagesCount = currentSegmentImages.filter(
+          (img) => img !== null
+        ).length;
+        console.log("[Layout] Current segment images:", {
+          total: currentSegmentImages.length,
+          actual: actualImagesCount,
+          hasImages: currentSegmentImages.some((img) => img !== null),
+          currentImages: currentSegmentImages.map((img) =>
+            img ? "image" : "null"
+          ),
+        });
+
+        const panelDimensions = LAYOUTS[layoutType].panels[promptIndex];
+        console.log(
+          "[Layout] Panel dimensions for prompt",
+          promptIndex,
+          ":",
+          panelDimensions
+        );
+
+        // Ne créer une nouvelle page que si nous avons encore des prompts à traiter
+        // et qu'il n'y a plus de place dans le layout actuel
+        if (!panelDimensions && promptIndex < imagePrompts.length - 1) {
+          console.log(
+            "[Layout] Creating new page - No space in current layout"
+          );
+          // Créer un nouveau segment pour la nouvelle page
+          const newSegment = {
+            ...localSegments[segmentIndex],
+            images: Array(imagePrompts.length - promptIndex).fill(null),
+          };
+          localSegments = [...localSegments, newSegment];
+          segmentIndex = localSegments.length - 1;
+          console.log("[Layout] New segment created:", {
+            segmentIndex,
+            totalSegments: localSegments.length,
+            imagesArray: newSegment.images,
+          });
+          // Mettre à jour l'état avec le nouveau segment
+          setStorySegments(localSegments);
+          continue; // Recommencer la boucle avec le nouveau segment
+        }
+
+        // Si nous n'avons pas de dimensions de panneau et c'est le dernier prompt,
+        // ne pas continuer
+        if (!panelDimensions) {
+          console.log(
+            "[Layout] Stopping - No more space and no more prompts to process"
+          );
+          break;
+        }
+
+        console.log(
+          `[Image] Generating image ${promptIndex + 1}/${imagePrompts.length}:`,
+          {
+            prompt: imagePrompts[promptIndex],
+            dimensions: panelDimensions,
+          }
+        );
 
         try {
-          console.log("Attempting to play audio...");
-          await audioRef.current.play();
-          console.log("Audio playing successfully");
-        } catch (playError) {
-          console.error("Error playing audio:", playError);
-        }
+          const result = await api.post(
+            `${API_URL}/api/generate-image-direct`,
+            {
+              prompt: imagePrompts[promptIndex],
+              width: panelDimensions.width,
+              height: panelDimensions.height,
+            }
+          );
 
-        // Nettoyer l'URL une fois l'audio terminé
-        audioRef.current.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          console.log("Audio finished, URL cleaned up");
-        };
+          console.log(`[Image] Response for image ${promptIndex + 1}:`, {
+            success: result.data.success,
+            hasImage: !!result.data.image_base64,
+            imageLength: result.data.image_base64?.length,
+          });
+
+          if (result.data.success) {
+            console.log(
+              `[Image] Image ${promptIndex + 1} generated successfully`
+            );
+            // Mettre à jour les segments locaux
+            const currentImages = [
+              ...(localSegments[segmentIndex].images || []),
+            ];
+            // Remplacer le null à l'index du prompt par la nouvelle image
+            currentImages[promptIndex] = result.data.image_base64;
+
+            localSegments[segmentIndex] = {
+              ...localSegments[segmentIndex],
+              images: currentImages,
+            };
+            console.log("[State] Updating segments with new image:", {
+              segmentIndex,
+              imageIndex: promptIndex,
+              imagesArray: currentImages.map((img) => (img ? "image" : "null")),
+            });
+            // Mettre à jour l'état avec les segments mis à jour
+            setStorySegments([...localSegments]);
+          } else {
+            console.error(
+              `[Image] Generation failed for image ${promptIndex + 1}:`,
+              result.data.error
+            );
+          }
+        } catch (error) {
+          console.error(
+            `[Image] Error generating image ${promptIndex + 1}:`,
+            error
+          );
+        }
       }
+
+      console.log(
+        "[generateImagesForStory] Completed. Final segments:",
+        localSegments.map((seg) => ({
+          ...seg,
+          images: seg.images?.map((img) => (img ? "image" : "null")),
+        }))
+      );
+      return localSegments[segmentIndex]?.images || [];
     } catch (error) {
-      console.error("Error in playAudio:", error);
+      console.error("[generateImagesForStory] Error:", error);
+      return [];
     }
   };
 
@@ -175,7 +227,7 @@ function App() {
         }
       );
 
-      // 2. Créer le nouveau segment sans image
+      // 2. Créer le nouveau segment sans images
       const newSegment = {
         text: formatTextWithBold(response.data.story_text),
         isChoice: false,
@@ -184,20 +236,26 @@ function App() {
         radiationLevel: response.data.radiation_level,
         is_first_step: response.data.is_first_step,
         is_last_step: response.data.is_last_step,
-        image_base64: null,
+        images: response.data.image_prompts
+          ? Array(response.data.image_prompts.length).fill(null)
+          : [], // Pré-remplir avec null pour les spinners
       };
 
+      // 3. Calculer le nouvel index et les segments mis à jour
       let segmentIndex;
-      // 3. Mettre à jour l'état avec le nouveau segment
+      let updatedSegments;
+
       if (action === "restart") {
-        setStorySegments([newSegment]);
         segmentIndex = 0;
+        updatedSegments = [newSegment];
       } else {
-        setStorySegments((prev) => {
-          segmentIndex = prev.length;
-          return [...prev, newSegment];
-        });
+        // Récupérer l'état actuel de manière synchrone
+        segmentIndex = storySegments.length;
+        updatedSegments = [...storySegments, newSegment];
       }
+
+      // Mettre à jour l'état avec les nouveaux segments
+      setStorySegments(updatedSegments);
 
       // 4. Mettre à jour les choix immédiatement
       setCurrentChoices(response.data.choices);
@@ -205,29 +263,27 @@ function App() {
       // 5. Désactiver le loading car l'histoire est affichée
       setIsLoading(false);
 
-      // 6. Lancer la synthèse vocale pour le nouveau segment
-      await playAudio(response.data.story_text);
-
-      // 7. Tenter de générer l'image en arrière-plan
-      try {
-        const image_base64 = await generateImageForStory(
-          response.data.story_text,
-          segmentIndex
-        );
-        if (image_base64) {
-          setStorySegments((prev) => {
-            const updatedSegments = [...prev];
-            if (updatedSegments[segmentIndex]) {
-              updatedSegments[segmentIndex] = {
-                ...updatedSegments[segmentIndex],
-                image_base64: image_base64,
-              };
-            }
-            return updatedSegments;
-          });
+      // 6. Générer les images en parallèle
+      if (
+        response.data.image_prompts &&
+        response.data.image_prompts.length > 0
+      ) {
+        try {
+          console.log(
+            "Starting image generation with prompts:",
+            response.data.image_prompts,
+            "for segment",
+            segmentIndex
+          );
+          // generateImagesForStory met déjà à jour le state au fur et à mesure
+          await generateImagesForStory(
+            response.data.image_prompts,
+            segmentIndex,
+            updatedSegments
+          );
+        } catch (imageError) {
+          console.error("Error generating images:", imageError);
         }
-      } catch (imageError) {
-        console.error("Error generating image:", imageError);
       }
     } catch (error) {
       console.error("Error:", error);
@@ -241,7 +297,7 @@ function App() {
           storySegments.length > 0
             ? storySegments[storySegments.length - 1].radiationLevel
             : 0,
-        image_base64: null,
+        images: [],
       };
 
       // Ajouter le segment d'erreur et permettre de réessayer
@@ -257,14 +313,6 @@ function App() {
       setIsLoading(false);
     }
   };
-
-  // Start the story when the component mounts
-  useEffect(() => {
-    if (!isInitializedRef.current) {
-      handleStoryAction("restart");
-      isInitializedRef.current = true;
-    }
-  }, []); // Empty dependency array since we're using a ref
 
   const handleChoice = async (choiceId) => {
     // Si c'est l'option "Réessayer", on relance la dernière action

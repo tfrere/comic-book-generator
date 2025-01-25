@@ -1,52 +1,50 @@
 import { LAYOUTS, getNextLayoutType } from "./config";
 
+// Map to store layout types for each page
+const pageLayoutMap = new Map();
+
 // Function to group segments into layouts
 export function groupSegmentsIntoLayouts(segments) {
-  if (segments.length === 0) return [];
+  if (!segments || segments.length === 0) return [];
 
   const layouts = [];
+  let currentLayout = null;
+  let currentPanelIndex = 0;
 
-  // Premier segment toujours en COVER s'il est marqué comme first_step
-  if (segments[0].is_first_step) {
-    layouts.push({
-      type: "COVER",
-      segments: [segments[0]],
-    });
-  }
-
-  // Segments du milieu (on exclut le premier s'il était en COVER)
-  const startIndex = segments[0].is_first_step ? 1 : 0;
-  const middleSegments = segments.slice(startIndex);
-  let currentIndex = 0;
-
-  while (currentIndex < middleSegments.length) {
-    const segment = middleSegments[currentIndex];
-
-    // Si c'est le dernier segment (mort ou victoire), on le met en COVER
-    if (segment.is_last_step) {
-      layouts.push({
-        type: "COVER",
-        segments: [segment],
-      });
-    } else {
-      // Sinon on utilise un layout normal
-      const layoutType = getNextLayoutType(layouts.length);
-      const maxPanels = LAYOUTS[layoutType].panels.length;
-      const availableSegments = middleSegments
-        .slice(currentIndex)
-        .filter((s) => !s.is_last_step);
-
-      if (availableSegments.length > 0) {
-        layouts.push({
-          type: layoutType,
-          segments: availableSegments.slice(0, maxPanels),
-        });
-        currentIndex += Math.min(maxPanels, availableSegments.length) - 1;
-      }
+  segments.forEach((segment) => {
+    // Si c'est le premier segment, créer un layout COVER
+    if (segment.is_first_step) {
+      currentLayout = { type: "COVER", segments: [segment] };
+      layouts.push(currentLayout);
+      currentPanelIndex = segment.images?.length || 0;
+      return;
     }
 
-    currentIndex++;
-  }
+    // Si pas de layout courant ou si tous les panels sont remplis, en créer un nouveau
+    if (
+      !currentLayout ||
+      currentPanelIndex >= LAYOUTS[currentLayout.type].panels.length
+    ) {
+      // Utiliser le layout existant pour cette page ou en créer un nouveau
+      const pageIndex = layouts.length;
+      let nextType = pageLayoutMap.get(pageIndex);
+      if (!nextType) {
+        nextType = getNextLayoutType(layouts.length);
+        pageLayoutMap.set(pageIndex, nextType);
+      }
+      currentLayout = { type: nextType, segments: [] };
+      layouts.push(currentLayout);
+      currentPanelIndex = 0;
+    }
+
+    // Ajouter le segment au layout courant
+    currentLayout.segments.push(segment);
+
+    // Mettre à jour l'index du panel pour le prochain segment
+    if (segment.images) {
+      currentPanelIndex += segment.images.length;
+    }
+  });
 
   return layouts;
 }
@@ -74,8 +72,13 @@ export function getNextPanelDimensions(segments) {
   const lastLayout = layouts[layouts.length - 1];
   const segmentsInLastLayout = lastLayout ? lastLayout.segments.length : 0;
 
-  // Déterminer le type du prochain layout
-  const nextLayoutType = getNextLayoutType(layouts.length);
+  // Utiliser le layout existant ou en créer un nouveau
+  const pageIndex = layouts.length;
+  let nextLayoutType = pageLayoutMap.get(pageIndex);
+  if (!nextLayoutType) {
+    nextLayoutType = getNextLayoutType(layouts.length);
+    pageLayoutMap.set(pageIndex, nextLayoutType);
+  }
   const nextPanelIndex = segmentsInLastLayout;
 
   // Si le dernier layout est plein, prendre le premier panneau du prochain layout
@@ -88,4 +91,9 @@ export function getNextPanelDimensions(segments) {
 
   // Sinon, prendre le prochain panneau du layout courant
   return LAYOUTS[lastLayout.type].panels[nextPanelIndex];
+}
+
+// Function to reset layout map (call this when starting a new story)
+export function resetLayoutMap() {
+  pageLayoutMap.clear();
 }
