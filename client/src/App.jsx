@@ -46,6 +46,7 @@ function App() {
   const isInitializedRef = useRef(false);
   const currentImageRequestRef = useRef(null);
   const pendingImageRequests = useRef(new Set()); // Track pending image requests
+  const audioRef = useRef(new Audio());
 
   const generateImageForStory = async (storyText, segmentIndex) => {
     try {
@@ -120,6 +121,48 @@ function App() {
     }
   };
 
+  const playAudio = async (text) => {
+    try {
+      console.log("Requesting audio for text:", text);
+      const response = await api.post(`${API_URL}/api/text-to-speech`, {
+        text: text,
+      });
+
+      if (response.data.success) {
+        console.log("Audio received successfully");
+        // Arrêter l'audio en cours s'il y en a un
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+
+        // Créer et jouer le nouvel audio
+        const audioBlob = await fetch(
+          `data:audio/mpeg;base64,${response.data.audio_base64}`
+        ).then((r) => r.blob());
+        console.log("Audio blob created:", audioBlob.size, "bytes");
+
+        const audioUrl = URL.createObjectURL(audioBlob);
+        audioRef.current.src = audioUrl;
+        audioRef.current.volume = 1.0; // S'assurer que le volume est au maximum
+
+        try {
+          console.log("Attempting to play audio...");
+          await audioRef.current.play();
+          console.log("Audio playing successfully");
+        } catch (playError) {
+          console.error("Error playing audio:", playError);
+        }
+
+        // Nettoyer l'URL une fois l'audio terminé
+        audioRef.current.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          console.log("Audio finished, URL cleaned up");
+        };
+      }
+    } catch (error) {
+      console.error("Error in playAudio:", error);
+    }
+  };
+
   const handleStoryAction = async (action, choiceId = null) => {
     setIsLoading(true);
     try {
@@ -162,7 +205,10 @@ function App() {
       // 5. Désactiver le loading car l'histoire est affichée
       setIsLoading(false);
 
-      // 6. Tenter de générer l'image en arrière-plan
+      // 6. Lancer la synthèse vocale pour le nouveau segment
+      await playAudio(response.data.story_text);
+
+      // 7. Tenter de générer l'image en arrière-plan
       try {
         const image_base64 = await generateImageForStory(
           response.data.story_text,

@@ -61,7 +61,7 @@ class MistralClient:
 class FluxClient:
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.endpoint = os.getenv("FLUX_ENDPOINT", "https://api-inference.huggingface.co/models/stabilityai/sdxl-turbo")
+        self.endpoint = os.getenv("FLUX_ENDPOINT")
     
     def generate_image(self, 
                       prompt: str, 
@@ -92,7 +92,7 @@ class FluxClient:
                         "guidance_scale": guidance_scale,
                         "width": width,
                         "height": height,
-                        "negative_prompt": "text, watermark, logo, signature, blurry, low quality"
+                        "negative_prompt": "speech bubble, caption, subtitle"
                     }
                 }
             )

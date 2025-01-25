@@ -34,6 +34,7 @@ API_PORT = int(os.getenv("API_PORT", "8000"))
 STATIC_FILES_DIR = os.getenv("STATIC_FILES_DIR", "../client/dist")
 HF_API_KEY = os.getenv("HF_API_KEY")
 AWS_TOKEN = os.getenv("AWS_TOKEN", "VHVlIEZlYiAyNyAwOTowNzoyMiBDRVQgMjAyNA==")  # Token par défaut pour le développement
+ELEVEN_LABS_API_KEY = os.getenv("ELEVEN_LABS_API_KEY")  # Nouvelle clé d'API
 
 app = FastAPI(title="Echoes of Influence")
 
@@ -115,6 +116,10 @@ class ImageGenerationResponse(BaseModel):
     success: bool
     image_base64: Optional[str] = None
     error: Optional[str] = None
+
+class TextToSpeechRequest(BaseModel):
+    text: str
+    voice_id: str = "nPczCjzI2devNBz1zQrb"  # Default voice ID (Rachel)
 
 async def get_test_image(client_id: str, width=1024, height=1024):
     """Get a random image from Lorem Picsum"""
@@ -353,6 +358,47 @@ async def test_generate_image(request: Request, image_request: ImageGenerationRe
             "success": False,
             "error": str(e)
         }
+
+@app.post("/api/text-to-speech")
+async def text_to_speech(request: TextToSpeechRequest):
+    """Endpoint pour convertir du texte en audio via ElevenLabs"""
+    try:
+        if not ELEVEN_LABS_API_KEY:
+            raise HTTPException(status_code=500, detail="ElevenLabs API key not configured")
+
+        # Nettoyer le texte des balises markdown **
+        clean_text = request.text.replace("**", "")
+
+        # Appel à l'API ElevenLabs
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{request.voice_id}"
+        headers = {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": ELEVEN_LABS_API_KEY
+        }
+        data = {
+            "text": clean_text,
+            "model_id": "eleven_multilingual_v2",
+            "voice_settings": {
+                "stability": 0.5,
+                "similarity_boost": 0.75
+            }
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=data, headers=headers) as response:
+                if response.status == 200:
+                    audio_content = await response.read()
+                    # Convertir l'audio en base64 pour l'envoyer au client
+                    audio_base64 = base64.b64encode(audio_content).decode('utf-8')
+                    return {"success": True, "audio_base64": audio_base64}
+                else:
+                    error_text = await response.text()
+                    raise HTTPException(status_code=response.status, detail=error_text)
+
+    except Exception as e:
+        print(f"Error in text_to_speech: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.on_event("shutdown")
 async def shutdown_event():
