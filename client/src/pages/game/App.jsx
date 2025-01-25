@@ -6,15 +6,20 @@ import {
   Box,
   Typography,
   LinearProgress,
+  Chip,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
+import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import axios from "axios";
-import { ComicLayout } from "./layouts/ComicLayout";
+import { ComicLayout } from "../../layouts/ComicLayout";
 import {
   getNextPanelDimensions,
   groupSegmentsIntoLayouts,
-} from "./layouts/utils";
-import { LAYOUTS } from "./layouts/config";
+} from "../../layouts/utils";
+import { LAYOUTS } from "../../layouts/config";
+import html2canvas from "html2canvas";
 
 // Get API URL from environment or default to localhost in development
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -29,14 +34,29 @@ const api = axios.create({
   },
 });
 
-// Function to convert text with ** to bold elements
-const formatTextWithBold = (text) => {
+// Function to convert text with ** to Chip elements
+const formatTextWithBold = (text, isInPanel = false) => {
   if (!text) return "";
   const parts = text.split(/(\*\*.*?\*\*)/g);
   return parts.map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {
-      // Remove the ** and wrap in bold
-      return <strong key={index}>{part.slice(2, -2)}</strong>;
+      // Remove the ** and wrap in Chip
+      return (
+        <Chip
+          key={index}
+          label={part.slice(2, -2)}
+          size="small"
+          sx={{
+            mx: 0.5,
+            ...(isInPanel && {
+              backgroundColor: "rgba(0, 0, 0, 0)!important",
+              color: "black!important",
+              borderColor: "black!important",
+              borderRadius: "4px!important",
+            }),
+          }}
+        />
+      );
     }
     return part;
   });
@@ -50,6 +70,7 @@ function App() {
   const currentImageRequestRef = useRef(null);
   const pendingImageRequests = useRef(new Set()); // Track pending image requests
   const audioRef = useRef(new Audio());
+  const comicContainerRef = useRef(null);
 
   // Start the story on first render
   useEffect(() => {
@@ -149,54 +170,93 @@ function App() {
           }
         );
 
-        try {
-          const result = await api.post(
-            `${API_URL}/api/generate-image-direct`,
-            {
-              prompt: imagePrompts[promptIndex],
-              width: panelDimensions.width,
-              height: panelDimensions.height,
+        let retryCount = 0;
+        const maxRetries = 3;
+        let success = false;
+
+        while (retryCount < maxRetries && !success) {
+          try {
+            if (retryCount > 0) {
+              console.log(
+                `[Image] Retry attempt ${retryCount} for image ${
+                  promptIndex + 1
+                }`
+              );
             }
-          );
 
-          console.log(`[Image] Response for image ${promptIndex + 1}:`, {
-            success: result.data.success,
-            hasImage: !!result.data.image_base64,
-            imageLength: result.data.image_base64?.length,
-          });
-
-          if (result.data.success) {
-            console.log(
-              `[Image] Image ${promptIndex + 1} generated successfully`
+            const result = await api.post(
+              `${API_URL}/api/generate-image-direct`,
+              {
+                prompt: imagePrompts[promptIndex],
+                width: panelDimensions.width,
+                height: panelDimensions.height,
+              }
             );
-            // Mettre à jour les segments locaux
-            const currentImages = [
-              ...(localSegments[segmentIndex].images || []),
-            ];
-            // Remplacer le null à l'index du prompt par la nouvelle image
-            currentImages[promptIndex] = result.data.image_base64;
 
-            localSegments[segmentIndex] = {
-              ...localSegments[segmentIndex],
-              images: currentImages,
-            };
-            console.log("[State] Updating segments with new image:", {
-              segmentIndex,
-              imageIndex: promptIndex,
-              imagesArray: currentImages.map((img) => (img ? "image" : "null")),
+            console.log(`[Image] Response for image ${promptIndex + 1}:`, {
+              success: result.data.success,
+              hasImage: !!result.data.image_base64,
+              imageLength: result.data.image_base64?.length,
             });
-            // Mettre à jour l'état avec les segments mis à jour
-            setStorySegments([...localSegments]);
-          } else {
+
+            if (result.data.success) {
+              console.log(
+                `[Image] Image ${promptIndex + 1} generated successfully`
+              );
+              // Mettre à jour les segments locaux
+              const currentImages = [
+                ...(localSegments[segmentIndex].images || []),
+              ];
+              // Remplacer le null à l'index du prompt par la nouvelle image
+              currentImages[promptIndex] = result.data.image_base64;
+
+              localSegments[segmentIndex] = {
+                ...localSegments[segmentIndex],
+                images: currentImages,
+              };
+              console.log("[State] Updating segments with new image:", {
+                segmentIndex,
+                imageIndex: promptIndex,
+                imagesArray: currentImages.map((img) =>
+                  img ? "image" : "null"
+                ),
+              });
+              // Mettre à jour l'état avec les segments mis à jour
+              setStorySegments([...localSegments]);
+              success = true;
+            } else {
+              console.error(
+                `[Image] Generation failed for image ${promptIndex + 1}:`,
+                result.data.error
+              );
+              retryCount++;
+              if (retryCount < maxRetries) {
+                // Attendre un peu avant de réessayer (backoff exponentiel)
+                await new Promise((resolve) =>
+                  setTimeout(resolve, 1000 * Math.pow(2, retryCount))
+                );
+              }
+            }
+          } catch (error) {
             console.error(
-              `[Image] Generation failed for image ${promptIndex + 1}:`,
-              result.data.error
+              `[Image] Error generating image ${promptIndex + 1}:`,
+              error
             );
+            retryCount++;
+            if (retryCount < maxRetries) {
+              // Attendre un peu avant de réessayer (backoff exponentiel)
+              await new Promise((resolve) =>
+                setTimeout(resolve, 1000 * Math.pow(2, retryCount))
+              );
+            }
           }
-        } catch (error) {
+        }
+
+        if (!success) {
           console.error(
-            `[Image] Error generating image ${promptIndex + 1}:`,
-            error
+            `[Image] Failed to generate image ${
+              promptIndex + 1
+            } after ${maxRetries} attempts`
           );
         }
       }
@@ -229,7 +289,7 @@ function App() {
 
       // 2. Créer le nouveau segment sans images
       const newSegment = {
-        text: formatTextWithBold(response.data.story_text),
+        text: formatTextWithBold(response.data.story_text, true),
         isChoice: false,
         isDeath: response.data.is_death,
         isVictory: response.data.is_victory,
@@ -347,6 +407,27 @@ function App() {
     (segment) => !segment.isChoice
   );
 
+  const handleSaveAsImage = async () => {
+    if (comicContainerRef.current) {
+      try {
+        const canvas = await html2canvas(comicContainerRef.current, {
+          scale: 2, // Meilleure qualité
+          backgroundColor: "#242424", // Même couleur que le fond
+          logging: false,
+        });
+
+        // Convertir en PNG et télécharger
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = image;
+        link.download = "my-comic-story.png";
+        link.click();
+      } catch (error) {
+        console.error("Error saving image:", error);
+      }
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -356,79 +437,54 @@ function App() {
         flexDirection: "column",
       }}
     >
-      {/* <Box
+      <Box
         sx={{
-          p: 2,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          position: "fixed",
+          top: 16,
+          right: 16,
+          zIndex: 1000,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Box
+        <Tooltip title="Sauvegarder en PNG">
+          <IconButton
+            onClick={handleSaveAsImage}
             sx={{
-              display: "flex",
-              alignItems: "center",
-              bgcolor: "warning.main",
-              color: "white",
-              px: 2,
-              py: 1,
-              borderRadius: 1,
-              "& .radiation-value": {
-                color:
-                  storySegments.length > 0 &&
-                  storySegments[storySegments.length - 1].radiationLevel >= 7
-                    ? "error.light"
-                    : "inherit",
+              border: "1px solid",
+              borderColor: "primary.main",
+              borderRadius: "8px",
+              backgroundColor: "transparent",
+              color: "primary.main",
+              padding: "8px",
+              "&:hover": {
+                backgroundColor: "primary.main",
+                color: "background.paper",
               },
             }}
           >
-            <Typography variant="body1" component="span">
-              Radiation:{" "}
-              <span className="radiation-value">
-                {storySegments.length > 0
-                  ? `${
-                      storySegments[storySegments.length - 1].radiationLevel
-                    }/10`
-                  : "0/10"}
-              </span>
-            </Typography>
-          </Box>
-          <Button
-            variant="outlined"
-            startIcon={<RestartAltIcon />}
-            onClick={() => handleStoryAction("restart")}
-            disabled={isLoading}
-          >
-            Restart
-          </Button>
-          <Button
-            variant={isDebugMode ? "contained" : "outlined"}
-            color={isDebugMode ? "secondary" : "primary"}
-            onClick={() => {
-              setIsDebugMode(!isDebugMode);
-              // Redémarrer l'histoire en mode debug
-              if (!isDebugMode) {
-                handleStoryAction("restart");
-              }
-            }}
-            sx={{ ml: 2 }}
-          >
-            {isDebugMode ? "Mode Debug" : "Mode Normal"}
-          </Button>
-        </Box>
-      </Box> */}
+            <SaveOutlinedIcon />
+          </IconButton>
+        </Tooltip>
+      </Box>
 
-      {/* {isLoading && <LinearProgress sx={{ mb: 2 }} />} */}
+      {isLoading && (
+        <LinearProgress
+          color="secondary"
+          sx={{ position: "absolute", top: 0, width: "100%" }}
+        />
+      )}
 
       <Box
+        ref={comicContainerRef}
         sx={{
           flexGrow: 1,
           display: "flex",
           gap: 4,
-          p: 2,
+          pt: 8,
+          px: 2,
+          pb: 2,
           width: "100%",
-          height: "90vh",
+          height: "calc(100vh - 135px)",
+          bgcolor: "background.default",
         }}
       >
         <ComicLayout segments={nonChoiceSegments} />
@@ -438,7 +494,7 @@ function App() {
         sx={{
           py: 3,
           borderColor: "divider",
-          backgroundColor: "background.paper",
+          backgroundColor: "background.default",
         }}
       >
         {currentChoices.length > 0 ? (
@@ -447,20 +503,46 @@ function App() {
               display: "flex",
               justifyContent: "center",
               gap: 2,
-              minHeight: "40px",
+              minHeight: "100px",
             }}
           >
-            {currentChoices.map((choice) => (
-              <Button
+            {currentChoices.map((choice, index) => (
+              <Box
                 key={choice.id}
-                variant="contained"
-                size="large"
-                onClick={() => handleChoice(choice.id)}
-                disabled={isLoading}
-                sx={{ minWidth: "200px" }}
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 1,
+                }}
               >
-                {formatTextWithBold(choice.text)}
-              </Button>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ opacity: 0.7 }}
+                >
+                  Suggestion {index + 1}
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => handleChoice(choice.id)}
+                  disabled={isLoading}
+                  sx={{
+                    minWidth: "300px",
+                    textTransform: "none",
+                    cursor: "pointer",
+                    fontSize: "1.1rem",
+                    padding: "16px 24px",
+                    lineHeight: 1.3,
+                    "& .MuiChip-root": {
+                      fontSize: "1.1rem",
+                    },
+                  }}
+                >
+                  {formatTextWithBold(choice.text)}
+                </Button>
+              </Box>
             ))}
           </Box>
         ) : storySegments.length > 0 &&
@@ -475,15 +557,9 @@ function App() {
           >
             <Button
               variant="text"
-              size="large"
+              size="medium"
               onClick={() => handleStoryAction("restart")}
               startIcon={<RestartAltIcon />}
-              sx={{
-                color: "text.secondary",
-                "&:hover": {
-                  color: "text.primary",
-                },
-              }}
             >
               Replay
             </Button>

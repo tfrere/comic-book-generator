@@ -83,7 +83,7 @@ export function ComicLayout({ segments }) {
         gap: 4,
         height: "100%",
         width: "100%",
-        px: layouts[0]?.type === "COVER" ? "calc(50% - (90vh * 0.7 * 0.5))" : 0,
+        px: layouts[0]?.type === "COVER" ? "calc(50% - (90vh * 0.5 * 0.5))" : 0,
         overflowX: "auto",
         overflowY: "hidden",
         "&::-webkit-scrollbar": {
