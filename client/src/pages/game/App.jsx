@@ -20,6 +20,7 @@ import {
 } from "../../layouts/utils";
 import { LAYOUTS } from "../../layouts/config";
 import html2canvas from "html2canvas";
+import { useConversation } from "@11labs/react";
 
 // Get API URL from environment or default to localhost in development
 const isHFSpace = window.location.hostname.includes("hf.space");
@@ -29,6 +30,10 @@ const API_URL = isHFSpace
 
 // Generate a unique client ID
 const CLIENT_ID = `client_${Math.random().toString(36).substring(2)}`;
+// Constants
+const AGENT_ID = "2MF9st3s1mNFbX01Y106";
+
+const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/ws";
 
 // Create axios instance with default config
 const api = axios.create({
@@ -74,16 +79,195 @@ function App() {
   const [currentChoices, setCurrentChoices] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(false);
-  const currentImageRequestRef = useRef(null);
-  const pendingImageRequests = useRef(new Set()); // Track pending image requests
+  const [isRecording, setIsRecording] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
+
   const audioRef = useRef(new Audio());
   const comicContainerRef = useRef(null);
+  const narrationAudioRef = useRef(new Audio()); // Separate audio ref for narration
+  const wsRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+
 
   // Start the story on first render
   useEffect(() => {
     handleStoryAction("restart");
   }, []); // Empty dependency array for first render only
 
+  // Only setup WebSocket connection with server
+  useEffect(() => {
+    const setupWebSocket = () => {
+      wsRef.current = new WebSocket(WS_URL);
+
+      wsRef.current.onopen = () => {
+        console.log('Server WebSocket connected');
+        setWsConnected(true);
+      };
+
+      wsRef.current.onclose = (event) => {
+        const reason = event.reason || 'No reason provided';
+        const code = event.code;
+        console.log(`Server WebSocket disconnected - Code: ${code}, Reason: ${reason}`);
+        console.log('Attempting to reconnect in 3 seconds...');
+        setWsConnected(false);
+        // Attempt to reconnect after 3 seconds
+        setTimeout(setupWebSocket, 3000);
+      };
+
+      wsRef.current.onmessage = async (event) => {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'audio') {
+          // Stop any ongoing narration
+          if (narrationAudioRef.current) {
+            narrationAudioRef.current.pause();
+            narrationAudioRef.current.currentTime = 0;
+          }
+          
+          // Play the conversation audio response
+          const audioBlob = await fetch(`data:audio/mpeg;base64,${data.audio}`).then(r => r.blob());
+          const audioUrl = URL.createObjectURL(audioBlob);
+          audioRef.current.src = audioUrl;
+          await audioRef.current.play();
+        }
+      };
+    };
+
+    setupWebSocket();
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, []);
+  
+  const conversation = useConversation({
+    agentId: AGENT_ID,
+    onResponse: async (response) => {
+      if (response.type === 'audio') {
+        // Play the conversation audio response
+        const audioBlob = new Blob([response.audio], { type: 'audio/mpeg' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        audioRef.current.src = audioUrl;
+        await audioRef.current.play();
+      }
+    },
+    clientTools: {
+      make_decision: async ({ decision }) => {
+        console.log('AI made decision:', decision);
+        // End the ElevenLabs conversation
+        await conversation.endSession();
+        setIsConversationMode(false);
+        // Handle the choice and generate next story part
+        await handleChoice(parseInt(decision));
+      }
+    }
+  });
+  const { isSpeaking } = conversation;
+  const [isConversationMode, setIsConversationMode] = useState(false);
+
+  // Audio recording setup
+  const startRecording = async () => {
+    try {
+      // Stop narration audio if it's playing
+      if (narrationAudioRef.current) {
+        narrationAudioRef.current.pause();
+        narrationAudioRef.current.currentTime = 0;
+      }
+      // Also stop any conversation audio if playing
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+
+      if (!isConversationMode) {
+        // If we're not in conversation mode, this is the first recording
+        setIsConversationMode(true);
+        // Initialize ElevenLabs WebSocket connection
+          try {
+            // Pass available choices to the conversation
+            const currentChoiceIds = currentChoices.map(choice => choice.id).join(',');
+            await conversation.startSession({ 
+              agentId: AGENT_ID,
+              initialContext: `Available choices: ${currentChoiceIds}. Use the makeDecision tool with one of these IDs to make a choice.`
+            });
+            console.log('ElevenLabs WebSocket connected');
+          } catch (error) {
+            console.error('Error initializing ElevenLabs conversation:', error);
+            return;
+          }
+        } else if (isSpeaking) {
+          // Only handle stopping the agent if we're in conversation mode
+          await conversation.endSession();
+          const wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${AGENT_ID}`;
+          await conversation.startSession({ url: wsUrl });
+        }
+  
+        // Only stop narration if it's actually playing
+        if (!isConversationMode && narrationAudioRef.current) {
+          narrationAudioRef.current.pause();
+          narrationAudioRef.current.currentTime = 0;
+        }
+  
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        audioChunksRef.current = [];
+  
+        mediaRecorderRef.current.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+  
+        mediaRecorderRef.current.onstop = async () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+          const reader = new FileReader();
+          
+          reader.onload = async () => {
+            const base64Audio = reader.result.split(',')[1];
+            if (isConversationMode) {
+              try {
+                // Send audio to ElevenLabs conversation
+                await conversation.send({
+                  type: 'audio',
+                  data: base64Audio
+                });
+              } catch (error) {
+                console.error('Error sending audio to ElevenLabs:', error);
+              }
+            } else {
+              // Otherwise use the original WebSocket connection
+              if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                console.log('Sending audio to server via WebSocket');
+                wsRef.current.send(JSON.stringify({
+                  type: 'audio_input',
+                  audio: base64Audio,
+                  client_id: CLIENT_ID
+                }));
+              }
+            }
+          };
+          
+          reader.readAsDataURL(audioBlob);
+        };
+  
+        mediaRecorderRef.current.start();
+        setIsRecording(true);
+      } catch (error) {
+        console.error('Error starting recording:', error);
+      }
+    };
+  
+    const stopRecording = () => {
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  
   const generateImagesForStory = async (
     imagePrompts,
     segmentIndex,
@@ -485,8 +669,29 @@ function App() {
           top: 16,
           right: 16,
           zIndex: 1000,
+          display: "flex",
+          gap: 1,
         }}
       >
+        <Tooltip title={isRecording ? "Stop Recording" : "Start Recording"}>
+          <IconButton
+            onClick={isRecording ? stopRecording : startRecording}
+            sx={{
+              border: "1px solid",
+              borderColor: isRecording ? "error.main" : "primary.main",
+              borderRadius: "8px",
+              backgroundColor: isRecording ? "error.main" : "transparent",
+              color: isRecording ? "white" : "primary.main",
+              padding: "8px",
+              "&:hover": {
+                backgroundColor: isRecording ? "error.dark" : "primary.main",
+                color: "background.paper",
+              },
+            }}
+          >
+            {isRecording ? "⏹" : "⏺"}
+          </IconButton>
+        </Tooltip>
         <Tooltip title="Sauvegarder en PNG">
           <IconButton
             onClick={handleSaveAsImage}
