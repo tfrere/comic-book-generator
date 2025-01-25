@@ -275,6 +275,38 @@ function App() {
     }
   };
 
+  // Fonction pour jouer l'audio
+  const playAudio = async (text) => {
+    try {
+      // Nettoyer le texte des balises markdown et des chips
+      const cleanText = text.replace(/\*\*(.*?)\*\*/g, "$1");
+
+      // Appeler l'API text-to-speech
+      const response = await api.post(`${API_URL}/api/text-to-speech`, {
+        text: cleanText,
+      });
+
+      if (response.data.success) {
+        // Créer un Blob à partir du base64
+        const audioBlob = await fetch(
+          `data:audio/mpeg;base64,${response.data.audio_base64}`
+        ).then((r) => r.blob());
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        // Mettre à jour la source de l'audio
+        audioRef.current.src = audioUrl;
+        audioRef.current.play();
+
+        // Nettoyer l'URL quand l'audio est terminé
+        audioRef.current.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+        };
+      }
+    } catch (error) {
+      console.error("Error playing audio:", error);
+    }
+  };
+
   const handleStoryAction = async (action, choiceId = null) => {
     setIsLoading(true);
     try {
@@ -323,7 +355,10 @@ function App() {
       // 5. Désactiver le loading car l'histoire est affichée
       setIsLoading(false);
 
-      // 6. Générer les images en parallèle
+      // 6. Jouer l'audio du nouveau segment
+      await playAudio(response.data.story_text);
+
+      // 7. Générer les images en parallèle
       if (
         response.data.image_prompts &&
         response.data.image_prompts.length > 0

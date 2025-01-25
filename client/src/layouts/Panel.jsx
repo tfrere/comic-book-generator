@@ -1,18 +1,5 @@
-import {
-  Box,
-  CircularProgress,
-  Typography,
-  ThemeProvider,
-  createTheme,
-} from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
-
-// Créer un thème local en mode clair pour les chips
-const lightTheme = createTheme({
-  palette: {
-    mode: "light",
-  },
-});
 
 // Component for displaying a single panel
 export function Panel({ segment, panel, panelIndex }) {
@@ -125,25 +112,27 @@ export function Panel({ segment, panel, panelIndex }) {
 
           {/* Texte du segment (uniquement sur le premier panel) */}
           {panelIndex === 0 && segment.text && (
-            <ThemeProvider theme={lightTheme}>
-              <Box
-                sx={{
-                  position: "absolute",
-                  bottom: "20px",
-                  left: "20px",
-                  right: "20px",
-                  backgroundColor: "rgba(255, 255, 255, 0.9)",
-                  fontSize: ".9rem",
-                  padding: "10px",
-                  color: "black !important",
-                  borderRadius: "8px",
-                  boxShadow: "0 -2px 4px rgba(0,0,0,0.1)",
-                  zIndex: 2,
-                }}
-              >
-                {segment.text}
-              </Box>
-            </ThemeProvider>
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: "20px",
+                left: "20px",
+                right: "20px",
+                backgroundColor: "rgba(255, 255, 255, 0.9)",
+                fontSize: ".9rem",
+                padding: "10px",
+                borderRadius: "8px",
+                boxShadow: "0 -2px 4px rgba(0,0,0,0.1)",
+                zIndex: 2,
+                color: "black",
+                "& .MuiChip-root": {
+                  color: "black",
+                  borderColor: "black",
+                },
+              }}
+            >
+              {segment.text}
+            </Box>
           )}
         </>
       )}

@@ -42,7 +42,7 @@ export const theme = createTheme({
   components: {
     MuiChip: {
       styleOverrides: {
-        root: {
+        root: ({ theme }) => ({
           borderRadius: "4px",
           backgroundColor: "transparent",
           border: "1px solid",
@@ -53,7 +53,12 @@ export const theme = createTheme({
             padding: "2px 8px",
             lineHeight: "1.2",
           },
-        },
+          ...(theme.palette.mode === "dark" && {
+            backgroundColor: "transparent !important",
+            color: "inherit !important",
+            borderColor: "currentColor !important",
+          }),
+        }),
         sizeSmall: {
           height: "auto",
         },
