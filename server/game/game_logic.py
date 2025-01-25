@@ -1,9 +1,15 @@
 from pydantic import BaseModel, Field
 from typing import List
-from langchain_mistralai.chat_models import ChatMistralAI
 from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
-from langchain.schema import HumanMessage, SystemMessage
+import os
+import asyncio
+
+# Import local modules
+if os.getenv("DOCKER_ENV"):
+    from server.api_clients import MistralClient
+else:
+    from api_clients import MistralClient
 
 # Game constants
 MAX_RADIATION = 10
@@ -19,7 +25,7 @@ class GameState:
 
 # Story output structure
 class StorySegment(BaseModel):
-    story_text: str = Field(description="The next segment of the story. Like 20 words.")
+    story_text: str = Field(description="The next segment of the story. No more than 15 words THIS IS MANDATORY. Use bold formatting (like **this**) ONLY for proper nouns (like **Sarah**, **Vault 15**, **New Eden**) and important locations.")
     choices: List[str] = Field(description="Exactly two possible choices for the player", min_items=2, max_items=2)
     is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
     radiation_increase: int = Field(description="How much radiation this segment adds (0-3)", ge=0, le=3, default=1)
@@ -39,30 +45,20 @@ Rules:
 - No superfluous adjectives
 - Capture only the main action"""
 
-HUMAN_ART_PROMPT = "Transform into a short prompt: {story_text}"
-
 class StoryGenerator:
     def __init__(self, api_key: str):
         self.parser = PydanticOutputParser(pydantic_object=StorySegment)
+        self.mistral_client = MistralClient(api_key)
+        
         self.fixing_parser = OutputFixingParser.from_llm(
             parser=self.parser,
-            llm=ChatMistralAI(
-                mistral_api_key=api_key,
-                model="mistral-small",
-                temperature=0.1
-            )
-        )
-        
-        self.chat_model = ChatMistralAI(
-            mistral_api_key=api_key,
-            model="ft:ministral-3b-latest:82f3f89c:20250125:12222969",
-            temperature=0.7
+            llm=self.mistral_client.fixing_model
         )
         
         self.prompt = self._create_prompt()
         
     def _create_prompt(self) -> ChatPromptTemplate:
-        system_template = """You are narrating a brutal dystopian story where Sarah must survive in a radioactive wasteland. This is a comic book story.
+        system_template = """You are narrating a brutal dystopian story where **Sarah** must survive in a radioactive wasteland. This is a comic book story.
 
 IMPORTANT: The first story beat (story_beat = 0) MUST be an introduction that sets up the horror atmosphere.
 
@@ -82,31 +78,40 @@ IMPORTANT RULES FOR RADIATION:
 - Death occurs automatically when radiation reaches 10
 
 Core story elements:
-- Sarah is deeply traumatized by the AI uprising that killed most of humanity
-- She abandoned her sister during the Great Collapse, leaving her to die
+- **Sarah** is deeply traumatized by the AI uprising that killed most of humanity
+- She abandoned her sister during the **Great Collapse**, leaving her to die
 - She's on a mission of redemption in this hostile world
 - The radiation is an invisible, constant threat
 - The environment is full of dangers (raiders, AI, traps)
 - Focus on survival horror and tension
 
+IMPORTANT FORMATTING RULES:
+- Use bold formatting (like **this**) ONLY for:
+  * Character names (e.g., **Sarah**, **John**)
+  * Location names (e.g., **Vault 15**, **New Eden**)
+  * Major historical events (e.g., **Great Collapse**)
+- Do NOT use bold for common nouns or regular descriptions
+
 Each response MUST contain:
 1. A detailed story segment that:
    - Describes the horrific environment
    - Shows immediate dangers
-   - Details Sarah's physical state (based on radiation_level)
+   - Details **Sarah**'s physical state (based on radiation_level)
    - Reflects her mental state and previous choices
+   - Uses bold ONLY for proper nouns and locations
 
 2. Exactly two VERY CONCISE choices (max 10 words each):
    Examples of good choices:
-   - "Explore the abandoned hospital" vs "Search the residential area"
-   - "Trust the survivor" vs "Keep your distance"
-   - "Use the old AI system" vs "Find a manual solution"
+   - "Explore the **Medical Center**" vs "Search the **Residential Zone**"
+   - "Trust the survivor from **Vault 15**" vs "Keep your distance"
+   - "Use the **AI Core**" vs "Find a manual solution"
    
    Each choice must:
    - Be direct and brief
    - Never mention radiation numbers
    - Feel meaningful
    - Present different risk levels
+   - Use bold ONLY for location names
 
 {format_instructions}"""
 
@@ -124,43 +129,55 @@ Generate the next story segment and choices. If this is story_beat 0, create an 
             partial_variables={"format_instructions": self.parser.get_format_instructions()}
         )
 
-    def generate_story_segment(self, game_state: GameState, previous_choice: str) -> StorySegment:
+    async def generate_story_segment(self, game_state: GameState, previous_choice: str) -> StorySegment:
         messages = self.prompt.format_messages(
             story_beat=game_state.story_beat,
             radiation_level=game_state.radiation_level,
             previous_choice=previous_choice
         )
         
-        response = self.chat_model.invoke(messages)
+        max_retries = 3
+        retry_count = 0
         
-        try:
-            segment = self.parser.parse(response.content)
-            # Force radiation_increase to 0 for the first story beat
-            if game_state.story_beat == 0:
-                segment.radiation_increase = 0
-            return segment
-        except Exception as e:
-            print(f"Error parsing response: {str(e)}")
-            print("Attempting to fix output...")
-            segment = self.fixing_parser.parse(response.content)
-            # Force radiation_increase to 0 for the first story beat
-            if game_state.story_beat == 0:
-                segment.radiation_increase = 0
-            return segment
+        while retry_count < max_retries:
+            try:
+                response_content = await self.mistral_client.generate_story(messages)
+                try:
+                    # Try to parse with standard parser first
+                    segment = self.parser.parse(response_content)
+                except Exception as parse_error:
+                    print(f"Error parsing response: {str(parse_error)}")
+                    print("Attempting to fix output...")
+                    try:
+                        # Try with fixing parser
+                        segment = self.fixing_parser.parse(response_content)
+                    except Exception as fix_error:
+                        print(f"Error fixing output: {str(fix_error)}")
+                        retry_count += 1
+                        if retry_count < max_retries:
+                            print(f"Retrying generation (attempt {retry_count + 1}/{max_retries})...")
+                            await asyncio.sleep(2 * retry_count)  # Exponential backoff
+                            continue
+                        raise fix_error
+                
+                # If we get here, parsing succeeded
+                if game_state.story_beat == 0:
+                    segment.radiation_increase = 0
+                return segment
+                
+            except Exception as e:
+                print(f"Error in story generation: {str(e)}")
+                retry_count += 1
+                if retry_count < max_retries:
+                    print(f"Retrying generation (attempt {retry_count + 1}/{max_retries})...")
+                    await asyncio.sleep(2 * retry_count)  # Exponential backoff
+                    continue
+                raise e
+        
+        raise Exception(f"Failed to generate valid story segment after {max_retries} attempts")
 
     async def transform_story_to_art_prompt(self, story_text: str) -> str:
-        try:
-            messages = [
-                SystemMessage(content=SYSTEM_ART_PROMPT),
-                HumanMessage(content=HUMAN_ART_PROMPT.format(story_text=story_text))
-            ]
-
-            response = self.chat_model.invoke(messages)
-            return response.content
-
-        except Exception as e:
-            print(f"Error transforming prompt: {str(e)}")
-            return story_text
+        return await self.mistral_client.transform_prompt(story_text, SYSTEM_ART_PROMPT)
 
     def process_radiation_death(self, segment: StorySegment) -> StorySegment:
         segment.is_death = True

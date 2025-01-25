@@ -1,20 +1,29 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, Field
+from typing import List, Optional, Dict
 import os
 from dotenv import load_dotenv
-import requests
 import base64
 import time
 import random
+import asyncio
+import aiohttp
+from lorem.text import TextLorem
+from contextlib import asynccontextmanager
 
-# Choose import based on environment
+
+lorem = TextLorem(wsep='-', srange=(2,3), words="A B C D".split())
+
+
+# Import local modules
 if os.getenv("DOCKER_ENV"):
     from server.game.game_logic import GameState, StoryGenerator, MAX_RADIATION
+    from server.api_clients import FluxClient
 else:
     from game.game_logic import GameState, StoryGenerator, MAX_RADIATION
+    from api_clients import FluxClient
 
 # Load environment variables
 load_dotenv()
@@ -52,17 +61,46 @@ if not mistral_api_key:
     raise ValueError("MISTRAL_API_KEY environment variable is not set")
 
 story_generator = StoryGenerator(api_key=mistral_api_key)
+flux_client = FluxClient(api_key=HF_API_KEY)
+
+# Store client sessions and requests by type
+client_sessions: Dict[str, aiohttp.ClientSession] = {}
+client_requests: Dict[str, Dict[str, asyncio.Task]] = {}
+
+async def get_client_session(client_id: str) -> aiohttp.ClientSession:
+    """Get or create a client session"""
+    if client_id not in client_sessions:
+        client_sessions[client_id] = aiohttp.ClientSession()
+    return client_sessions[client_id]
+
+async def cancel_previous_request(client_id: str, request_type: str):
+    """Cancel previous request if it exists"""
+    if client_id in client_requests and request_type in client_requests[client_id]:
+        task = client_requests[client_id][request_type]
+        if not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+async def store_request(client_id: str, request_type: str, task: asyncio.Task):
+    """Store a request for a client"""
+    if client_id not in client_requests:
+        client_requests[client_id] = {}
+    client_requests[client_id][request_type] = task
 
 class Choice(BaseModel):
     id: int
     text: str
 
 class StoryResponse(BaseModel):
-    story_text: str
+    story_text: str = Field(description="The story text with proper nouns in bold using ** markdown")
     choices: List[Choice]
-    is_death: bool = False
-    is_victory: bool = False
-    radiation_level: int
+    radiation_level: int = Field(description="Current radiation level from 0 to 10")
+    is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
+    is_first_step: bool = Field(description="Whether this is the first step of the story", default=False)
+    is_last_step: bool = Field(description="Whether this is the last step (victory or death)", default=False)
 
 class ChatMessage(BaseModel):
     message: str
@@ -70,14 +108,26 @@ class ChatMessage(BaseModel):
 
 class ImageGenerationRequest(BaseModel):
     prompt: str
-    negative_prompt: Optional[str] = None
-    width: Optional[int] = 1024
-    height: Optional[int] = 1024
+    width: int = Field(description="Width of the image to generate")
+    height: int = Field(description="Height of the image to generate")
 
 class ImageGenerationResponse(BaseModel):
     success: bool
     image_base64: Optional[str] = None
     error: Optional[str] = None
+
+async def get_test_image(client_id: str, width=1024, height=1024):
+    """Get a random image from Lorem Picsum"""
+    # Build the Lorem Picsum URL with blur and grayscale effects
+    url = f"https://picsum.photos/{width}/{height}?grayscale&blur=2"
+    
+    session = await get_client_session(client_id)
+    async with session.get(url) as response:
+        if response.status == 200:
+            image_bytes = await response.read()
+            return base64.b64encode(image_bytes).decode('utf-8')
+        else:
+            raise Exception(f"Failed to fetch image: {response.status}")
 
 @app.get("/api/health")
 async def health_check():
@@ -105,7 +155,7 @@ async def chat_endpoint(chat_message: ChatMessage):
         print("Previous choice:", previous_choice)
 
         # Generate story segment
-        story_segment = story_generator.generate_story_segment(game_state, previous_choice)
+        story_segment = await story_generator.generate_story_segment(game_state, previous_choice)
         print("Generated story segment:", story_segment)
         
         # Update radiation level
@@ -148,12 +198,20 @@ Sa mission s'arrête ici, une autre victime du tueur invisible des terres désol
             for i, choice in enumerate(story_segment.choices, 1)
         ]
 
+        # Determine if this is the first step
+        is_first_step = chat_message.message == "restart"
+        
+        # Determine if this is the last step (victory or death)
+        is_last_step = game_state.radiation_level >= MAX_RADIATION or story_segment.is_victory
+
+        # Return the response with the new fields
         response = StoryResponse(
             story_text=story_segment.story_text,
             choices=choices,
-            is_death=is_death,
+            radiation_level=game_state.radiation_level,
             is_victory=story_segment.is_victory,
-            radiation_level=game_state.radiation_level
+            is_first_step=is_first_step,
+            is_last_step=is_last_step
         )
         print("Sending response:", response)
         return response
@@ -164,99 +222,149 @@ Sa mission s'arrête ici, une autre victime du tueur invisible des terres désol
         print("Traceback:", traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/generate-image", response_model=ImageGenerationResponse)
+@app.post("/api/generate-image")
 async def generate_image(request: ImageGenerationRequest):
     try:
-        if not HF_API_KEY:
-            return ImageGenerationResponse(
-                success=False,
-                error="HF_API_KEY is not configured in .env file"
-            )
-
-        # Transform the prompt into an artistic prompt
-        original_prompt = request.prompt
-        # Remove prefix for transformation
-        story_text = original_prompt.replace("moebius style scene: ", "").strip()
-        art_prompt = await story_generator.transform_story_to_art_prompt(story_text)
-        # Reapply prefix
-        final_prompt = f"moebius style scene: {art_prompt}"
-        print("Original prompt:", original_prompt)
-        print("Transformed art prompt:", final_prompt)
+        # Transform story into art prompt
+        art_prompt = await story_generator.transform_story_to_art_prompt(request.prompt)
         
-        # Paramètres de retry
-        max_retries = 3
-        retry_delay = 1  # secondes
+        print(f"Generating image with dimensions: {request.width}x{request.height}")
+        print(f"Using prompt: {art_prompt}")
+
+        # Generate image using Flux client
+        image_bytes = flux_client.generate_image(
+            prompt=art_prompt,
+            width=request.width,
+            height=request.height
+        )
         
-        for attempt in range(max_retries):
-            try:
-                # Appel à l'endpoint HF avec authentification
-                response = requests.post(
-                    "https://tvsk4iu4ghzffi34.us-east-1.aws.endpoints.huggingface.cloud",
-                    headers={
-                        "Content-Type": "application/json",
-                        "Accept": "image/jpeg",
-                        "Authorization": f"Bearer {HF_API_KEY}"
-                    },
-                    json={
-                        "inputs": final_prompt,
-                        "parameters": {
-                            "guidance_scale": 9.0,  # Valeur du Comic Factory
-                            "width": request.width or 1024,
-                            "height": request.height or 1024,
-                            "negative_prompt": "manga, anime, american comic, grayscale, monochrome, photo, painting, 3D render"
-                        }
-                    }
-                )
-
-                print(f"Attempt {attempt + 1} - API Response status:", response.status_code)
-                print("API Response headers:", dict(response.headers))
-
-                if response.status_code == 503:
-                    if attempt < max_retries - 1:
-                        print(f"Service unavailable, retrying in {retry_delay} seconds...")
-                        time.sleep(retry_delay)
-                        retry_delay *= 2  # Exponential backoff
-                        continue
-                    else:
-                        return ImageGenerationResponse(
-                            success=False,
-                            error="Service is currently unavailable after multiple retries"
-                        )
-
-                if response.status_code != 200:
-                    error_msg = response.text if response.text else "Unknown error"
-                    print("Error response:", error_msg)
-                    return ImageGenerationResponse(
-                        success=False,
-                        error=f"API error: {error_msg}"
-                    )
-
-                # L'API renvoie directement l'image en binaire
-                image_bytes = response.content
-                base64_image = base64.b64encode(image_bytes).decode('utf-8')
-                
-                print("Base64 image length:", len(base64_image))
-                
-                return ImageGenerationResponse(
-                    success=True,
-                    image_base64=f"data:image/jpeg;base64,{base64_image}"
-                )
-
-            except requests.exceptions.RequestException as e:
-                if attempt < max_retries - 1:
-                    print(f"Request failed, retrying in {retry_delay} seconds... Error: {str(e)}")
-                    time.sleep(retry_delay)
-                    retry_delay *= 2
-                    continue
-                else:
-                    raise
+        if image_bytes:
+            print(f"Received image bytes of length: {len(image_bytes)}")
+            # Ensure we're getting raw bytes and encoding them properly
+            if isinstance(image_bytes, str):
+                print("Warning: image_bytes is a string, converting to bytes")
+                image_bytes = image_bytes.encode('utf-8')
+            base64_image = base64.b64encode(image_bytes).decode('utf-8').strip('"')
+            print(f"Converted to base64 string of length: {len(base64_image)}")
+            print(f"First 100 chars of base64: {base64_image[:100]}")
+            return {"success": True, "image_base64": base64_image}
+        else:
+            print("No image bytes received from Flux client")
+            return {"success": False, "error": "Failed to generate image"}
 
     except Exception as e:
-        print("Error in generate_image:", str(e))
-        return ImageGenerationResponse(
-            success=False,
-            error=f"Error generating image: {str(e)}"
-        )
+        print(f"Error generating image: {str(e)}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/test/chat")
+async def test_chat_endpoint(request: Request, chat_message: ChatMessage):
+    """Endpoint de test qui génère des données aléatoires"""
+    try:
+        client_id = request.headers.get("x-client-id", "default")
+        
+        # Cancel any previous chat request from this client
+        await cancel_previous_request(client_id, "chat")
+        
+        async def generate_chat_response():
+            # Générer un texte aléatoire
+            story_text = f"**Sarah** {lorem.paragraph()}"
+            
+            # Générer un niveau de radiation aléatoire qui augmente progressivement
+            radiation_level = min(10, random.randint(0, 3) + (chat_message.choice_id or 0))
+            
+            # Déterminer si c'est le premier pas
+            is_first_step = chat_message.message == "restart"
+            
+            # Déterminer si c'est le dernier pas (mort ou victoire)
+            is_last_step = radiation_level >= 30 or (
+                not is_first_step and random.random() < 0.1  # 10% de chance de victoire
+            )
+            
+            # Générer des choix aléatoires sauf si c'est la fin
+            choices = []
+            if not is_last_step:
+                num_choices = 2
+                for i in range(num_choices):
+                    choices.append(Choice(
+                        id=i+1,
+                        text=f"{lorem.sentence() }"
+                    ))
+            
+            # Construire la réponse
+            return StoryResponse(
+                story_text=story_text,
+                choices=choices,
+                radiation_level=radiation_level,
+                is_victory=is_last_step and radiation_level < 30,
+                is_first_step=is_first_step,
+                is_last_step=is_last_step
+            )
+        
+        # Create and store the new request
+        task = asyncio.create_task(generate_chat_response())
+        await store_request(client_id, "chat", task)
+        
+        try:
+            response = await task
+            return response
+        except asyncio.CancelledError:
+            print(f"[INFO] Chat request cancelled for client {client_id}")
+            raise HTTPException(status_code=409, detail="Request cancelled")
+
+    except Exception as e:
+        print(f"[ERROR] Error in test_chat_endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/test/generate-image")
+async def test_generate_image(request: Request, image_request: ImageGenerationRequest):
+    """Endpoint de test qui récupère une image aléatoire"""
+    try:
+        client_id = request.headers.get("x-client-id", "default")
+        
+        print(f"[DEBUG] Client ID: {client_id}")
+        print(f"[DEBUG] Raw request data: {image_request}")
+        
+        # Cancel any previous image request from this client
+        await cancel_previous_request(client_id, "image")
+        
+        # Create and store the new request
+        task = asyncio.create_task(get_test_image(client_id, image_request.width, image_request.height))
+        await store_request(client_id, "image", task)
+        
+        try:
+            image_base64 = await task
+            return {
+                "success": True,
+                "image_base64": image_base64
+            }
+        except asyncio.CancelledError:
+            print(f"[INFO] Image request cancelled for client {client_id}")
+            return {
+                "success": False,
+                "error": "Request cancelled"
+            }
+            
+    except Exception as e:
+        print(f"[ERROR] Detailed error in test_generate_image: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up sessions on shutdown"""
+    # Cancel all pending requests
+    for client_id in client_requests:
+        for request_type in client_requests[client_id]:
+            await cancel_previous_request(client_id, request_type)
+    
+    # Close all sessions
+    for session in client_sessions.values():
+        await session.close()
 
 # Mount static files (this should be after all API routes)
 app.mount("/", StaticFiles(directory=STATIC_FILES_DIR, html=True), name="static")

@@ -13,6 +13,10 @@ elevenlabs = "^0.2.26"
 langchain = "^0.3.15"
 langchain-mistralai = "^0.2.4"
 requests = "^2.31.0"
+pillow = "^10.2.0"  # Pour la génération d'images de test
+lorem = "^0.1.1"    # Pour la génération de texte aléatoire
+aiohttp = "^3.9.3"
+
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
