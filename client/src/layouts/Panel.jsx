@@ -1,5 +1,18 @@
-import { Box, CircularProgress, Typography } from "@mui/material";
+import {
+  Box,
+  CircularProgress,
+  Typography,
+  ThemeProvider,
+  createTheme,
+} from "@mui/material";
 import { useEffect, useState } from "react";
+
+// Créer un thème local en mode clair pour les chips
+const lightTheme = createTheme({
+  palette: {
+    mode: "light",
+  },
+});
 
 // Component for displaying a single panel
 export function Panel({ segment, panel, panelIndex }) {
@@ -101,38 +114,36 @@ export function Panel({ segment, panel, panelIndex }) {
                 justifyContent: "center",
                 flexDirection: "column",
                 gap: 1,
-                opacity: 0.7,
+                opacity: 0.5,
                 backgroundColor: "white",
                 zIndex: 1,
               }}
             >
-              <CircularProgress size={30} />
-              <Typography variant="caption" color="text.secondary">
-                {!segment.images?.[panelIndex]
-                  ? "Génération en cours..."
-                  : "Chargement de l'image..."}
-              </Typography>
+              <CircularProgress size={10} />
             </Box>
           )}
 
           {/* Texte du segment (uniquement sur le premier panel) */}
           {panelIndex === 0 && segment.text && (
-            <Box
-              sx={{
-                position: "absolute",
-                bottom: "20px",
-                left: "20px",
-                right: "20px",
-                backgroundColor: "rgba(255, 255, 255, 0.9)",
-                fontSize: ".9rem",
-                padding: "24px",
-                borderRadius: "8px",
-                boxShadow: "0 -2px 4px rgba(0,0,0,0.1)",
-                zIndex: 2,
-              }}
-            >
-              {segment.text}
-            </Box>
+            <ThemeProvider theme={lightTheme}>
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: "20px",
+                  left: "20px",
+                  right: "20px",
+                  backgroundColor: "rgba(255, 255, 255, 0.9)",
+                  fontSize: ".9rem",
+                  padding: "10px",
+                  color: "black !important",
+                  borderRadius: "8px",
+                  boxShadow: "0 -2px 4px rgba(0,0,0,0.1)",
+                  zIndex: 2,
+                }}
+              >
+                {segment.text}
+              </Box>
+            </ThemeProvider>
           )}
         </>
       )}

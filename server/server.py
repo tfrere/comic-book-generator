@@ -10,12 +10,7 @@ import time
 import random
 import asyncio
 import aiohttp
-from lorem.text import TextLorem
 from contextlib import asynccontextmanager
-
-
-lorem = TextLorem(wsep='-', srange=(2,3), words="A B C D".split())
-
 
 # Import local modules
 if os.getenv("DOCKER_ENV"):
@@ -127,19 +122,6 @@ class DirectImageGenerationRequest(BaseModel):
     width: int = Field(description="Width of the image to generate")
     height: int = Field(description="Height of the image to generate")
 
-async def get_test_image(client_id: str, width=1024, height=1024):
-    """Get a random image from Lorem Picsum"""
-    # Build the Lorem Picsum URL with blur and grayscale effects
-    url = f"https://picsum.photos/{width}/{height}?grayscale&blur=2"
-    
-    session = await get_client_session(client_id)
-    async with session.get(url) as response:
-        if response.status == 200:
-            image_bytes = await response.read()
-            return base64.b64encode(image_bytes).decode('utf-8')
-        else:
-            raise Exception(f"Failed to fetch image: {response.status}")
-
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint"""
@@ -179,17 +161,11 @@ async def chat_endpoint(chat_message: ChatMessage):
         # Check for radiation death
         is_death = game_state.radiation_level >= MAX_RADIATION
         if is_death:
-            llm_response.story_text += f"""
-
-MORT PAR RADIATION: Le corps de Sarah ne peut plus supporter ce niveau de radiation ({game_state.radiation_level}/10). 
-Ses cellules se désagrègent alors qu'elle s'effondre, l'esprit rempli de regrets concernant sa sœur. 
-Les fournitures médicales qu'elle transportait n'atteindront jamais leur destination. 
-Sa mission s'arrête ici, une autre victime du tueur invisible des terres désolées."""
             llm_response.choices = []
             # Pour la mort, on ne garde qu'un seul prompt d'image
             if len(llm_response.image_prompts) > 1:
                 llm_response.image_prompts = [llm_response.image_prompts[0]]
-        
+
         # Add segment to history (before victory check to include final state)
         game_state.add_to_history(llm_response.story_text, previous_choice, llm_response.image_prompts)
 
@@ -199,12 +175,6 @@ Sa mission s'arrête ici, une autre victime du tueur invisible des terres désol
             victory_chance = (game_state.story_beat - 4) * 0.2  # 20% de chance par step après le 5ème
             if random.random() < victory_chance:
                 llm_response.is_victory = True
-                llm_response.story_text = f"""Sarah l'a fait ! Elle a trouvé un bunker sécurisé avec des survivants. 
-                À l'intérieur, elle découvre une communauté organisée qui a réussi à maintenir un semblant de civilisation. 
-                Ils ont même un système de décontamination ! Son niveau de radiation : {game_state.radiation_level}/10.
-                Elle peut enfin se reposer et peut-être un jour, reconstruire un monde meilleur.
-                
-                VICTOIRE !"""
                 llm_response.choices = []
                 # Pour la victoire, on ne garde qu'un seul prompt d'image
                 if len(llm_response.image_prompts) > 1:
@@ -244,136 +214,6 @@ Sa mission s'arrête ici, une autre victime du tueur invisible des terres désol
         print(f"Error in chat_endpoint: {str(e)}")
         print("Traceback:", traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/generate-image")
-async def generate_image(request: ImageGenerationRequest):
-    try:
-        # Transform story into art prompt
-        art_prompt = await story_generator.transform_story_to_art_prompt(request.prompt)
-        
-        print(f"Generating image with dimensions: {request.width}x{request.height}")
-        print(f"Using prompt: {art_prompt}")
-
-        # Generate image using Flux client
-        image_bytes = flux_client.generate_image(
-            prompt=art_prompt,
-            width=request.width,
-            height=request.height
-        )
-        
-        if image_bytes:
-            print(f"Received image bytes of length: {len(image_bytes)}")
-            # Ensure we're getting raw bytes and encoding them properly
-            if isinstance(image_bytes, str):
-                print("Warning: image_bytes is a string, converting to bytes")
-                image_bytes = image_bytes.encode('utf-8')
-            base64_image = base64.b64encode(image_bytes).decode('utf-8').strip('"')
-            print(f"Converted to base64 string of length: {len(base64_image)}")
-            print(f"First 100 chars of base64: {base64_image[:100]}")
-            return {"success": True, "image_base64": base64_image}
-        else:
-            print("No image bytes received from Flux client")
-            return {"success": False, "error": "Failed to generate image"}
-
-    except Exception as e:
-        print(f"Error generating image: {str(e)}")
-        print(f"Error type: {type(e)}")
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")
-        return {"success": False, "error": str(e)}
-
-@app.post("/api/test/chat")
-async def test_chat_endpoint(request: Request, chat_message: ChatMessage):
-    """Endpoint de test qui génère des données aléatoires"""
-    try:
-        client_id = request.headers.get("x-client-id", "default")
-        
-        # Cancel any previous chat request from this client
-        await cancel_previous_request(client_id, "chat")
-        
-        async def generate_chat_response():
-            # Générer un texte aléatoire
-            story_text = f"**Sarah** {lorem.paragraph()}"
-            
-            # Générer un niveau de radiation aléatoire qui augmente progressivement
-            radiation_level = min(10, random.randint(0, 3) + (chat_message.choice_id or 0))
-            
-            # Déterminer si c'est le premier pas
-            is_first_step = chat_message.message == "restart"
-            
-            # Déterminer si c'est le dernier pas (mort ou victoire)
-            is_last_step = radiation_level >= 30 or (
-                not is_first_step and random.random() < 0.1  # 10% de chance de victoire
-            )
-            
-            # Générer des choix aléatoires sauf si c'est la fin
-            choices = []
-            if not is_last_step:
-                num_choices = 2
-                for i in range(num_choices):
-                    choices.append(Choice(
-                        id=i+1,
-                        text=f"{lorem.sentence() }"
-                    ))
-            
-            # Construire la réponse
-            return StoryResponse(
-                story_text=story_text,
-                choices=choices,
-                radiation_level=radiation_level,
-                is_victory=is_last_step and radiation_level < 30
-            )
-        
-        # Create and store the new request
-        task = asyncio.create_task(generate_chat_response())
-        await store_request(client_id, "chat", task)
-        
-        try:
-            response = await task
-            return response
-        except asyncio.CancelledError:
-            print(f"[INFO] Chat request cancelled for client {client_id}")
-            raise HTTPException(status_code=409, detail="Request cancelled")
-
-    except Exception as e:
-        print(f"[ERROR] Error in test_chat_endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/test/generate-image")
-async def test_generate_image(request: Request, image_request: ImageGenerationRequest):
-    """Endpoint de test qui récupère une image aléatoire"""
-    try:
-        client_id = request.headers.get("x-client-id", "default")
-        
-        print(f"[DEBUG] Client ID: {client_id}")
-        print(f"[DEBUG] Raw request data: {image_request}")
-        
-        # Cancel any previous image request from this client
-        await cancel_previous_request(client_id, "image")
-        
-        # Create and store the new request
-        task = asyncio.create_task(get_test_image(client_id, image_request.width, image_request.height))
-        await store_request(client_id, "image", task)
-        
-        try:
-            image_base64 = await task
-            return {
-                "success": True,
-                "image_base64": image_base64
-            }
-        except asyncio.CancelledError:
-            print(f"[INFO] Image request cancelled for client {client_id}")
-            return {
-                "success": False,
-                "error": "Request cancelled"
-            }
-            
-    except Exception as e:
-        print(f"[ERROR] Detailed error in test_generate_image: {str(e)}")
-        return {
-            "success": False,
-            "error": str(e)
-        }
 
 @app.post("/api/text-to-speech")
 async def text_to_speech(request: TextToSpeechRequest):

@@ -38,6 +38,7 @@ IMPORTANT FORMATTING RULES:
   * Location names (e.g., **Vault 15**, **New Eden**)
   * Major historical events (e.g., **Great Collapse**)
 - Do NOT use bold for common nouns or regular descriptions
+- THIS IS MANDATORY FOR THE STORY TO BE CONSISTENT
 
 Each response MUST contain:
 1. A detailed story segment that:

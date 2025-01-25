@@ -36,7 +36,7 @@ class GameState:
 
 # Story output structure
 class StoryLLMResponse(BaseModel):
-    story_text: str = Field(description="The next segment of the story. No more than 15 words THIS IS MANDATORY. Use bold formatting (like **this**) ONLY for proper nouns (like **Sarah**, **Vault 15**, **New Eden**) and important locations.")
+    story_text: str = Field(description="The next segment of the story. No more than 12 words THIS IS MANDATORY. Use bold formatting (like **this**) ONLY for proper nouns (like **Sarah**, **hospital**) and important locations.")
     choices: List[str] = Field(description="Exactly two possible choices for the player", min_items=2, max_items=2)
     is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
     radiation_increase: int = Field(description="How much radiation this segment adds (0-3)", ge=0, le=3, default=1)
