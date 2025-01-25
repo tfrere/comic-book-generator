@@ -1,5 +1,5 @@
 ---
-title: Dont Lookup
+title: team-10
 emoji: 💻
 colorFrom: red
 colorTo: blue
