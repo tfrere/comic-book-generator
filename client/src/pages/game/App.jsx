@@ -674,24 +674,23 @@ function App() {
           gap: 1,
         }}
       >
-        <Tooltip title={isRecording ? "Stop Recording" : "Start Recording"}>
-          <IconButton
+        <Tooltip title={isRecording ? "Sarah's being convinced" : "Try to convince Sarah"}>
+          <Button
             onClick={isRecording ? stopRecording : startRecording}
+            variant="outlined"
             sx={{
-              border: "1px solid",
               borderColor: isRecording ? "error.main" : "primary.main",
-              borderRadius: "8px",
               backgroundColor: isRecording ? "error.main" : "transparent",
               color: isRecording ? "white" : "primary.main",
-              padding: "8px",
               "&:hover": {
                 backgroundColor: isRecording ? "error.dark" : "primary.main",
                 color: "background.paper",
+                borderColor: isRecording ? "error.dark" : "primary.main",
               },
             }}
           >
-            {isRecording ? "⏹" : "⏺"}
-          </IconButton>
+            {isRecording ? "Sarah's being convinced" : "Try to convince Sarah"}
+          </Button>
         </Tooltip>
         <Tooltip title="Sauvegarder en PNG">
           <IconButton
