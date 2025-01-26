@@ -160,6 +160,7 @@ function App() {
         // End the ElevenLabs conversation
         await conversation.endSession();
         setIsConversationMode(false);
+        setIsRecording(false);
         // Handle the choice and generate next story part
         await handleChoice(parseInt(decision));
       }
@@ -191,7 +192,7 @@ function App() {
             const currentChoiceIds = currentChoices.map(choice => choice.id).join(',');
             await conversation.startSession({ 
               agentId: AGENT_ID,
-              initialContext: `This is the current context : ${storySegments[storySegments.length - 1].text}. Those are your possibilities : ${currentChoices.map((choice, index) => `${index + 1}: ${choice.text}`).join(', ')}`
+              initialContext: `This is the current situation : ${storySegments[storySegments.length - 1].text}. Those are the possible actions, ${currentChoices.map((choice, index) => `decision ${index + 1} : ${choice.text}`).join(', ')}.`
             });
             console.log('ElevenLabs WebSocket connected');
           } catch (error) {
