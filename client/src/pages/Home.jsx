@@ -37,7 +37,7 @@ export function Home() {
         <Button
           variant="outlined"
           size="large"
-          onClick={() => navigate("/game")}
+          onClick={() => navigate("/tutorial")}
           sx={{
             fontSize: "1.2rem",
             padding: "12px 36px",
