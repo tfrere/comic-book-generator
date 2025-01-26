@@ -31,8 +31,8 @@ export function Tutorial() {
           <Chip label="wastelands" size="small" /> in search of food.
         </Typography>
         <Typography variant="h5" paragraph>
-          You are her little sister, you stayed in the bunker and you help Sarah
-          make decisions.
+          As her little sister, you stayed in the bunker and you help her make
+          decisions with a talkie-walkie.
         </Typography>
         -
         <Typography variant="body1" paragraph>
@@ -51,6 +51,10 @@ export function Tutorial() {
           As her sibling and a scientist, you need to find the right words and
           tone to help her understand the urgency of climate change, while
           maintaining your close relationship.
+        </Typography>
+        -
+        <Typography variant="body1" paragraph>
+          {"Oh and remember, be kind with the game, do not spam buttons. <3"}
         </Typography>
       </Box>
 
