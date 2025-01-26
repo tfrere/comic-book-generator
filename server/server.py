@@ -162,6 +162,13 @@ async def chat_endpoint(chat_message: ChatMessage):
         is_death = game_state.radiation_level >= MAX_RADIATION
         if is_death:
             llm_response.choices = []
+            llm_response.story_text = (
+                "In the desolate wastelands, Sarah's journey comes to a tragic end. "
+                "Despite her courage and determination, the harsh environment proved "
+                "too formidable. Her story, though brief, was filled with bravery and "
+                "hope. She will be remembered as a beacon of resilience in a world "
+                "that had lost its way."
+            )
             # Pour la mort, on ne garde qu'un seul prompt d'image
             if len(llm_response.image_prompts) > 1:
                 llm_response.image_prompts = [llm_response.image_prompts[0]]
@@ -169,16 +176,22 @@ async def chat_endpoint(chat_message: ChatMessage):
         # Add segment to history (before victory check to include final state)
         game_state.add_to_history(llm_response.story_text, previous_choice, llm_response.image_prompts)
 
-        # Check for victory condition
-        if not is_death and game_state.story_beat >= 5:
-            # Chance de victoire augmente avec le nombre de steps
-            victory_chance = (game_state.story_beat - 4) * 0.2  # 20% de chance par step après le 5ème
-            if random.random() < victory_chance:
-                llm_response.is_victory = True
-                llm_response.choices = []
-                # Pour la victoire, on ne garde qu'un seul prompt d'image
-                if len(llm_response.image_prompts) > 1:
-                    llm_response.image_prompts = [llm_response.image_prompts[0]]
+        # THERE IS NOT ESCAPE HAHA
+        # # Check for victory condition
+        # if not is_death and game_state.story_beat >= 5:
+        #     # Chance de victoire augmente avec le nombre de steps
+        #     victory_chance = (game_state.story_beat - 4) * 0.02  # 20% de chance par step après le 5ème
+        #     if random.random() < victory_chance:
+        #         llm_response.is_victory = True
+        #         llm_response.choices = []
+        #         llm_response.story_text = (
+        #             "Sarah triumphs over the wastelands. Her journey was tough, but she "
+        #             "emerged stronger and hopeful. The horizon now promises a new beginning. "
+        #             "You have won, and Sarah's story continues with renewed strength."
+        #         )
+        #         # Pour la victoire, on ne garde qu'un seul prompt d'image
+        #         if len(llm_response.image_prompts) > 1:
+        #             llm_response.image_prompts = [llm_response.image_prompts[0]]
 
         # Pour la première étape, on ne garde qu'un seul prompt d'image
         if game_state.story_beat == 0 and len(llm_response.image_prompts) > 1:

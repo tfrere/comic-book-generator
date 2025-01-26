@@ -6,6 +6,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { theme } from "./theme";
 import { Home } from "./pages/Home";
 import { Game } from "./pages/Game";
+import { Tutorial } from "./pages/tutorial/Tutorial";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -15,6 +16,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/game" element={<Game />} />
+        <Route path="/tutorial" element={<Tutorial />} />
       </Routes>
     </BrowserRouter>
   </ThemeProvider>

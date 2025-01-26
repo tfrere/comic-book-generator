@@ -2,6 +2,18 @@
 # yarn lockfile v1
 
 
+"@11labs/client@0.0.5":
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/@11labs/client/-/client-0.0.5.tgz#4785466ed06fed8dca843df733db55f04f76a40e"
+  integrity sha512-quxnacC90t3mCpMBD+Nvp+PEv59428ys9ICeY3qv0GzhyurHfPg1HWHt4sr4fC6KL6iUU0rlZe9npq7zH+RPmw==
+
+"@11labs/react@^0.0.5":
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/@11labs/react/-/react-0.0.5.tgz#adb7884878f7b687185192bb837682eb164973e5"
+  integrity sha512-jeB7r0Zn/YiX0tESthmwpCpSqiEz5HYRK7ztH7M6yQx0MfTffs5McS7sU8swBqMxT62bNuDs1VTHmcZfbNXd4Q==
+  dependencies:
+    "@11labs/client" "0.0.5"
+
 "@ampproject/remapping@^2.2.0":
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@ampproject/remapping/-/remapping-2.3.0.tgz#ed441b6fa600072520ce18b43d2c8cc8caecc7f4"
