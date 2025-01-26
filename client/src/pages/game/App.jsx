@@ -80,6 +80,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isNarratorSpeaking, setIsNarratorSpeaking] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
 
   const audioRef = useRef(new Audio());
@@ -88,7 +89,6 @@ function App() {
   const wsRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
-
 
   // Start the story on first render
   useEffect(() => {
@@ -101,15 +101,17 @@ function App() {
       wsRef.current = new WebSocket(WS_URL);
 
       wsRef.current.onopen = () => {
-        console.log('Server WebSocket connected');
+        console.log("Server WebSocket connected");
         setWsConnected(true);
       };
 
       wsRef.current.onclose = (event) => {
-        const reason = event.reason || 'No reason provided';
+        const reason = event.reason || "No reason provided";
         const code = event.code;
-        console.log(`Server WebSocket disconnected - Code: ${code}, Reason: ${reason}`);
-        console.log('Attempting to reconnect in 3 seconds...');
+        console.log(
+          `Server WebSocket disconnected - Code: ${code}, Reason: ${reason}`
+        );
+        console.log("Attempting to reconnect in 3 seconds...");
         setWsConnected(false);
         // Attempt to reconnect after 3 seconds
         setTimeout(setupWebSocket, 3000);
@@ -117,16 +119,18 @@ function App() {
 
       wsRef.current.onmessage = async (event) => {
         const data = JSON.parse(event.data);
-        
-        if (data.type === 'audio') {
+
+        if (data.type === "audio") {
           // Stop any ongoing narration
           if (narrationAudioRef.current) {
             narrationAudioRef.current.pause();
             narrationAudioRef.current.currentTime = 0;
           }
-          
+
           // Play the conversation audio response
-          const audioBlob = await fetch(`data:audio/mpeg;base64,${data.audio}`).then(r => r.blob());
+          const audioBlob = await fetch(
+            `data:audio/mpeg;base64,${data.audio}`
+          ).then((r) => r.blob());
           const audioUrl = URL.createObjectURL(audioBlob);
           audioRef.current.src = audioUrl;
           await audioRef.current.play();
@@ -142,13 +146,13 @@ function App() {
       }
     };
   }, []);
-  
+
   const conversation = useConversation({
     agentId: AGENT_ID,
     onResponse: async (response) => {
-      if (response.type === 'audio') {
+      if (response.type === "audio") {
         // Play the conversation audio response
-        const audioBlob = new Blob([response.audio], { type: 'audio/mpeg' });
+        const audioBlob = new Blob([response.audio], { type: "audio/mpeg" });
         const audioUrl = URL.createObjectURL(audioBlob);
         audioRef.current.src = audioUrl;
         await audioRef.current.play();
@@ -156,15 +160,15 @@ function App() {
     },
     clientTools: {
       make_decision: async ({ decision }) => {
-        console.log('AI made decision:', decision);
+        console.log("AI made decision:", decision);
         // End the ElevenLabs conversation
         await conversation.endSession();
         setIsConversationMode(false);
         setIsRecording(false);
         // Handle the choice and generate next story part
         await handleChoice(parseInt(decision));
-      }
-    }
+      },
+    },
   });
   const { isSpeaking } = conversation;
   const [isConversationMode, setIsConversationMode] = useState(false);
@@ -187,88 +191,100 @@ function App() {
         // If we're not in conversation mode, this is the first recording
         setIsConversationMode(true);
         // Initialize ElevenLabs WebSocket connection
-          try {
-            // Pass available choices to the conversation
-            const currentChoiceIds = currentChoices.map(choice => choice.id).join(',');
-            await conversation.startSession({ 
-              agentId: AGENT_ID,
-              initialContext: `This is the current situation : ${storySegments[storySegments.length - 1].text}. Those are the possible actions, ${currentChoices.map((choice, index) => `decision ${index + 1} : ${choice.text}`).join(', ')}.`
-            });
-            console.log('ElevenLabs WebSocket connected');
-          } catch (error) {
-            console.error('Error initializing ElevenLabs conversation:', error);
-            return;
-          }
-        } else if (isSpeaking) {
-          // Only handle stopping the agent if we're in conversation mode
-          await conversation.endSession();
-          const wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${AGENT_ID}`;
-          await conversation.startSession({ url: wsUrl });
+        try {
+          // Pass available choices to the conversation
+          const currentChoiceIds = currentChoices
+            .map((choice) => choice.id)
+            .join(",");
+          await conversation.startSession({
+            agentId: AGENT_ID,
+            initialContext: `This is the current situation : ${
+              storySegments[storySegments.length - 1].text
+            }. Those are the possible actions, ${currentChoices
+              .map((choice, index) => `decision ${index + 1} : ${choice.text}`)
+              .join(", ")}.`,
+          });
+          console.log("ElevenLabs WebSocket connected");
+        } catch (error) {
+          console.error("Error initializing ElevenLabs conversation:", error);
+          return;
         }
-  
-        // Only stop narration if it's actually playing
-        if (!isConversationMode && narrationAudioRef.current) {
-          narrationAudioRef.current.pause();
-          narrationAudioRef.current.currentTime = 0;
+      } else if (isSpeaking) {
+        // Only handle stopping the agent if we're in conversation mode
+        await conversation.endSession();
+        const wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${AGENT_ID}`;
+        await conversation.startSession({ url: wsUrl });
+      }
+
+      // Only stop narration if it's actually playing
+      if (!isConversationMode && narrationAudioRef.current) {
+        narrationAudioRef.current.pause();
+        narrationAudioRef.current.currentTime = 0;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
         }
-  
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorderRef.current = new MediaRecorder(stream);
-        audioChunksRef.current = [];
-  
-        mediaRecorderRef.current.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            audioChunksRef.current.push(event.data);
-          }
-        };
-  
-        mediaRecorderRef.current.onstop = async () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-          const reader = new FileReader();
-          
-          reader.onload = async () => {
-            const base64Audio = reader.result.split(',')[1];
-            if (isConversationMode) {
-              try {
-                // Send audio to ElevenLabs conversation
-                await conversation.send({
-                  type: 'audio',
-                  data: base64Audio
-                });
-              } catch (error) {
-                console.error('Error sending audio to ElevenLabs:', error);
-              }
-            } else {
-              // Otherwise use the original WebSocket connection
-              if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                console.log('Sending audio to server via WebSocket');
-                wsRef.current.send(JSON.stringify({
-                  type: 'audio_input',
-                  audio: base64Audio,
-                  client_id: CLIENT_ID
-                }));
-              }
+      };
+
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: "audio/wav",
+        });
+        const reader = new FileReader();
+
+        reader.onload = async () => {
+          const base64Audio = reader.result.split(",")[1];
+          if (isConversationMode) {
+            try {
+              // Send audio to ElevenLabs conversation
+              await conversation.send({
+                type: "audio",
+                data: base64Audio,
+              });
+            } catch (error) {
+              console.error("Error sending audio to ElevenLabs:", error);
             }
-          };
-          
-          reader.readAsDataURL(audioBlob);
+          } else {
+            // Otherwise use the original WebSocket connection
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+              console.log("Sending audio to server via WebSocket");
+              wsRef.current.send(
+                JSON.stringify({
+                  type: "audio_input",
+                  audio: base64Audio,
+                  client_id: CLIENT_ID,
+                })
+              );
+            }
+          }
         };
-  
-        mediaRecorderRef.current.start();
-        setIsRecording(true);
-      } catch (error) {
-        console.error('Error starting recording:', error);
-      }
-    };
-  
-    const stopRecording = () => {
-      if (mediaRecorderRef.current && isRecording) {
-        mediaRecorderRef.current.stop();
-        setIsRecording(false);
-        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  
+
+        reader.readAsDataURL(audioBlob);
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      mediaRecorderRef.current.stream
+        .getTracks()
+        .forEach((track) => track.stop());
+    }
+  };
+
   const generateImagesForStory = async (
     imagePrompts,
     segmentIndex,
@@ -488,9 +504,12 @@ function App() {
         // Mettre à jour la source de l'audio
         audioRef.current.src = audioUrl;
         audioRef.current.play();
+        setIsNarratorSpeaking(true);
 
         // Nettoyer l'URL quand l'audio est terminé
         audioRef.current.onended = () => {
+          // Event to indicate that the audio has finished playing
+          setIsNarratorSpeaking(false);
           URL.revokeObjectURL(audioUrl);
         };
       }
@@ -674,24 +693,23 @@ function App() {
           gap: 1,
         }}
       >
-        <Tooltip title={isRecording ? "Sarah's being convinced" : "Try to convince Sarah"}>
-          <Button
-            onClick={isRecording ? stopRecording : startRecording}
-            variant="outlined"
-            sx={{
-              borderColor: isRecording ? "error.main" : "primary.main",
-              backgroundColor: isRecording ? "error.main" : "transparent",
-              color: isRecording ? "white" : "primary.main",
-              "&:hover": {
-                backgroundColor: isRecording ? "error.dark" : "primary.main",
-                color: "background.paper",
-                borderColor: isRecording ? "error.dark" : "primary.main",
-              },
-            }}
-          >
-            {isRecording ? "Sarah's being convinced" : "Try to convince Sarah"}
-          </Button>
-        </Tooltip>
+        <Button
+          onClick={isRecording ? stopRecording : startRecording}
+          variant="outlined"
+          disabled={isLoading || isNarratorSpeaking}
+          sx={{
+            borderColor: isRecording ? "error.main" : "primary.main",
+            backgroundColor: isRecording ? "error.main" : "transparent",
+            color: isRecording ? "white" : "primary.main",
+            "&:hover": {
+              backgroundColor: isRecording ? "error.dark" : "primary.main",
+              color: "background.paper",
+              borderColor: isRecording ? "error.dark" : "primary.main",
+            },
+          }}
+        >
+          {isRecording ? "Sarah's being convinced" : "Try to convince Sarah"}
+        </Button>
         <Tooltip title="Sauvegarder en PNG">
           <IconButton
             onClick={handleSaveAsImage}
@@ -774,7 +792,7 @@ function App() {
                   variant="outlined"
                   size="large"
                   onClick={() => handleChoice(choice.id)}
-                  disabled={isLoading}
+                  disabled={isLoading || isNarratorSpeaking}
                   sx={{
                     minWidth: "300px",
                     textTransform: "none",
