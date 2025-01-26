@@ -191,7 +191,7 @@ function App() {
             const currentChoiceIds = currentChoices.map(choice => choice.id).join(',');
             await conversation.startSession({ 
               agentId: AGENT_ID,
-              initialContext: `Available choices: ${currentChoiceIds}. Use the makeDecision tool with one of these IDs to make a choice.`
+              initialContext: `This is the current context : ${storySegments[storySegments.length - 1].text}. Those are your possibilities : ${currentChoices.map((choice, index) => `${index + 1}: ${choice.text}`).join(', ')}`
             });
             console.log('ElevenLabs WebSocket connected');
           } catch (error) {
