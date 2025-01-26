@@ -162,13 +162,7 @@ async def chat_endpoint(chat_message: ChatMessage):
         is_death = game_state.radiation_level >= MAX_RADIATION
         if is_death:
             llm_response.choices = []
-            llm_response.story_text = (
-                "In the desolate wastelands, Sarah's journey comes to a tragic end. "
-                "Despite her courage and determination, the harsh environment proved "
-                "too formidable. Her story, though brief, was filled with bravery and "
-                "hope. She will be remembered as a beacon of resilience in a world "
-                "that had lost its way."
-            )
+            llm_response.story_text += "Your radiation level has reached a critical point. You have succumbed to the harsh wastelands, and your journey concludes here. THE END."
             # Pour la mort, on ne garde qu'un seul prompt d'image
             if len(llm_response.image_prompts) > 1:
                 llm_response.image_prompts = [llm_response.image_prompts[0]]
