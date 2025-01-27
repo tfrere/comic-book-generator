@@ -77,8 +77,11 @@ async def shutdown_event():
 
 # Mount static files (this should be after all API routes)
 if IS_DOCKER:
+    # Mount static files
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
     # En mode Docker (HF Space), on monte les fichiers statiques avec des types MIME spécifiques
-    app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_FILES_DIR, "assets"), html=False), name="assets")
+    # app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_FILES_DIR, "assets"), html=False), name="assets")
     
 #     @app.get("/{full_path:path}")
 #     async def serve_spa(full_path: str):
