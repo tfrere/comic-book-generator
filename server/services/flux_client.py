@@ -29,7 +29,6 @@ class FluxClient:
             print(f"Headers: Authorization: Bearer {self.api_key[:4]}...")
             print(f"Request body: {prompt[:100]}...")
 
-            prefix = "François Schuiten comic book artist."
             
             session = await self._get_session()
             async with session.post(
@@ -39,7 +38,7 @@ class FluxClient:
                     "Accept": "image/jpeg"
                 },
                 json={
-                    "inputs": "in the style of " + prefix + " --- content: " + prompt,
+                    "inputs": prompt,
                     "parameters": {
                         "num_inference_steps": num_inference_steps,
                         "guidance_scale": guidance_scale,

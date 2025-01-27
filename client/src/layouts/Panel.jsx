@@ -57,21 +57,27 @@ export function Panel({ segment, panel, panelIndex }) {
         borderRadius: "8px",
         overflow: "hidden",
         transition: "all 0.3s ease-in-out",
+        aspectRatio: `${panel.width} / ${panel.height}`, // Forcer le ratio même sans image
       }}
     >
       {segment && (
         <>
-          {/* Image avec fade in */}
-          {segment.images?.[panelIndex] && (
-            <Box
-              sx={{
-                position: "relative",
-                width: "100%",
-                height: "100%",
-                opacity: imageLoaded ? 1 : 0,
-                transition: "opacity 0.5s ease-in-out",
-              }}
-            >
+          {/* Conteneur d'image avec dimensions fixes */}
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: imageLoaded ? 1 : 0,
+              transition: "opacity 0.5s ease-in-out",
+            }}
+          >
+            {segment.images?.[panelIndex] && (
               <img
                 src={`data:image/jpeg;base64,${segment.images[panelIndex]}`}
                 alt={`Story scene ${panelIndex + 1}`}
@@ -84,23 +90,21 @@ export function Panel({ segment, panel, panelIndex }) {
                 onLoad={handleImageLoad}
                 onError={handleImageError}
               />
-            </Box>
-          )}
+            )}
+          </Box>
 
-          {/* Spinner de chargement toujours affiché quand l'image n'est pas chargée */}
+          {/* Spinner de chargement */}
           {(!segment.images?.[panelIndex] || !imageLoaded) && (
             <Box
               sx={{
                 position: "absolute",
                 top: 0,
                 left: 0,
-                width: "100%",
-                height: "100%",
+                right: 0,
+                bottom: 0,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                flexDirection: "column",
-                gap: 1,
                 opacity: 0.5,
                 backgroundColor: "white",
                 zIndex: 1,

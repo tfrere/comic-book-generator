@@ -141,27 +141,37 @@ export const nonRandomLayouts = Object.keys(LAYOUTS).filter(
   (layout) => layout !== "COVER"
 );
 
+// Grouper les layouts par nombre de panneaux
+export const LAYOUTS_BY_PANEL_COUNT = {
+  1: ["COVER"],
+  2: ["LAYOUT_2"], // Layouts avec exactement 2 panneaux
+  3: ["LAYOUT_5"], // Layouts avec exactement 3 panneaux
+  4: ["LAYOUT_3", "LAYOUT_4", "LAYOUT_6"], // Layouts avec exactement 4 panneaux
+};
+
 // Helper functions for layout configuration
-export const getNextLayoutType = (currentLayoutCount) => {
-  // Get all available layouts except COVER
-  const availableLayouts = Object.keys(LAYOUTS).filter(
-    (layout) => layout !== "COVER"
-  );
+export const getNextLayoutType = (currentLayoutCount, imageCount) => {
+  // Obtenir les layouts disponibles pour ce nombre d'images
+  const availableLayouts = LAYOUTS_BY_PANEL_COUNT[imageCount] || [];
 
-  // Use a pseudo-random selection based on the current count
-  // but avoid repeating the same layout twice in a row
-  const previousLayout = `LAYOUT_${
-    (currentLayoutCount % availableLayouts.length) + 1
-  }`;
-  let nextLayout;
+  if (!availableLayouts.length) {
+    // Si aucun layout n'est disponible pour ce nombre d'images exact,
+    // utiliser le premier layout qui peut contenir au moins ce nombre d'images
+    for (let i = imageCount + 1; i <= 4; i++) {
+      if (LAYOUTS_BY_PANEL_COUNT[i]?.length) {
+        availableLayouts.push(...LAYOUTS_BY_PANEL_COUNT[i]);
+        break;
+      }
+    }
+  }
 
-  do {
-    const randomIndex =
-      Math.floor(Math.random() * (availableLayouts.length - 1)) + 1;
-    nextLayout = `LAYOUT_${randomIndex}`;
-  } while (nextLayout === previousLayout);
+  if (!availableLayouts.length) {
+    return "LAYOUT_1"; // Layout par défaut si rien ne correspond
+  }
 
-  return nextLayout;
+  // Sélectionner un layout aléatoire parmi ceux disponibles
+  const randomIndex = Math.floor(Math.random() * availableLayouts.length);
+  return availableLayouts[randomIndex];
 };
 
 export const getLayoutDimensions = (layoutType, panelIndex) =>

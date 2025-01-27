@@ -8,6 +8,16 @@ from langchain.schema.messages import BaseMessage
 # - mistral-small    : Good balance of speed and quality
 # - mistral-medium   : Better quality, slower than small
 # - mistral-large    : Best quality, slowest and most expensive
+#
+# mistral-large-latest: currently points to mistral-large-2411.
+# pixtral-large-latest: currently points to pixtral-large-2411.
+# mistral-moderation-latest: currently points to mistral-moderation-2411.
+# ministral-3b-latest: currently points to ministral-3b-2410.
+# ministral-8b-latest: currently points to ministral-8b-2410.
+# open-mistral-nemo: currently points to open-mistral-nemo-2407.
+# mistral-small-latest: currently points to mistral-small-2409.
+# codestral-latest: currently points to codestral-2501.
+#
 # Pricing: https://docs.mistral.ai/platform/pricing/
 
 class MistralClient:

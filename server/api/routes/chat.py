@@ -46,7 +46,13 @@ def get_chat_router(session_manager: SessionManager, story_generator):
                     llm_response.image_prompts = [llm_response.image_prompts[0]]
 
             # Add segment to history
-            game_state.add_to_history(llm_response.story_text, previous_choice, llm_response.image_prompts)
+            game_state.add_to_history(
+                llm_response.story_text,
+                previous_choice,
+                llm_response.image_prompts,
+                llm_response.time,
+                llm_response.location
+            )
 
             # Pour la première étape, on ne garde qu'un seul prompt d'image
             if game_state.story_beat == 0 and len(llm_response.image_prompts) > 1:
