@@ -1,8 +1,10 @@
 import { useConversation } from '@11labs/react';
-import MicIcon from '@mui/icons-material/Mic';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
+import SendIcon from '@mui/icons-material/Send';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import { Box, IconButton, LinearProgress, Tooltip } from '@mui/material';
+import { Box, CircularProgress, IconButton, LinearProgress, TextField, Tooltip } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 
 import { useNarrator } from '../hooks/useNarrator';
@@ -41,6 +43,11 @@ export function Game() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isConversationMode, setIsConversationMode] = useState(false);
+  const [xiApiKey, setXiApiKey] = useState(() => {
+    return import.meta.env.VITE_XI_API_KEY || localStorage.getItem('xiApiKey') || '';
+  });
+  const [isValidatingKey, setIsValidatingKey] = useState(false);
+  const [keyValidationStatus, setKeyValidationStatus] = useState(null); // null, 'success', 'error'
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const wsRef = useRef(null);
@@ -55,6 +62,9 @@ export function Game() {
 
   const conversation = useConversation({
     agentId: AGENT_ID,
+    headers: {
+      'xi-api-key': xiApiKey
+    },
     onResponse: async (response) => {
       if (response.type === "audio") {
         const audioBlob = new Blob([response.audio], { type: "audio/mpeg" });
@@ -73,6 +83,13 @@ export function Game() {
   });
 
   const { isSpeaking } = conversation || {};
+
+  // Save API key to localStorage when it changes
+  useEffect(() => {
+    if (xiApiKey && xiApiKey !== import.meta.env.VITE_XI_API_KEY) {
+      localStorage.setItem('xiApiKey', xiApiKey);
+    }
+  }, [xiApiKey]);
 
   // Sauvegarder l'état de la narration dans le localStorage
   useEffect(() => {
@@ -383,6 +400,28 @@ export function Game() {
     }
   };
 
+  const validateApiKey = async () => {
+    setIsValidatingKey(true);
+    setKeyValidationStatus(null);
+    try {
+      const response = await fetch('https://api.elevenlabs.io/v1/user', {
+        headers: {
+          'xi-api-key': xiApiKey
+        }
+      });
+      if (response.ok) {
+        setKeyValidationStatus('success');
+        localStorage.setItem('xiApiKey', xiApiKey);
+      } else {
+        setKeyValidationStatus('error');
+      }
+    } catch (error) {
+      console.error('Error validating API key:', error);
+      setKeyValidationStatus('error');
+    } finally {
+      setIsValidatingKey(false);
+    }
+  };
 
   const handleCaptureStory = async () => {
     await downloadStoryImage(
@@ -417,8 +456,76 @@ export function Game() {
             top: 16,
             right: 16,
             zIndex: 1000,
+            display: "flex",
+            gap: 2,
+            alignItems: "center",
           }}
         >
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <TextField
+              size="small"
+              type="password"
+              label="ElevenLabs API Key"
+              value={xiApiKey}
+              onChange={(e) => {
+                setXiApiKey(e.target.value);
+                setKeyValidationStatus(null);
+              }}
+              error={keyValidationStatus === 'error'}
+              helperText={keyValidationStatus === 'error' ? 'Invalid API key' : ''}
+              sx={{
+                minWidth: 250,
+                '& .MuiOutlinedInput-root': {
+                  color: 'white',
+                  '& fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.23)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.4)',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                },
+                '& .MuiOutlinedInput-input': {
+                  color: 'white',
+                },
+                '& .MuiFormHelperText-root': {
+                  color: 'error.main',
+                },
+              }}
+              placeholder="Enter your xi-api-key"
+            />
+            <IconButton
+              onClick={validateApiKey}
+              disabled={!xiApiKey || isValidatingKey}
+              sx={{
+                backgroundColor: keyValidationStatus === 'success' 
+                  ? 'success.main' 
+                  : keyValidationStatus === 'error'
+                  ? 'error.main'
+                  : 'rgba(255, 255, 255, 0.1)',
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: keyValidationStatus === 'success'
+                    ? 'success.dark'
+                    : keyValidationStatus === 'error'
+                    ? 'error.dark'
+                    : 'rgba(255, 255, 255, 0.2)',
+                },
+              }}
+            >
+              {isValidatingKey ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : keyValidationStatus === 'success' ? (
+                <CheckIcon />
+              ) : keyValidationStatus === 'error' ? (
+                <CloseIcon />
+              ) : (
+                <SendIcon />
+              )}
+            </IconButton>
+          </Box>
           <Tooltip
             title={
               isNarrationEnabled
@@ -426,23 +533,6 @@ export function Game() {
                 : "Activer la narration"
             }
           >
-          <IconButton
-            onClick={isRecording ? () => {
-              setIsRecording(false);
-              mediaRecorderRef.current?.stop();
-            } : startRecording}
-            sx={{
-              ml: 1,
-              backgroundColor: isRecording ? 'error.main' : 'rgba(255, 255, 255, 0.1)',
-              color: 'white',
-              '&:hover': {
-                backgroundColor: isRecording ? 'error.dark' : 'rgba(255, 255, 255, 0.2)',
-              }
-            }}
-          >
-            <MicIcon />
-          </IconButton>
-
             <IconButton
               onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
               sx={{
@@ -459,6 +549,32 @@ export function Game() {
             >
               {isNarrationEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
             </IconButton>
+          </Tooltip>
+          <Tooltip title={isRecording ? "Stop" : "Start talking to Sarah"}>
+            <Box
+              onClick={isRecording ? () => {
+                setIsRecording(false);
+                mediaRecorderRef.current?.stop();
+              } : startRecording}
+              sx={{
+                cursor: 'pointer',
+                backgroundColor: isRecording ? 'error.main' : 'rgba(255, 255, 255, 0.1)',
+                color: 'white',
+                padding: '6px 16px',
+                borderRadius: '4px',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                transition: 'background-color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                '&:hover': {
+                  backgroundColor: isRecording ? 'error.dark' : 'rgba(255, 255, 255, 0.2)',
+                }
+              }}
+            >
+              {isRecording ? "Stop" : "Try to convince Sarah"}
+            </Box>
           </Tooltip>
         </Box>
 
