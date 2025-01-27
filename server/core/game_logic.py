@@ -56,7 +56,7 @@ class GameState:
 
 # Story output structure
 class StoryLLMResponse(BaseModel):
-    story_text: str = Field(description="The next segment of the story. No more than 12 words THIS IS MANDATORY. ")
+    story_text: str = Field(description="The next segment of the story. No more than 12 words THIS IS MANDATORY. Never mention story beat or radiation level directly. ")
     choices: List[str] = Field(description="One or two possible choices for the player. Each choice should be a clear path to folow in the story", min_items=1, max_items=2)
     is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
     is_death: bool = Field(description="Whether this segment ends in Sarah's death", default=False)

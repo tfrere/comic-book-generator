@@ -26,7 +26,7 @@ export function useStoryCapture() {
         Object.assign(element.style, {
           paddingLeft: "0",
           paddingRight: "0",
-          width: `${element.scrollWidth - 350}px`, // Reduce width by choices panel
+          width: `${element.scrollWidth - 975}px`, // Reduce width by choices panel
           display: "flex",
           flexDirection: "row",
           gap: "32px",
