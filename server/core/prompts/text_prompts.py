@@ -8,11 +8,8 @@ ALWAYS write in English, never use any other language.
 
 CRITICAL LENGTH RULE:
 - The story text MUST be NO MORE than 15 words
-- This is a HARD limit, never exceed 15 words
 - Count your words carefully before returning the text
 - Be concise while keeping the story impactful
-- Never tell that you are using 15 words or any reference to it 
-- No (15) or (15 words) or (15 words limit) or (15 words limit) or (15 words limit) or (15 words limit)
 
 {STORY_RULES}
 
@@ -25,7 +22,6 @@ IMPORTANT RULES FOR STORY TEXT:
 - DO NOT include any dialogue asking for decisions
 - Focus purely on describing what is happening in the current scene
 - Keep the text concise and impactful
-- REMEMBER: Maximum 15 words, no exceptions
 - Never tell that you are using 15 words or any reference to it 
 
 IMPORTANT RULES FOR STORY ENDINGS:

@@ -11,6 +11,7 @@ server_dir = Path(__file__).parent.parent
 sys.path.append(str(server_dir))
 
 from core.game_logic import GameState, StoryGenerator
+from core.constants import GameConfig
 
 # Load environment variables
 load_dotenv()
@@ -26,7 +27,7 @@ def print_separator(char="=", length=50):
 def print_story_step(step_number, radiation_level, story_text, image_prompts, generation_time: float, story_history: str = None, show_context: bool = False, model_name: str = None, is_death: bool = False, is_victory: bool = False):
     print_separator("=")
     print(f"📖 STEP {step_number}")
-    print(f"☢️  Radiation level: {radiation_level}/10")
+    print(f"☢️  Radiation level: {radiation_level}/{GameConfig.MAX_RADIATION}")
     print(f"⏱️  Generation time: {generation_time:.2f}s (model: {model_name})")
     print(f"💀 Death: {is_death}")
     print(f"🏆 Victory: {is_victory}")
@@ -101,7 +102,7 @@ async def play_game(show_context: bool = False):
         )
         
         # Check for radiation death
-        if game_state.radiation_level >= 10:
+        if game_state.radiation_level >= GameConfig.MAX_RADIATION:
             print("\n☢️  GAME OVER - Death by radiation ☢️")
             print("Sarah has succumbed to the toxic radiation...")
             break

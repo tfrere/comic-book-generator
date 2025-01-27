@@ -14,7 +14,6 @@ from api.models import StoryTextResponse, StoryPromptsResponse, StoryMetadataRes
 from core.story_generators import TextGenerator, ImagePromptsGenerator, MetadataGenerator
 
 # Game constants
-MAX_RADIATION = 4
 STARTING_TIME = "18:00"  # Game starts at sunset
 STARTING_LOCATION = "Outskirts of New Haven"
 

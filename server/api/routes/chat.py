@@ -3,7 +3,7 @@ from typing import Optional
 import traceback
 
 from core.session_manager import SessionManager
-from core.game_logic import MAX_RADIATION
+from core.constants import GameConfig
 from api.models import ChatMessage, StoryResponse, Choice
 
 router = APIRouter()
@@ -38,10 +38,10 @@ def get_chat_router(session_manager: SessionManager, story_generator):
             game_state.radiation_level += llm_response.radiation_increase
             
             # Check for radiation death
-            is_death = game_state.radiation_level >= MAX_RADIATION
+            is_death = game_state.radiation_level >= GameConfig.MAX_RADIATION
             if is_death:
                 llm_response.choices = []
-                llm_response.story_text += "\nYour radiation level has reached a critical point. You have succumbed to the harsh wastelands, and your journey concludes here. THE END."
+                llm_response.story_text += "\You have succumbed to the harsh wastelands, and your journey concludes here. THE END."
                 if len(llm_response.image_prompts) > 1:
                     llm_response.image_prompts = [llm_response.image_prompts[0]]
 
