@@ -550,32 +550,6 @@ export function Game() {
               {isNarrationEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
             </IconButton>
           </Tooltip>
-          <Tooltip title={isRecording ? "Stop" : "Start talking to Sarah"}>
-            <Box
-              onClick={isRecording ? () => {
-                setIsRecording(false);
-                mediaRecorderRef.current?.stop();
-              } : startRecording}
-              sx={{
-                cursor: 'pointer',
-                backgroundColor: isRecording ? 'error.main' : 'rgba(255, 255, 255, 0.1)',
-                color: 'white',
-                padding: '6px 16px',
-                borderRadius: '4px',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                transition: 'background-color 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                '&:hover': {
-                  backgroundColor: isRecording ? 'error.dark' : 'rgba(255, 255, 255, 0.2)',
-                }
-              }}
-            >
-              {isRecording ? "Stop" : "Try to convince Sarah"}
-            </Box>
-          </Tooltip>
         </Box>
 
         {/* Progress bar */}
@@ -611,6 +585,12 @@ export function Game() {
               currentChoices[0].text === "Réessayer"
             }
             onScreenshot={() => downloadStoryImage(storyContainerRef)}
+            isRecording={isRecording}
+            onStartRecording={startRecording}
+            onStopRecording={() => {
+              setIsRecording(false);
+              mediaRecorderRef.current?.stop();
+            }}
           />
         </Box>
       </Box>

@@ -1,4 +1,4 @@
-import { Box, Button, Typography, Chip } from "@mui/material";
+import { Box, Button, Typography, Chip, Divider } from "@mui/material";
 
 // Function to convert text with ** to Chip elements
 const formatTextWithBold = (text) => {
@@ -24,7 +24,14 @@ const formatTextWithBold = (text) => {
   });
 };
 
-export function StoryChoices({ choices = [], onChoice, disabled = false }) {
+export function StoryChoices({ 
+  choices = [], 
+  onChoice, 
+  disabled = false,
+  isRecording = false,
+  onStartRecording,
+  onStopRecording,
+}) {
   if (!choices || choices.length === 0) return null;
 
   return (
@@ -41,47 +48,102 @@ export function StoryChoices({ choices = [], onChoice, disabled = false }) {
         backgroundColor: "transparent",
       }}
     >
-      {choices.map((choice, index) => (
-        <Box
-          key={choice.id}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 2,
+          width: "100%",
+        }}
+      >
+        <Typography
+          variant="h6"
           sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 1,
-            width: "100%",
+            color: "white",
+            textAlign: "center",
+            mb: 1,
           }}
         >
-          <Typography variant="caption" sx={{ opacity: 0.7, color: "white" }}>
-            Suggestion {index + 1}
-          </Typography>
-          <Button
-            variant="outlined"
-            size="large"
-            onClick={() => onChoice(choice.id)}
-            disabled={disabled}
+          Choose your next action
+        </Typography>
+        
+        {choices.map((choice, index) => (
+          <Box
+            key={choice.id}
             sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1,
               width: "100%",
-              textTransform: "none",
-              cursor: "pointer",
-              fontSize: "1.1rem",
-              padding: "16px 24px",
-              lineHeight: 1.3,
-              color: "white",
-              borderColor: "rgba(255, 255, 255, 0.23)",
-              "&:hover": {
-                borderColor: "white",
-                backgroundColor: "rgba(255, 255, 255, 0.05)",
-              },
-              "& .MuiChip-root": {
-                fontSize: "1.1rem",
-              },
             }}
           >
-            {formatTextWithBold(choice.text)}
-          </Button>
-        </Box>
-      ))}
+            <Button
+              onClick={() => onChoice(choice.id)}
+              disabled={disabled}
+              variant="contained"
+              sx={{
+                width: "100%",
+                whiteSpace: "normal",
+                textAlign: "left",
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                },
+              }}
+            >
+              <Typography
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                {formatTextWithBold(choice.text)}
+              </Typography>
+            </Button>
+          </Box>
+        ))}
+
+        <Divider 
+          sx={{ 
+            width: "100%", 
+            my: 2,
+            "&::before, &::after": {
+              borderColor: "rgba(255, 255, 255, 0.3)",
+            },
+          }}
+        >
+          <Typography
+            sx={{
+              color: "rgba(255, 255, 255, 0.7)",
+              px: 2,
+              fontSize: "0.875rem",
+            }}
+          >
+            or
+          </Typography>
+        </Divider>
+
+        <Button
+          onClick={isRecording ? onStopRecording : onStartRecording}
+          disabled={disabled}
+          variant="contained"
+          sx={{
+            width: "100%",
+            py: 1.5,
+            backgroundColor: isRecording ? 'error.main' : 'primary.main',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: isRecording ? 'error.dark' : 'primary.dark',
+            },
+          }}
+        >
+          {isRecording ? "Stop" : "Try to convince Sarah"}
+        </Button>
+      </Box>
     </Box>
   );
 }

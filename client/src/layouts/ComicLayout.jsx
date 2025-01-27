@@ -16,6 +16,9 @@ function ComicPage({
   isLoading,
   showScreenshot,
   onScreenshot,
+  isRecording,
+  onStartRecording,
+  onStopRecording,
 }) {
   // Calculer le nombre total d'images dans tous les segments de ce layout
   const totalImages = layout.segments.reduce((total, segment) => {
@@ -118,6 +121,9 @@ function ComicPage({
               choices={choices}
               onChoice={onChoice}
               disabled={isLoading}
+              isRecording={isRecording}
+              onStartRecording={onStartRecording}
+              onStopRecording={onStopRecording}
             />
           )}
         </Box>
@@ -134,6 +140,9 @@ export function ComicLayout({
   isLoading,
   showScreenshot,
   onScreenshot,
+  isRecording,
+  onStartRecording,
+  onStopRecording,
 }) {
   const scrollContainerRef = useRef(null);
 
@@ -160,33 +169,25 @@ export function ComicLayout({
         flexDirection: "row",
         gap: 4,
         height: "100%",
-        width: "100%",
-        px: layouts[0]?.type === "COVER" ? "calc(50% - (90vh * 0.5 * 0.5))" : 0,
-        overflowX: "auto",
-        overflowY: "hidden",
-        "&::-webkit-scrollbar": {
-          height: "0px",
-        },
-        "&::-webkit-scrollbar-track": {
-          backgroundColor: "grey.200",
-        },
-        "&::-webkit-scrollbar-thumb": {
-          backgroundColor: "grey.400",
-          borderRadius: "4px",
-        },
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "auto",
       }}
     >
-      {layouts.map((layout, layoutIndex) => (
+      {layouts.map((layout, index) => (
         <ComicPage
-          key={layoutIndex}
+          key={index}
           layout={layout}
-          layoutIndex={layoutIndex}
-          isLastPage={layoutIndex === layouts.length - 1}
-          choices={choices}
+          layoutIndex={index}
+          isLastPage={index === layouts.length - 1}
+          choices={index === layouts.length - 1 ? choices : null}
           onChoice={onChoice}
           isLoading={isLoading}
           showScreenshot={showScreenshot}
           onScreenshot={onScreenshot}
+          isRecording={isRecording}
+          onStartRecording={onStartRecording}
+          onStopRecording={onStopRecording}
         />
       ))}
     </Box>
