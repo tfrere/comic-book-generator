@@ -21,6 +21,8 @@ import {
 import { LAYOUTS } from "../../layouts/config";
 import html2canvas from "html2canvas";
 import { useConversation } from "@11labs/react";
+import { CLIENT_ID, getDefaultHeaders } from "../../utils/session";
+import { useNarrator } from "../../hooks/useNarrator";
 
 // Get API URL from environment or default to localhost in development
 const isHFSpace = window.location.hostname.includes("hf.space");
@@ -28,8 +30,6 @@ const API_URL = isHFSpace
   ? "" // URL relative pour HF Spaces
   : import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-// Generate a unique client ID
-const CLIENT_ID = `client_${Math.random().toString(36).substring(2)}`;
 // Constants
 const AGENT_ID = "2MF9st3s1mNFbX01Y106";
 
@@ -37,9 +37,7 @@ const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/ws";
 
 // Create axios instance with default config
 const api = axios.create({
-  headers: {
-    "x-client-id": CLIENT_ID,
-  },
+  headers: getDefaultHeaders(),
   // Ajouter baseURL pour HF Spaces
   ...(isHFSpace && {
     baseURL: window.location.origin,
@@ -80,15 +78,14 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [isNarratorSpeaking, setIsNarratorSpeaking] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
 
-  const audioRef = useRef(new Audio());
   const comicContainerRef = useRef(null);
-  const narrationAudioRef = useRef(new Audio()); // Separate audio ref for narration
-  const wsRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const wsRef = useRef(null);
+
+  const { isNarratorSpeaking, playNarration, stopNarration } = useNarrator();
 
   // Start the story on first render
   useEffect(() => {
@@ -122,9 +119,8 @@ function App() {
 
         if (data.type === "audio") {
           // Stop any ongoing narration
-          if (narrationAudioRef.current) {
-            narrationAudioRef.current.pause();
-            narrationAudioRef.current.currentTime = 0;
+          if (isNarratorSpeaking) {
+            stopNarration();
           }
 
           // Play the conversation audio response
@@ -132,8 +128,7 @@ function App() {
             `data:audio/mpeg;base64,${data.audio}`
           ).then((r) => r.blob());
           const audioUrl = URL.createObjectURL(audioBlob);
-          audioRef.current.src = audioUrl;
-          await audioRef.current.play();
+          playNarration(audioUrl);
         }
       };
     };
@@ -154,8 +149,7 @@ function App() {
         // Play the conversation audio response
         const audioBlob = new Blob([response.audio], { type: "audio/mpeg" });
         const audioUrl = URL.createObjectURL(audioBlob);
-        audioRef.current.src = audioUrl;
-        await audioRef.current.play();
+        playNarration(audioUrl);
       }
     },
     clientTools: {
@@ -163,7 +157,6 @@ function App() {
         console.log("AI made decision:", decision);
         // End the ElevenLabs conversation
         await conversation.endSession();
-        setIsConversationMode(false);
         setIsRecording(false);
         // Handle the choice and generate next story part
         await handleChoice(parseInt(decision));
@@ -177,14 +170,13 @@ function App() {
   const startRecording = async () => {
     try {
       // Stop narration audio if it's playing
-      if (narrationAudioRef.current) {
-        narrationAudioRef.current.pause();
-        narrationAudioRef.current.currentTime = 0;
+      if (isNarratorSpeaking) {
+        stopNarration();
       }
       // Also stop any conversation audio if playing
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+      if (conversation.audioRef.current) {
+        conversation.audioRef.current.pause();
+        conversation.audioRef.current.currentTime = 0;
       }
 
       if (!isConversationMode) {
@@ -217,9 +209,8 @@ function App() {
       }
 
       // Only stop narration if it's actually playing
-      if (!isConversationMode && narrationAudioRef.current) {
-        narrationAudioRef.current.pause();
-        narrationAudioRef.current.currentTime = 0;
+      if (!isConversationMode && isNarratorSpeaking) {
+        stopNarration();
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -483,41 +474,6 @@ function App() {
     }
   };
 
-  // Fonction pour jouer l'audio
-  const playAudio = async (text) => {
-    try {
-      // Nettoyer le texte des balises markdown et des chips
-      const cleanText = text.replace(/\*\*(.*?)\*\*/g, "$1");
-
-      // Appeler l'API text-to-speech
-      const response = await api.post(`${API_URL}/api/text-to-speech`, {
-        text: cleanText,
-      });
-
-      if (response.data.success) {
-        // Créer un Blob à partir du base64
-        const audioBlob = await fetch(
-          `data:audio/mpeg;base64,${response.data.audio_base64}`
-        ).then((r) => r.blob());
-        const audioUrl = URL.createObjectURL(audioBlob);
-
-        // Mettre à jour la source de l'audio
-        audioRef.current.src = audioUrl;
-        audioRef.current.play();
-        setIsNarratorSpeaking(true);
-
-        // Nettoyer l'URL quand l'audio est terminé
-        audioRef.current.onended = () => {
-          // Event to indicate that the audio has finished playing
-          setIsNarratorSpeaking(false);
-          URL.revokeObjectURL(audioUrl);
-        };
-      }
-    } catch (error) {
-      console.error("Error playing audio:", error);
-    }
-  };
-
   const handleStoryAction = async (action, choiceId = null) => {
     setIsLoading(true);
     try {
@@ -567,7 +523,7 @@ function App() {
       setIsLoading(false);
 
       // 6. Jouer l'audio du nouveau segment
-      await playAudio(response.data.story_text);
+      await playNarration(response.data.story_text);
 
       // 7. Générer les images en parallèle
       if (

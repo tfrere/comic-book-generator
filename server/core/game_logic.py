@@ -1,14 +1,16 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Tuple
 from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
 import os
 import asyncio
 
-from core.prompts.system import SYSTEM_PROMPT, SARAH_DESCRIPTION
+from core.prompts.system import SARAH_DESCRIPTION
 from core.prompts.cinematic import CINEMATIC_SYSTEM_PROMPT
-from core.prompts.image_style import IMAGE_STYLE_PROMPT, IMAGE_STYLE_PREFIX
+from core.prompts.image_style import IMAGE_STYLE_PREFIX
 from services.mistral_client import MistralClient
+from api.models import StoryTextResponse, StoryPromptsResponse, StoryMetadataResponse
+from core.story_generators import TextGenerator, ImagePromptsGenerator, MetadataGenerator
 
 # Game constants
 MAX_RADIATION = 10
@@ -58,135 +60,81 @@ class StoryLLMResponse(BaseModel):
     choices: List[str] = Field(description="Exactly two possible choices for the player", min_items=2, max_items=2)
     is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
     radiation_increase: int = Field(description="How much radiation this segment adds (0-3)", ge=0, le=3, default=1)
-    image_prompts: List[str] = Field(description="List of 1 to 3 comic panel descriptions that illustrate the key moments of the scene", min_items=1, max_items=3)
+    image_prompts: List[str] = Field(description="List of 1 to 4 comic panel descriptions that illustrate the key moments of the scene", min_items=1, max_items=4)
     is_last_step: bool = Field(description="Whether this is the last step (victory or death)", default=False)
     time: str = Field(description="Current in-game time in 24h format (HH:MM). Time passes realistically based on actions.", default=STARTING_TIME)
     location: str = Field(description="Current location, using bold for proper nouns (e.g., 'Inside **Vault 15**', 'Streets of **New Haven**').", default=STARTING_LOCATION)
 
-# Prompt templates
+# Story generator
 class StoryGenerator:
     def __init__(self, api_key: str, model_name: str = "mistral-small"):
-        self.parser = PydanticOutputParser(pydantic_object=StoryLLMResponse)
         self.mistral_client = MistralClient(api_key=api_key, model_name=model_name)
+        self.text_generator = TextGenerator(self.mistral_client)
+        self.prompts_generator = ImagePromptsGenerator(self.mistral_client)
+        self.metadata_generator = MetadataGenerator(self.mistral_client)
+
+    def _format_story_history(self, game_state: GameState) -> str:
+        """Formate l'historique de l'histoire pour le prompt."""
+        if not game_state.story_history:
+            return ""
+            
+        segments = []
+        for entry in game_state.story_history:
+            segments.append(entry['segment'])
         
-        self.fixing_parser = OutputFixingParser.from_llm(
-            parser=self.parser,
-            llm=self.mistral_client.fixing_model
-        )
-        
-        self.prompt = self._create_prompt()
-        
-    def _create_prompt(self) -> ChatPromptTemplate:
-        system_template = """
-        {SYSTEM_PROMPT}
-        {ART_SYSTEM_PROMPT}
-{format_instructions}"""
-
-        human_template = """Current story beat: {story_beat}
-Current radiation level: {radiation_level}/10
-Current time: {current_time}
-Current location: {current_location}
-Previous choice: {previous_choice}
-
-Story so far:
-{story_history}
-
-Generate the next story segment and choices. Make sure it advances the plot and never repeats previous descriptions or situations. If this is story_beat 0, create an atmospheric introduction that sets up the horror but doesn't kill Sarah (radiation_increase MUST be 0). Otherwise, create a brutal and potentially lethal segment.
-
-Time should advance realistically based on the actions taken. Location should change based on movement and choices."""
-
-        return ChatPromptTemplate(
-            messages=[
-                SystemMessagePromptTemplate.from_template(system_template),
-                HumanMessagePromptTemplate.from_template(human_template)
-            ],
-            partial_variables={"format_instructions": self.parser.get_format_instructions()}
-        )
+        story_history = "\n\n---\n\n".join(segments)
+        return story_history
 
     async def generate_story_segment(self, game_state: GameState, previous_choice: str) -> StoryLLMResponse:
-        # Format story history as a narrative storyboard
-        story_history = ""
-        if game_state.story_history:
-            segments = []
-            for entry in game_state.story_history:
-                segment = entry['segment']
-                time_location = f"[{entry['time']} - {entry['location']}]"
-                image_descriptions = "\nVisual panels:\n" + "\n".join(f"- {prompt}" for prompt in entry['image_prompts'])
-                segments.append(f"{time_location}\n{segment}{image_descriptions}")
-            
-            story_history = "\n\n---\n\n".join(segments)
-            story_history += "\n\nLast choice made: " + previous_choice
-        
-        messages = self.prompt.format_messages(
+        """Génère un segment d'histoire complet en plusieurs étapes."""
+        # 1. Générer le texte de l'histoire
+        story_history = self._format_story_history(game_state)
+        text_response = await self.text_generator.generate(
             story_beat=game_state.story_beat,
             radiation_level=game_state.radiation_level,
             current_time=game_state.current_time,
             current_location=game_state.current_location,
             previous_choice=previous_choice,
-            story_history=story_history,
-            SYSTEM_PROMPT=SYSTEM_PROMPT,
-            ART_SYSTEM_PROMPT=CINEMATIC_SYSTEM_PROMPT
+            story_history=story_history
         )
         
-        max_retries = 3
-        retry_count = 0
+        # 2. Générer les prompts d'images et les métadonnées en parallèle
+        prompts_task = self.prompts_generator.generate(text_response.story_text)
+        metadata_task = self.metadata_generator.generate(
+            story_text=text_response.story_text,
+            current_time=game_state.current_time,
+            current_location=game_state.current_location,
+            story_beat=game_state.story_beat
+        )
         
-        while retry_count < max_retries:
-            try:
-                response_content = await self.mistral_client.generate_story(messages)
-                try:
-                    # Try to parse with standard parser first
-                    segment = self.parser.parse(response_content)
-                    
-                    # Enrich image prompts with Sarah's description when needed
-                    segment.image_prompts = [enrich_prompt_with_sarah_description(prompt) for prompt in segment.image_prompts]
-                    
-                    # Add style prefix to all image prompts
-                    segment.image_prompts = [format_image_prompt(prompt, segment.time, segment.location) for prompt in segment.image_prompts]
-                    
-                    # Check if this is a victory or death (radiation) step
-                    is_death = game_state.radiation_level + segment.radiation_increase >= MAX_RADIATION
-                    if is_death or segment.is_victory:
-                        segment.is_last_step = True
-                        # Force only one image prompt for victory/death scenes
-                        if len(segment.image_prompts) > 1:
-                            segment.image_prompts = [segment.image_prompts[0]]
-                    
-                except Exception as parse_error:
-                    print(f"Error parsing response: {str(parse_error)}")
-                    print("Attempting to fix output...")
-                    try:
-                        # Try with fixing parser
-                        segment = self.fixing_parser.parse(response_content)
-                        # Enrich image prompts here too
-                        segment.image_prompts = [enrich_prompt_with_sarah_description(prompt) for prompt in segment.image_prompts]
-                        # Add style prefix to all image prompts
-                        segment.image_prompts = [format_image_prompt(prompt, segment.time, segment.location) for prompt in segment.image_prompts]
-                    except Exception as fix_error:
-                        print(f"Error fixing output: {str(fix_error)}")
-                        retry_count += 1
-                        if retry_count < max_retries:
-                            print(f"Retrying generation (attempt {retry_count + 1}/{max_retries})...")
-                            await asyncio.sleep(2 * retry_count)  # Exponential backoff
-                            continue
-                        raise fix_error
-                
-                # If we get here, parsing succeeded
-                if game_state.story_beat == 0:
-                    segment.radiation_increase = 0
-                    segment.is_last_step = False
-                return segment
-                
-            except Exception as e:
-                print(f"Error in story generation: {str(e)}")
-                retry_count += 1
-                if retry_count < max_retries:
-                    print(f"Retrying generation (attempt {retry_count + 1}/{max_retries})...")
-                    await asyncio.sleep(2 * retry_count)  # Exponential backoff
-                    continue
-                raise e
+        prompts_response, metadata_response = await asyncio.gather(prompts_task, metadata_task)
         
-        raise Exception(f"Failed to generate valid story segment after {max_retries} attempts")
+        # 3. Combiner les résultats
+        response = StoryLLMResponse(
+            story_text=text_response.story_text,
+            choices=metadata_response.choices,
+            is_victory=metadata_response.is_victory,
+            radiation_increase=metadata_response.radiation_increase,
+            image_prompts=[format_image_prompt(prompt, metadata_response.time, metadata_response.location) 
+                          for prompt in prompts_response.image_prompts],
+            is_last_step=metadata_response.is_last_step,
+            time=metadata_response.time,
+            location=metadata_response.location
+        )
+        
+        # 4. Post-processing
+        if game_state.story_beat == 0:
+            response.radiation_increase = 0
+            response.is_last_step = False
+            
+        # Vérifier la mort par radiation
+        is_death = game_state.radiation_level + response.radiation_increase >= MAX_RADIATION
+        if is_death or response.is_victory:
+            response.is_last_step = True
+            if len(response.image_prompts) > 1:
+                response.image_prompts = [response.image_prompts[0]]
+                
+        return response
 
     async def transform_story_to_art_prompt(self, story_text: str) -> str:
         return await self.mistral_client.transform_prompt(story_text, CINEMATIC_SYSTEM_PROMPT)

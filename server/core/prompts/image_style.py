@@ -18,4 +18,4 @@ EXAMPLES:
 
 Always maintain consistency with Sarah's appearance and the comic book style.""" 
 
-IMAGE_STYLE_PREFIX = "Moebius, Hergé style, color comic panel -- "
+IMAGE_STYLE_PREFIX = "François Schuiten comic panel -- "

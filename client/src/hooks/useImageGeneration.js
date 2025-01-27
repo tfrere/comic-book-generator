@@ -1,12 +1,11 @@
 import axios from "axios";
+import { getDefaultHeaders } from "../utils/session";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // Create axios instance with default config
 const api = axios.create({
-  headers: {
-    "x-client-id": `client_${Math.random().toString(36).substring(2)}`,
-  },
+  headers: getDefaultHeaders(),
 });
 
 export function useImageGeneration() {
