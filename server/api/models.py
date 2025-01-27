@@ -8,7 +8,7 @@ class Choice(BaseModel):
 
 class StorySegmentBase(BaseModel):
     """Base model for story segments with common validation logic"""
-    story_text: str = Field(description="The story text. Never mention story beat or radiation level directly. ")
+    story_text: str = Field(description="The story text. No more than 15 words THIS IS MANDATORY.  Never mention story beat or radiation level directly. ")
     is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
     is_death: bool = Field(description="Whether this segment ends in Sarah's death", default=False)
 

@@ -59,12 +59,12 @@ export function StoryChoices({
         >
           The End
         </Typography>
-        <Button
+        {/* <Button
           variant="outlined"
           size="large"
           onClick={() => {
             // Simulate a button click on another button with the id "targetButton"
-            document.getElementById("printButton").click();
+            document.getElementById("screenshot-button").click();
           }}
           sx={{
             width: "100%",
@@ -83,7 +83,7 @@ export function StoryChoices({
           }}
         >
           Save your story
-        </Button>
+        </Button> */}
         <Button
           variant="outlined"
           size="large"

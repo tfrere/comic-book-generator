@@ -385,6 +385,7 @@ export function Game() {
             >
               <Tooltip title="Save your story">
                 <IconButton
+                  id="screenshot-button"
                   onClick={handleCaptureStory}
                   sx={{
                     color: "white",
