@@ -147,8 +147,8 @@ export function Tutorial() {
               <strong>bunker</strong> to find <strong>medicine</strong> for your{" "}
               <strong>sick sister</strong>. If you don't find it, she will{" "}
               <strong>die</strong>. <strong>Time</strong> is running out, and
-              every <strong>choice</strong>
-              matters in this desperate <strong>quest</strong>.
+              every <strong>choice</strong>&nbsp; matters in this desperate{" "}
+              <strong>quest</strong>.
             </Typography>
             <Typography variant="h4">How to play</Typography>
             <Typography variant="body1" sx={{ fontWeight: "normal" }}>
