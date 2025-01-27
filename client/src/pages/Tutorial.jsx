@@ -1,72 +1,175 @@
-import { Box, Typography, Button, Chip } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Chip,
+  Paper,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { usePageSound } from "../hooks/usePageSound";
+import { motion } from "framer-motion";
 
 export function Tutorial() {
   const navigate = useNavigate();
+  const playPageSound = usePageSound();
+
+  const handleStartGame = () => {
+    playPageSound();
+    navigate("/game");
+  };
+
+  const handleBack = () => {
+    playPageSound();
+    navigate("/");
+  };
 
   return (
-    <Box
-      sx={{
-        height: "100vh",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 4,
-        padding: 4,
-        backgroundColor: "background.default",
-        color: "text.primary",
-      }}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ backgroundColor: "#121212", width: "100%" }}
     >
-      <Typography variant="h2" component="h1" textAlign="center" gutterBottom>
-        How to play?
-      </Typography>
-
-      <Box sx={{ maxWidth: "800px", textAlign: "center" }}>
-        <Typography variant="h5" paragraph>
-          Since the rise of AI, the world is desolate. Your sister,{" "}
-          <Chip label="Sarah" size="small" />, is traversing these{" "}
-          <Chip label="wastelands" size="small" /> in search of food.
-        </Typography>
-        <Typography variant="h5" paragraph>
-          As her little sister, you stayed in the bunker and you help her make
-          decisions with a talkie-walkie.
-        </Typography>
-        -
-        <Typography variant="body1" paragraph>
-          When <Chip label="Sarah" size="small" /> calls you, you have two ways
-          to help her:
-        </Typography>
-        <Typography variant="body1" paragraph sx={{ mb: 4 }}>
-          1. Choose one of the suggested responses by clicking on it
-          <br />
-          2. Use your voice to speak directly to{" "}
-          <Chip label="Sarah" size="small" /> by clicking the "Try to convince{" "}
-          <Chip label="Sarah" size="small" />" button
-        </Typography>
-        -
-        <Typography variant="body1" paragraph>
-          As her sibling and a scientist, you need to find the right words and
-          tone to help her understand the urgency of climate change, while
-          maintaining your close relationship.
-        </Typography>
-      </Box>
-
-      <Button
-        variant="contained"
-        size="large"
-        onClick={() => navigate("/game")}
+      <Box
         sx={{
-          mt: 4,
-          fontSize: "1.2rem",
-          padding: "12px 24px",
+          minHeight: "100vh",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 4,
+          padding: 4,
+          backgroundColor: "background.default",
+          position: "relative",
         }}
       >
-        Start the game
-      </Button>
-    </Box>
+        <Tooltip title="Back to home">
+          <IconButton
+            onClick={handleBack}
+            sx={{
+              position: "absolute",
+              top: 16,
+              left: 16,
+              color: "white",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              "&:hover": {
+                backgroundColor: "rgba(0, 0, 0, 0.7)",
+              },
+            }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
+
+        <Box
+          sx={{
+            position: "relative",
+            width: "auto",
+            height: "80vh",
+            aspectRatio: "0.66666667",
+            display: "flex",
+            alignItems: "center", // Center vertically
+            justifyContent: "center", // Center horizontally
+            "&::before, &::after": {
+              content: '""',
+              position: "absolute",
+              width: "100%",
+              height: "100%",
+              background: "white",
+              borderRadius: 1,
+              boxShadow: "0px 1px 3px rgba(0,0,0,0.2)",
+            },
+            "&::before": {
+              top: "4px",
+              left: "4px",
+              transform: "rotate(-1deg)",
+              zIndex: 1,
+            },
+            "&::after": {
+              top: "8px",
+              left: "8px",
+              transform: "rotate(1deg)",
+              zIndex: 0,
+            },
+          }}
+        >
+          <Paper
+            elevation={3}
+            sx={{
+              position: "relative",
+              zIndex: 2,
+              width: "100%",
+              height: "100%",
+              backgroundColor: "white",
+              color: "black",
+              padding: 6,
+              borderRadius: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center", // Center align items
+              justifyContent: "center", // Ensure content is centered vertically
+              textAlign: "center",
+              gap: 4,
+              overflowY: "auto",
+            }}
+          >
+            <Typography
+              variant="h2"
+              component="h1"
+              textAlign="center"
+              gutterBottom
+              color="black"
+              sx={{ width: "100%" }}
+            >
+              Synopsis
+            </Typography>
+            <Typography
+              variant="body1"
+              paragraph
+              color="black"
+              sx={{ fontWeight: "normal" }}
+            >
+              Since the rise of <strong>AI</strong>, the world is desolate due
+              to a <strong>nuclear winter</strong> caused by rogue{" "}
+              <strong>AIs</strong> that launched <strong>bombs</strong> all over
+              the planet. You are the only <strong>survivor</strong> of the{" "}
+              <strong>bunker</strong>.
+              <br />
+              <br />
+              You have to make <strong>decisions</strong> to{" "}
+              <strong>survive</strong>. You have ventured out of your{" "}
+              <strong>bunker</strong> to find <strong>medicine</strong> for your{" "}
+              <strong>sick sister</strong>. If you don't find it, she will{" "}
+              <strong>die</strong>. <strong>Time</strong> is running out, and
+              every <strong>choice</strong>
+              matters in this desperate <strong>quest</strong>.
+            </Typography>
+            <Typography variant="h4">How to play</Typography>
+            <Typography variant="body1" sx={{ fontWeight: "normal" }}>
+              At each step, click one of the available <strong>choices</strong>.
+            </Typography>
+          </Paper>
+        </Box>
+
+        <Button
+          variant="outlined"
+          size="large"
+          onClick={handleStartGame}
+          sx={{
+            fontSize: "1.2rem",
+            padding: "12px 24px",
+          }}
+        >
+          Start the game
+        </Button>
+      </Box>
+    </motion.div>
   );
 }
 

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Box, LinearProgress, IconButton, Tooltip } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ComicLayout } from "../layouts/ComicLayout";
 import { storyApi } from "../utils/api";
 import { useNarrator } from "../hooks/useNarrator";
@@ -10,7 +12,8 @@ import { StoryChoices } from "../components/StoryChoices";
 import { ErrorDisplay } from "../components/ErrorDisplay";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import VolumeOffIcon from "@mui/icons-material/VolumeOff";
-import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import PhotoCameraOutlinedIcon from "@mui/icons-material/PhotoCameraOutlined";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { getNextLayoutType, LAYOUTS } from "../layouts/config";
 
 // Constants
@@ -34,6 +37,7 @@ const stripBoldMarkers = (text) => {
 };
 
 export function Game() {
+  const navigate = useNavigate();
   const storyContainerRef = useRef(null);
   const { downloadStoryImage } = useStoryCapture();
   const [storySegments, setStorySegments] = useState([]);
@@ -60,6 +64,11 @@ export function Game() {
   useEffect(() => {
     handleStoryAction("restart");
   }, []);
+
+  const handleBack = () => {
+    playPageSound();
+    navigate("/tutorial");
+  };
 
   const handleChoice = async (choiceId) => {
     playPageSound();
@@ -275,114 +284,140 @@ export function Game() {
   };
 
   return (
-    <Box
-      ref={storyContainerRef}
-      sx={{
-        height: "100vh",
-        width: "100vw",
-        backgroundColor: "#1a1a1a",
-        position: "relative",
-        overflow: "hidden",
-      }}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      style={{ backgroundColor: "#121212", width: "100%" }}
     >
-      {isLoading && (
-        <LinearProgress
-          sx={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1000,
-          }}
-        />
-      )}
-
-      {error ? (
-        <ErrorDisplay
-          message={error}
-          onRetry={() => {
-            if (storySegments.length === 0) {
-              handleStoryAction("restart");
-            } else {
-              handleStoryAction(
-                "choice",
-                storySegments[storySegments.length - 1]?.choiceId || null
-              );
-            }
-          }}
-        />
-      ) : (
-        <>
-          <ComicLayout
-            segments={storySegments}
-            choices={showChoices ? currentChoices : []}
-            onChoice={handleChoice}
-            isLoading={isLoading}
-            showScreenshot={storySegments.length > 0}
-            onScreenshot={handleCaptureStory}
-          />
-          {showChoices && (
-            <StoryChoices
-              choices={currentChoices}
-              onChoice={handleChoice}
-              disabled={isLoading}
-              isLastStep={
-                storySegments.length > 0 &&
-                storySegments[storySegments.length - 1].isLastStep
-              }
-              isGameOver={
-                storySegments.length > 0 &&
-                storySegments[storySegments.length - 1].isGameOver
-              }
-              containerRef={storyContainerRef}
-            />
-          )}
-          <Box
+      <Box
+        ref={storyContainerRef}
+        sx={{
+          height: "100vh",
+          width: "100vw",
+          backgroundColor: "#1a1a1a",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {isLoading && (
+          <LinearProgress
             sx={{
-              position: "fixed",
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 1000,
+            }}
+          />
+        )}
+
+        <Tooltip title="Back to tutorial">
+          <IconButton
+            onClick={handleBack}
+            sx={{
+              position: "absolute",
               top: 16,
-              right: 16,
-              display: "flex",
-              gap: 1,
+              left: 16,
+              color: "white",
               backgroundColor: "rgba(0, 0, 0, 0.5)",
-              padding: 1,
-              borderRadius: 1,
+              "&:hover": {
+                backgroundColor: "rgba(0, 0, 0, 0.7)",
+              },
+              zIndex: 1000,
             }}
           >
-            <Tooltip title="Take a screenshot">
-              <IconButton
-                onClick={handleCaptureStory}
-                sx={{
-                  color: "white",
-                  "&:hover": {
-                    backgroundColor: "rgba(0, 0, 0, 0.7)",
-                  },
-                }}
-              >
-                <PhotoCameraIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip
-              title={
-                isNarrationEnabled ? "Disable narration" : "Enable narration"
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
+
+        {error ? (
+          <ErrorDisplay
+            message={error}
+            onRetry={() => {
+              if (storySegments.length === 0) {
+                handleStoryAction("restart");
+              } else {
+                handleStoryAction(
+                  "choice",
+                  storySegments[storySegments.length - 1]?.choiceId || null
+                );
               }
+            }}
+          />
+        ) : (
+          <>
+            <ComicLayout
+              segments={storySegments}
+              choices={showChoices ? currentChoices : []}
+              onChoice={handleChoice}
+              isLoading={isLoading}
+              showScreenshot={storySegments.length > 0}
+              onScreenshot={handleCaptureStory}
+            />
+            {showChoices && (
+              <StoryChoices
+                choices={currentChoices}
+                onChoice={handleChoice}
+                disabled={isLoading}
+                isLastStep={
+                  storySegments.length > 0 &&
+                  storySegments[storySegments.length - 1].isLastStep
+                }
+                isGameOver={
+                  storySegments.length > 0 &&
+                  storySegments[storySegments.length - 1].isGameOver
+                }
+                containerRef={storyContainerRef}
+              />
+            )}
+            <Box
+              sx={{
+                position: "fixed",
+                top: 16,
+                right: 16,
+                display: "flex",
+                gap: 1,
+                padding: 1,
+                borderRadius: 1,
+              }}
             >
-              <IconButton
-                onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
-                sx={{
-                  color: "white",
-                  "&:hover": {
-                    backgroundColor: "rgba(0, 0, 0, 0.7)",
-                  },
-                }}
+              <Tooltip title="Save your story">
+                <IconButton
+                  onClick={handleCaptureStory}
+                  sx={{
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: "rgba(0, 0, 0, 0.7)",
+                    },
+                  }}
+                >
+                  <PhotoCameraOutlinedIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip
+                title={
+                  isNarrationEnabled ? "Disable narration" : "Enable narration"
+                }
               >
-                {isNarrationEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </>
-      )}
-    </Box>
+                <IconButton
+                  onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
+                  sx={{
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: "rgba(0, 0, 0, 0.7)",
+                    },
+                  }}
+                >
+                  {isNarrationEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </>
+        )}
+      </Box>
+    </motion.div>
   );
 }
 

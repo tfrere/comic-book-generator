@@ -1,5 +1,4 @@
 import { Box, Button, Typography, Chip } from "@mui/material";
-import { useStoryCapture } from "../hooks/useStoryCapture";
 
 // Function to convert text with ** to Chip elements
 const formatTextWithBold = (text) => {
@@ -33,8 +32,6 @@ export function StoryChoices({
   isGameOver = false,
   containerRef,
 }) {
-  const { captureStory } = useStoryCapture();
-
   console.log("ICI", isLastStep, isGameOver);
   if (isGameOver) {
     return (
@@ -65,7 +62,10 @@ export function StoryChoices({
         <Button
           variant="outlined"
           size="large"
-          onClick={() => captureStory(containerRef)}
+          onClick={() => {
+            // Simulate a button click on another button with the id "targetButton"
+            document.getElementById("printButton").click();
+          }}
           sx={{
             width: "100%",
             textTransform: "none",
@@ -137,7 +137,7 @@ export function StoryChoices({
           }}
         >
           <Typography variant="caption" sx={{ opacity: 0.7, color: "white" }}>
-            Suggestion {index + 1}
+            Choice {index + 1}
           </Typography>
           <Button
             variant="outlined"
