@@ -23,8 +23,11 @@ COPY server/pyproject.toml server/poetry.lock* ./
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction --no-ansi --only main --no-root
 
-# Copy server code
-COPY server/ ./server/
+# Copy server code to the root directory to maintain import structure
+COPY server/* ./
+COPY server/core ./core
+COPY server/api ./api
+COPY server/services ./services
 
 # Copy client build
 COPY --from=client-build /app/dist ./static
@@ -44,4 +47,4 @@ USER user
 EXPOSE 7860
 
 # Start the server
-CMD ["python", "-m", "uvicorn", "server.server:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["python", "-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "7860"]

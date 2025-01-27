@@ -7,8 +7,6 @@ sdk: docker
 pinned: false
 ---
 
-Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
-
 # START SERVER
 
 poetry run uvicorn server:app --reload
@@ -19,3 +17,7 @@ nvm use 20 ( osef si t'as déjà node 20+ )
 yarn ( ou npm install )
 
 yarn dev ( ou npm run dev )
+
+## Link of Presentation about the project
+
+https://devpost.com/software/sarah-s-chronicles
