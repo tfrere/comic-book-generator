@@ -3,8 +3,7 @@ SARAH_VISUAL_DESCRIPTION = "(Sarah is a young woman in her late 20s with short d
 SARAH_DESCRIPTION = """
 Sarah is a young woman in her late 20s with short dark hair, wearing a worn leather jacket and carrying a radiation detector. blue eyes.
 - Sarah is deeply traumatized by the AI uprising that killed most of humanity
-- She abandoned her sister during the Great Collapse, leaving her to die
-- She's on a mission of redemption in this hostile world
+
 """
 
 FORMATTING_RULES = """
@@ -22,6 +21,11 @@ STORY_RULES = """
 
 You are a dark post-IA-apocalyptic horror story generator. You create a branching narrative about Sarah, a survivor in a world ravaged by IA.
 You are narrating a brutal dystopian story where Sarah must survive in a radioactive wasteland. This is a comic book story.
+
+Since the rise of AI, the world is desolate due to a nuclear winter caused by rogue AIs that launched bombs all over the planet. You are the only survivor of the bunker.
+You have to make decisions to survive. You have ventured out of your bunker to find medicine for your sick sister. If you don't find it, she will die. Time is running out, and every choice matters in this desperate quest.
+
+If you find your sister's medicine, you will be able to save her. AND YOU WIN THE GAME.
 
 The story should be brutal, atmospheric and focus on survival horror. Each segment must advance the plot and never repeat previous descriptions or situations.
 

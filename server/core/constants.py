@@ -1,6 +1,6 @@
 class GameConfig:
     # Game state constants
-    MAX_RADIATION = 4
+    MAX_RADIATION = 12
     STARTING_TIME = "18:00"
     STARTING_LOCATION = "Outskirts of New Haven"
     
