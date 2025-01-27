@@ -6,7 +6,7 @@ const PAGE_SOUNDS = Array.from(
   (_, i) => `/sounds/page-flip-${i + 1}.mp3`
 );
 
-export function usePageSound() {
+export function usePageSound(isSoundEnabled = true) {
   const [soundsLoaded, setSoundsLoaded] = useState(false);
 
   // Créer un tableau de hooks useSound pour chaque son
@@ -29,8 +29,7 @@ export function usePageSound() {
   }, [sounds]);
 
   const playRandomPageSound = () => {
-    if (!soundsLoaded) {
-      console.warn("Page sounds not loaded yet");
+    if (!isSoundEnabled || !soundsLoaded) {
       return;
     }
 

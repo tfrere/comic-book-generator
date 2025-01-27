@@ -21,6 +21,7 @@ API_PORT = int(os.getenv("API_PORT", "8000"))
 STATIC_FILES_DIR = os.getenv("STATIC_FILES_DIR", "../client/dist")
 HF_API_KEY = os.getenv("HF_API_KEY")
 ELEVEN_LABS_API_KEY = os.getenv("ELEVEN_LABS_API_KEY")
+IS_DOCKER = os.getenv("IS_DOCKER", "false").lower() == "true"
 
 app = FastAPI(title="Echoes of Influence")
 
@@ -74,7 +75,17 @@ async def shutdown_event():
     await flux_client.close()
 
 # Mount static files (this should be after all API routes)
-app.mount("/", StaticFiles(directory=STATIC_FILES_DIR, html=True), name="static")
+if IS_DOCKER:
+    # En mode Docker (HF Space), on monte les fichiers statiques sur un chemin spécifique
+    app.mount("/static", StaticFiles(directory=STATIC_FILES_DIR), name="static")
+    # Et on ajoute une route pour servir l'index.html
+    from fastapi.responses import FileResponse
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        return FileResponse(os.path.join(STATIC_FILES_DIR, "index.html"))
+else:
+    # En local, on monte simplement à la racine
+    app.mount("/", StaticFiles(directory=STATIC_FILES_DIR, html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn

@@ -6,13 +6,13 @@ const PAGE_SOUNDS = Array.from(
   (_, i) => `/sounds/drawing-${i + 1}.mp3`
 );
 
-export function useWritingSound() {
+export function useWritingSound(isSoundEnabled = true) {
   const [soundsLoaded, setSoundsLoaded] = useState(false);
 
   // Créer un tableau de hooks useSound pour chaque son
   const sounds = PAGE_SOUNDS.map((soundPath) => {
     const [play, { sound }] = useSound(soundPath, {
-      volume: 1,
+      volume: 0.3,
       interrupt: true,
     });
     return { play, sound };
@@ -29,8 +29,7 @@ export function useWritingSound() {
   }, [sounds]);
 
   const playRandomPageSound = () => {
-    if (!soundsLoaded) {
-      console.warn("Page sounds not loaded yet");
+    if (!isSoundEnabled || !soundsLoaded) {
       return;
     }
 

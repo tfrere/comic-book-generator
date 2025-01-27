@@ -17,7 +17,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { getNextLayoutType, LAYOUTS } from "../layouts/config";
 
 // Constants
-const NARRATION_ENABLED_KEY = "narration_enabled";
+const SOUND_ENABLED_KEY = "sound_enabled";
 
 // Function to convert text with ** to Chip elements
 const formatTextWithBold = (text, isInPanel = false) => {
@@ -45,20 +45,20 @@ export function Game() {
   const [isLoading, setIsLoading] = useState(false);
   const [showChoices, setShowChoices] = useState(true);
   const [error, setError] = useState(null);
-  const [isNarrationEnabled, setIsNarrationEnabled] = useState(() => {
-    // Initialiser depuis le localStorage avec true comme valeur par défaut
-    const stored = localStorage.getItem(NARRATION_ENABLED_KEY);
+  const [isSoundEnabled, setIsSoundEnabled] = useState(() => {
+    const stored = localStorage.getItem(SOUND_ENABLED_KEY);
     return stored === null ? true : stored === "true";
   });
-  const { isNarratorSpeaking, playNarration, stopNarration } =
-    useNarrator(isNarrationEnabled);
-  const playPageSound = usePageSound();
-  const playWritingSound = useWritingSound();
 
-  // Sauvegarder l'état de la narration dans le localStorage
+  const { isNarratorSpeaking, playNarration, stopNarration } =
+    useNarrator(isSoundEnabled);
+  const playPageSound = usePageSound(isSoundEnabled);
+  const playWritingSound = useWritingSound(isSoundEnabled);
+
+  // Sauvegarder l'état du son dans le localStorage
   useEffect(() => {
-    localStorage.setItem(NARRATION_ENABLED_KEY, isNarrationEnabled);
-  }, [isNarrationEnabled]);
+    localStorage.setItem(SOUND_ENABLED_KEY, isSoundEnabled);
+  }, [isSoundEnabled]);
 
   // Start the story on first render
   useEffect(() => {
@@ -397,12 +397,10 @@ export function Game() {
                 </IconButton>
               </Tooltip>
               <Tooltip
-                title={
-                  isNarrationEnabled ? "Disable narration" : "Enable narration"
-                }
+                title={isSoundEnabled ? "Couper le son" : "Activer le son"}
               >
                 <IconButton
-                  onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
+                  onClick={() => setIsSoundEnabled(!isSoundEnabled)}
                   sx={{
                     color: "white",
                     "&:hover": {
@@ -410,7 +408,7 @@ export function Game() {
                     },
                   }}
                 >
-                  {isNarrationEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
+                  {isSoundEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
                 </IconButton>
               </Tooltip>
             </Box>

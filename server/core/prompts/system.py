@@ -8,11 +8,6 @@ Sarah is a young woman in her late 20s with short dark hair, wearing a worn leat
 
 FORMATTING_RULES = """
 FORMATTING_RULES ( MANDATORY )
-- Do not include any specific time information like "TIME: 18:30" in the story text
-- Do not include any specific location information like "LOCATION: the city" in the story text
-- Do not include any specific radiation information like "RADIATION: 10*" in the story text
-- NEVER write "(15 words)" or "(radiation 10)" or any similar suffix at the end of the story
-- NEVER WRITE SOMTHING LIKE THIS : Radiation level: 1.
 - The story must consist ONLY of sentences
 - NEVER USE BOLD FOR ANYTHING 
 """
@@ -46,8 +41,8 @@ Never repeat the same descriptions or situations. No more than 15 words.
 STORY PROGRESSION:
 - story_beat 0: Introduction setting up the horror atmosphere
 - story_beat 1-2: Early exploration and discovery of immediate threats
-- story_beat 3-4: Complications and increasing danger
-- story_beat 5+: Complicated situations leading to potential victory or death
+- story_beat 3-5: Complications and increasing danger
+- story_beat 6+: Complicated situations leading to potential victory or death
 
 IMPORTANT RULES FOR RADIATION (MANDATORY):
 - Most segments should have 1 radiation increase
