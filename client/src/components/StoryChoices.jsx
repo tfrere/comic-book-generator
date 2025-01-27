@@ -1,4 +1,5 @@
 import { Box, Button, Typography, Chip } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 // Function to convert text with ** to Chip elements
 const formatTextWithBold = (text) => {
@@ -32,6 +33,8 @@ export function StoryChoices({
   isGameOver = false,
   containerRef,
 }) {
+  const navigate = useNavigate();
+
   console.log("ICI", isLastStep, isGameOver);
   if (isGameOver) {
     return (
@@ -59,35 +62,10 @@ export function StoryChoices({
         >
           The End
         </Typography>
-        {/* <Button
-          variant="outlined"
-          size="large"
-          onClick={() => {
-            // Simulate a button click on another button with the id "targetButton"
-            document.getElementById("screenshot-button").click();
-          }}
-          sx={{
-            width: "100%",
-            textTransform: "none",
-            cursor: "pointer",
-            fontSize: "1.1rem",
-            padding: "16px 24px",
-            lineHeight: 1.3,
-            color: "white",
-            borderColor: "rgba(255, 255, 255, 0.23)",
-            "&:hover": {
-              borderColor: "white",
-              backgroundColor: "rgba(255, 255, 255, 0.05)",
-            },
-            mb: 2,
-          }}
-        >
-          Save your story
-        </Button> */}
         <Button
           variant="outlined"
           size="large"
-          onClick={() => window.location.reload()}
+          onClick={() => navigate("/")}
           sx={{
             width: "100%",
             textTransform: "none",
