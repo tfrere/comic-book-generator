@@ -6,17 +6,27 @@ COPY client/ ./
 ENV VITE_API_URL=https://mistral-ai-game-jam-dont-lookup.hf.space
 RUN mkdir -p dist && npm run build
 
-FROM python:3.9-slim
+FROM python:3.10-slim
 WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 -
+
+# Copy project files
+COPY . .
+
+# Configure Poetry
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi --only main --no-root
 
 # Create non-root user
 RUN useradd -m -u 1000 user
-
-# Install system dependencies and poetry
-RUN apt-get update && apt-get install -y \
-    netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install poetry
 
 # Copy and install Python dependencies
 COPY server/pyproject.toml server/poetry.lock* ./
@@ -44,4 +54,4 @@ USER user
 EXPOSE 7860
 
 # Start the server
-CMD ["python", "-m", "uvicorn", "server.server:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["poetry", "run", "python", "server/server.py"]
