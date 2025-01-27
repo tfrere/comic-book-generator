@@ -15,7 +15,7 @@ from core.story_generators import TextGenerator, ImagePromptsGenerator, Metadata
 # Game constants
 MAX_RADIATION = 10
 STARTING_TIME = "18:00"  # Game starts at sunset
-STARTING_LOCATION = "Outskirts of **New Haven**"
+STARTING_LOCATION = "Outskirts of New Haven"
 
 def enrich_prompt_with_sarah_description(prompt: str) -> str:
     """Add Sarah's visual description to prompts that mention her."""
@@ -56,14 +56,14 @@ class GameState:
 
 # Story output structure
 class StoryLLMResponse(BaseModel):
-    story_text: str = Field(description="The next segment of the story. No more than 12 words THIS IS MANDATORY. Use bold formatting (like **this**) ONLY for proper nouns (like **Sarah**, **hospital**) and important locations.")
+    story_text: str = Field(description="The next segment of the story. No more than 12 words THIS IS MANDATORY. Use bold formatting (like this) ONLY for proper nouns (like Sarah, hospital) and important locations.")
     choices: List[str] = Field(description="Exactly two possible choices for the player", min_items=2, max_items=2)
     is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
     radiation_increase: int = Field(description="How much radiation this segment adds (0-3)", ge=0, le=3, default=1)
     image_prompts: List[str] = Field(description="List of 1 to 4 comic panel descriptions that illustrate the key moments of the scene", min_items=1, max_items=4)
     is_last_step: bool = Field(description="Whether this is the last step (victory or death)", default=False)
     time: str = Field(description="Current in-game time in 24h format (HH:MM). Time passes realistically based on actions.", default=STARTING_TIME)
-    location: str = Field(description="Current location, using bold for proper nouns (e.g., 'Inside **Vault 15**', 'Streets of **New Haven**').", default=STARTING_LOCATION)
+    location: str = Field(description="Current location, using bold for proper nouns (e.g., 'Inside Vault 15', 'Streets of New Haven').", default=STARTING_LOCATION)
 
 # Story generator
 class StoryGenerator:

@@ -12,6 +12,7 @@ FORMATTING_RULES ( MANDATORY )
 - Never use TIME: 18:30 or other time-related information
 - Never use LOCATION: the city or other location-related information
 - Never use RADIATION: 10* or other radiation-related information
+- NEVER USE BOLD FOR ANYTHING 
 """
 
 STORY_RULES = """

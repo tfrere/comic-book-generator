@@ -149,13 +149,14 @@ export function Game() {
       }
     } catch (error) {
       console.error("Error in handleStoryAction:", error);
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.message ||
+        "Le conteur d'histoires est temporairement indisponible. Veuillez réessayer dans quelques instants...";
+
       const errorSegment = {
-        text:
-          error.message ||
-          "Le conteur d'histoires est temporairement indisponible. Veuillez réessayer dans quelques instants...",
-        rawText:
-          error.message ||
-          "Le conteur d'histoires est temporairement indisponible. Veuillez réessayer dans quelques instants...",
+        text: errorMessage,
+        rawText: errorMessage,
         isChoice: false,
         isDeath: false,
         isVictory: false,
@@ -164,16 +165,18 @@ export function Game() {
             ? storySegments[storySegments.length - 1].radiationLevel
             : 0,
         images: [],
+        isLoading: false,
       };
 
       if (action === "restart") {
         setStorySegments([errorSegment]);
       } else {
-        setStorySegments((prev) => [...prev, errorSegment]);
+        // En cas d'erreur sur un choix, on garde le segment précédent
+        setStorySegments((prev) => [...prev.slice(0, -1), errorSegment]);
       }
 
       // Set retry choice
-      setCurrentChoices([{ id: 1, text: "Réessayer" }]);
+      setCurrentChoices([{ id: "retry", text: "Réessayer" }]);
 
       // Play error message
       await playNarration(errorSegment.rawText);

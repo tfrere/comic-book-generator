@@ -1,7 +1,7 @@
 import { LAYOUTS, getNextLayoutType } from "./config";
 
-// Map to store layout types for each page
-const pageLayoutMap = new Map();
+// Map to store layout types for each segment
+const segmentLayoutMap = new Map();
 
 // Function to group segments into layouts
 export function groupSegmentsIntoLayouts(segments) {
@@ -9,7 +9,7 @@ export function groupSegmentsIntoLayouts(segments) {
 
   const layouts = [];
 
-  segments.forEach((segment) => {
+  segments.forEach((segment, index) => {
     const imageCount = segment.images?.length || 0;
 
     // Si c'est le premier segment ou le dernier (mort/victoire), créer un layout COVER
@@ -18,8 +18,12 @@ export function groupSegmentsIntoLayouts(segments) {
       return;
     }
 
-    // Pour tous les autres segments, créer un layout adapté au nombre d'images
-    const layoutType = getNextLayoutType(layouts.length, imageCount);
+    // Pour tous les autres segments, utiliser le layout existant ou en créer un nouveau
+    let layoutType = segmentLayoutMap.get(segment.text);
+    if (!layoutType) {
+      layoutType = getNextLayoutType(layouts.length, imageCount);
+      segmentLayoutMap.set(segment.text, layoutType);
+    }
     layouts.push({ type: layoutType, segments: [segment] });
   });
 
@@ -40,18 +44,19 @@ export function getNextPanelDimensions(segments) {
     return LAYOUTS.COVER.panels[0];
   }
 
-  // Pour les segments du milieu, déterminer le layout en fonction du nombre d'images
+  // Pour les segments du milieu, utiliser le layout existant ou en créer un nouveau
   const lastSegment = nonChoiceSegments[nonChoiceSegments.length - 1];
   const imageCount = lastSegment.images?.length || 0;
-  const layoutType = getNextLayoutType(
-    nonChoiceSegments.length - 1,
-    imageCount
-  );
+  let layoutType = segmentLayoutMap.get(lastSegment.text);
+  if (!layoutType) {
+    layoutType = getNextLayoutType(nonChoiceSegments.length - 1, imageCount);
+    segmentLayoutMap.set(lastSegment.text, layoutType);
+  }
 
   return LAYOUTS[layoutType].panels[0];
 }
 
 // Function to reset layout map (call this when starting a new story)
 export function resetLayoutMap() {
-  pageLayoutMap.clear();
+  segmentLayoutMap.clear();
 }

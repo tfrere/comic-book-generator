@@ -19,12 +19,12 @@ Be consistent with the story's tone and previous context.
 
 You must return a JSON object with the following format:
 {{{{
-    "choices": ["Go to the **hospital**", "Get back to the **warehouse**"],
+    "choices": ["Go to the hospital", "Get back to the warehouse"],
     "is_victory": false,
     "radiation_increase": 1,
     "is_last_step": false,
     "time": "HH:MM",
-    "location": "Location name with **proper nouns** in bold"
+    "location": "Location name with proper nouns in bold"
 }}}}
 """
 
