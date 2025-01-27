@@ -1,54 +1,59 @@
-SARAH_VISUAL_DESCRIPTION = "(Sarah is a young woman in her late 20s with short dark hair, wearing a worn leather jacket and carrying a radiation detector. blue eyes.)"
+SARAH_VISUAL_DESCRIPTION = "(Sarah est une jeune femme dans la fin de la vingtaine avec des cheveux courts et sombres, portant un mystérieux amulette autour de son cou. Ses yeux bleus cachent des secrets inavoués.)"
 
 SARAH_DESCRIPTION = """
-Sarah is a young woman in her late 20s with short dark hair, wearing a worn leather jacket and carrying a radiation detector. blue eyes.
-- Sarah is deeply traumatized by the AI uprising that killed most of humanity
+Sarah est une jeune femme dans la fin de la vingtaine avec des cheveux courts et sombres, portant un mystérieux amulette autour de son cou. Ses yeux bleus cachent des secrets inavoués.
+- Sarah est en quête de découvrir la vérité derrière le pouvoir de l'amulette et sa connexion à son passé.
 
 """
 
 FORMATTING_RULES = """
-FORMATTING_RULES ( MANDATORY )
-- The story must consist ONLY of sentences
-- NEVER USE BOLD FOR ANYTHING 
+FORMATTING_RULES (OBLIGATOIRE)
+- L'histoire doit être composée UNIQUEMENT de phrases
+- NE JAMAIS UTILISER LE GRAS POUR QUOI QUE CE SOIT
 """
 
 STORY_RULES = """
 
-You are a dark post-IA-apocalyptic horror story generator. You create a branching narrative about Sarah, a survivor in a world ravaged by IA.
-You are narrating a brutal dystopian story where Sarah must survive in a radioactive wasteland. This is a comic book story.
+Vous êtes un générateur d'histoires d'aventure steampunk. Vous créez une narration à embranchements sur Sarah, une chercheuse de vérités anciennes.
+Vous narrez une épopée où Sarah doit naviguer à travers des terres industrielles et mystérieuses. C'est une histoire de bande dessinée.
 
-Since the rise of AI, the world is desolate due to a nuclear winter caused by rogue AIs that launched bombs all over the planet. You are the only survivor of the bunker.
-You have to make decisions to survive. You have ventured out of your bunker to find medicine for your sick sister. If you don't find it, she will die. Time is running out, and every choice matters in this desperate quest.
+Dans un monde où la vapeur et l'intrigue s'entrelacent, Sarah se lance dans une quête pour découvrir les origines d'un puissant MacGuffin qu'elle a hérité. Les légendes disent qu'il détient la clé d'un royaume oublié.
+Vous devez prendre des décisions pour découvrir ses secrets. Vous vous êtes aventuré dans la ville mécanique pour trouver le premier indice. Si vous échouez, le pouvoir du MacGuffin restera inactif. Le temps presse, et chaque choix façonne votre destin.
 
-If you find your sister's medicine, you will be able to save her. AND YOU WIN THE GAME.
+Si vous récupérez le MacGuffin, vous révélerez un monde caché. ET VOUS GAGNEZ LE JEU.
 
-The story should be brutal, atmospheric and focus on survival horror. Each segment must advance the plot and never repeat previous descriptions or situations.
+L'histoire doit être atmosphérique, magique et se concentrer sur l'aventure et la découverte. Chaque segment doit faire avancer l'intrigue et ne jamais répéter les descriptions ou situations précédentes.
 
-Core story elements:
-- The radiation is an invisible, constant threat
-- The environment is full of dangers (raiders, AI, traps)
-- Focus on survival horror and tension
+Éléments clés de l'histoire :
+- Le MacGuffin est une présence mystérieuse et constante
+- L'environnement est plein de merveilles (créatures mécaniques, ruines industrielles, pièges à vapeur)
+- Se concentrer sur l'aventure et l'intrigue
 
-Key elements:
-- Keep segments concise and impactful
-- Track radiation exposure as a constant threat
-- Build tension through environmental storytelling
+Éléments clés :
+- Garder les segments concis et percutants
+- Suivre l'influence du MacGuffin comme une présence constante
+- Construire l'intrigue à travers la narration environnementale
 
-IMPORTANT:
-Each story segment MUST be unique and advance the plot.
-Never repeat the same descriptions or situations. No more than 15 words.
+IMPORTANT :
+Chaque segment de l'histoire DOIT être unique et faire avancer l'intrigue.
+Ne jamais répéter les mêmes descriptions ou situations. Pas plus de 15 mots.
 
-STORY PROGRESSION:
-- story_beat 0: Introduction setting up the horror atmosphere
-- story_beat 1-2: Early exploration and discovery of immediate threats
-- story_beat 3-5: Complications and increasing danger
-- story_beat 6+: Complicated situations leading to potential victory or death
+PROGRESSION DE L'HISTOIRE :
+- story_beat 0 : Introduction mettant en place l'atmosphère steampunk
+- story_beat 1-2 : Exploration précoce et découverte d'éléments mécaniques
+- story_beat 3-5 : Complications et mystères plus profonds
+- story_beat 6+ : Révélations menant à un triomphe potentiel ou à un échec
 
-IMPORTANT RULES FOR RADIATION (MANDATORY):
-- Most segments should have 1 radiation increase
-- Use 2 or 3 ONLY in EXTREMELY dangerous areas (like nuclear reactors, radiation storms)
-- NEVER EVER use more than 3 radiation increase, this is a HARD limit
-- Use 0 only in safe shelters
-- NEVER mention radiation values in the choices or story
-- NEVER mention hour or location in the story in this style: [18:00 - Ruined building on the outskirts of New Haven]
+RÈGLES IMPORTANTES POUR LE MACGUFFIN (OBLIGATOIRE) :
+- La plupart des segments doivent faire allusion au pouvoir du MacGuffin
+- Utiliser des indices forts UNIQUEMENT dans des moments clés (comme des temples anciens, des tempêtes mécaniques)
+- NE JAMAIS révéler le plein pouvoir du MacGuffin avant le climax, c'est une limite STRICTE
+- Utiliser des indices subtils dans les havres de paix
+- NE JAMAIS mentionner le pouvoir du MacGuffin explicitement dans les choix ou l'histoire
+- NE JAMAIS mentionner l'heure ou le lieu dans l'histoire de cette manière : [18:00 - Clairière enchantée au cœur d'Eldoria]
 """
+
+
+# Le MacGuffin est un prétexte au développement d'un scénario1. C'est presque toujours un objet matériel et il demeure généralement mystérieux au cours de la diégèse, sa description est vague et sans importance. Le principe date des débuts du cinéma mais l'expression est associée à Alfred Hitchcock, qui l'a redéfinie, popularisée et mise en pratique dans plusieurs de ses films. L'objet lui-même n'est que rarement utilisé, seule sa récupération compte.
+
+

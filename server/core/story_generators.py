@@ -13,7 +13,6 @@ from api.models import StoryTextResponse, StoryPromptsResponse, StoryMetadataRes
 class TextGenerator:
     def __init__(self, mistral_client: MistralClient):
         self.mistral_client = mistral_client
-        self.parser = PydanticOutputParser(pydantic_object=StoryTextResponse)
         self.prompt = self._create_prompt()
         
     def _create_prompt(self) -> ChatPromptTemplate:
@@ -51,63 +50,16 @@ The ending should feel like a natural continuation of the current scene."""
             ]
         )
 
-    async def generate(self, story_beat: int, radiation_level: int, current_time: str, current_location: str, previous_choice: str, story_history: str) -> StoryTextResponse:
-        """Génère le texte de l'histoire."""
-        messages = self.prompt.format_messages(
-            story_beat=story_beat,
-            radiation_level=radiation_level,
-            current_time=current_time,
-            current_location=current_location,
-            previous_choice=previous_choice,
-            story_history=story_history
-        )
-        
-        max_retries = 3
-        retry_count = 0
-        
-        while retry_count < max_retries:
-            try:
-                response_content = await self.mistral_client.generate_story(messages)
-                # Parser la réponse
-                return self._parse_response(response_content)
-            except Exception as e:
-                print(f"Error generating story text: {str(e)}")
-                retry_count += 1
-                if retry_count < max_retries:
-                    await asyncio.sleep(2 * retry_count)
-                    continue
-                raise e
-        
-        raise Exception(f"Failed to generate valid story text after {max_retries} attempts")
+    def _clean_story_text(self, text: str) -> str:
+        """Nettoie le texte des métadonnées et autres suffixes."""
+        text = text.replace("\n", " ").strip()
+        text = text.split("Radiation level:")[0].strip()
+        text = text.split("RADIATION:")[0].strip()
+        text = text.split("[")[0].strip()  # Supprimer les métadonnées entre crochets
+        return text
 
-    async def generate_ending(self, story_beat: int, ending_type: str, current_scene: str, story_history: str) -> StoryTextResponse:
-        """Génère un texte de fin approprié basé sur la situation actuelle."""
-        prompt = self._create_ending_prompt()
-        messages = prompt.format_messages(
-            ending_type=ending_type,
-            current_scene=current_scene,
-            story_history=story_history
-        )
-        
-        max_retries = 3
-        retry_count = 0
-        
-        while retry_count < max_retries:
-            try:
-                response_content = await self.mistral_client.generate_story(messages)
-                return self._parse_response(response_content)
-            except Exception as e:
-                print(f"Error generating ending text: {str(e)}")
-                retry_count += 1
-                if retry_count < max_retries:
-                    await asyncio.sleep(2 * retry_count)
-                    continue
-                raise e
-        
-        raise Exception(f"Failed to generate valid ending text after {max_retries} attempts")
-
-    def _parse_response(self, response_content: str) -> StoryTextResponse:
-        """Parse la réponse JSON et gère les erreurs."""
+    def _custom_parser(self, response_content: str) -> StoryTextResponse:
+        """Parse la réponse et gère les erreurs."""
         try:
             # Essayer de parser directement le JSON
             data = json.loads(response_content)
@@ -120,18 +72,39 @@ The ending should feel like a natural continuation of the current scene."""
             cleaned_text = self._clean_story_text(response_content.strip())
             return StoryTextResponse(story_text=cleaned_text)
 
-    def _clean_story_text(self, text: str) -> str:
-        """Nettoie le texte des métadonnées et autres suffixes."""
-        text = text.replace("\n", " ").strip()
-        text = text.split("Radiation level:")[0].strip()
-        text = text.split("RADIATION:")[0].strip()
-        text = text.split("[")[0].strip()  # Supprimer les métadonnées entre crochets
-        return text
+    async def generate(self, story_beat: int, radiation_level: int, current_time: str, current_location: str, previous_choice: str, story_history: str) -> StoryTextResponse:
+        """Génère le texte de l'histoire."""
+        messages = self.prompt.format_messages(
+            story_beat=story_beat,
+            radiation_level=radiation_level,
+            current_time=current_time,
+            current_location=current_location,
+            previous_choice=previous_choice,
+            story_history=story_history
+        )
+        
+        return await self.mistral_client.generate(
+            messages=messages,
+            custom_parser=self._custom_parser
+        )
+
+    async def generate_ending(self, story_beat: int, ending_type: str, current_scene: str, story_history: str) -> StoryTextResponse:
+        """Génère un texte de fin approprié basé sur la situation actuelle."""
+        prompt = self._create_ending_prompt()
+        messages = prompt.format_messages(
+            ending_type=ending_type,
+            current_scene=current_scene,
+            story_history=story_history
+        )
+        
+        return await self.mistral_client.generate(
+            messages=messages,
+            custom_parser=self._custom_parser
+        )
 
 class ImagePromptsGenerator:
     def __init__(self, mistral_client: MistralClient):
         self.mistral_client = mistral_client
-        self.parser = PydanticOutputParser(pydantic_object=StoryPromptsResponse)
         self.prompt = self._create_prompt()
         
     def _create_prompt(self) -> ChatPromptTemplate:
@@ -152,8 +125,8 @@ Generate panel descriptions following the format specified."""
             return f"{prompt} {SARAH_VISUAL_DESCRIPTION}"
         return prompt
 
-    def _parse_response(self, response_content: str) -> StoryPromptsResponse:
-        """Parse la réponse JSON et gère les erreurs."""
+    def _custom_parser(self, response_content: str) -> StoryPromptsResponse:
+        """Parse la réponse et gère les erreurs."""
         try:
             # Essayer de parser directement le JSON
             data = json.loads(response_content)
@@ -183,31 +156,18 @@ Generate panel descriptions following the format specified."""
         """Génère les prompts d'images basés sur le texte de l'histoire."""
         messages = self.prompt.format_messages(story_text=story_text)
         
-        max_retries = 3
-        retry_count = 0
+        response = await self.mistral_client.generate(
+            messages=messages,
+            custom_parser=self._custom_parser
+        )
         
-        while retry_count < max_retries:
-            try:
-                response_content = await self.mistral_client.generate_story(messages)
-                # Parser la réponse
-                parsed_response = self._parse_response(response_content)
-                # Enrichir les prompts avec la description de Sarah
-                parsed_response.image_prompts = [self.enrich_prompt(prompt) for prompt in parsed_response.image_prompts]
-                return parsed_response
-            except Exception as e:
-                print(f"Error generating image prompts: {str(e)}")
-                retry_count += 1
-                if retry_count < max_retries:
-                    await asyncio.sleep(2 * retry_count)
-                    continue
-                raise e
-        
-        raise Exception(f"Failed to generate valid image prompts after {max_retries} attempts")
+        # Enrichir les prompts avec la description de Sarah
+        response.image_prompts = [self.enrich_prompt(prompt) for prompt in response.image_prompts]
+        return response
 
 class MetadataGenerator:
     def __init__(self, mistral_client: MistralClient):
         self.mistral_client = mistral_client
-        self.parser = PydanticOutputParser(pydantic_object=StoryMetadataResponse)
         self.prompt = self._create_prompt()
         
     def _create_prompt(self, error_feedback: str = None) -> ChatPromptTemplate:
@@ -226,8 +186,8 @@ Generate the metadata following the format specified."""
             ]
         )
 
-    def _parse_response(self, response_content: str, current_time: str, current_location: str) -> StoryMetadataResponse:
-        """Parse la réponse JSON et gère les erreurs."""
+    def _custom_parser(self, response_content: str) -> StoryMetadataResponse:
+        """Parse la réponse et gère les erreurs."""
         try:
             # Essayer de parser directement le JSON
             data = json.loads(response_content)
@@ -248,35 +208,16 @@ Generate the metadata following the format specified."""
             raise ValueError(str(e))
 
     async def generate(self, story_text: str, current_time: str, current_location: str, story_beat: int) -> StoryMetadataResponse:
-        """Génère les métadonnées de l'histoire (choix, temps, lieu, etc.)."""
-        max_retries = 3
-        retry_count = 0
-        last_error = None
+        """Génère les métadonnées basées sur le texte de l'histoire."""
+        messages = self.prompt.format_messages(
+            story_text=story_text,
+            current_time=current_time,
+            current_location=current_location,
+            story_beat=story_beat,
+            error_feedback=""
+        )
         
-        while retry_count < max_retries:
-            try:
-                # Créer un nouveau prompt avec le feedback d'erreur si disponible
-                error_feedback = f"\nPrevious attempt failed: {last_error}\nPlease fix this issue." if last_error else ""
-                prompt = self._create_prompt(error_feedback)
-                
-                messages = prompt.format_messages(
-                    story_text=story_text,
-                    current_time=current_time,
-                    current_location=current_location,
-                    story_beat=story_beat,
-                    error_feedback=error_feedback
-                )
-                
-                response_content = await self.mistral_client.generate_story(messages)
-                # Parser la réponse
-                return self._parse_response(response_content, current_time, current_location)
-            except Exception as e:
-                print(f"Error generating metadata: {str(e)}")
-                last_error = str(e)
-                retry_count += 1
-                if retry_count < max_retries:
-                    await asyncio.sleep(2 * retry_count)
-                    continue
-                raise e
-        
-        raise Exception(f"Failed to generate valid metadata after {max_retries} attempts") 
+        return await self.mistral_client.generate(
+            messages=messages,
+            custom_parser=self._custom_parser
+        ) 

@@ -99,8 +99,10 @@ export function StoryChoices({
         gap: 2,
         p: 3,
         minWidth: "350px",
+        maxHeight: "80vh",
         height: "100%",
         backgroundColor: "transparent",
+        overflowY: "auto",
       }}
     >
       {choices.map((choice, index) => (
@@ -112,6 +114,7 @@ export function StoryChoices({
             alignItems: "center",
             gap: 1,
             width: "100%",
+            minHeight: "fit-content",
           }}
         >
           <Typography variant="caption" sx={{ opacity: 0.7, color: "white" }}>

@@ -33,7 +33,8 @@ app.add_middleware(
         "http://localhost:5173",
         f"http://localhost:{API_PORT}",
         "https://huggingface.co",
-        "https://*.hf.space"
+        "https://*.hf.space",
+        "https://mistral-ai-game-jam-dont-lookup.hf.space"
     ],
     allow_credentials=True,
     allow_methods=["*"],

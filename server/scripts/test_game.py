@@ -122,10 +122,10 @@ async def play_game(show_context: bool = False):
             # Get player choice
             while True:
                 try:
-                    last_choice = int(input("\n👉 Your choice (1-2): "))
-                    if 1 <= last_choice <= 2:
+                    last_choice = int(input(f"\n👉 Your choice (1-{len(response.choices)}): "))
+                    if 1 <= last_choice <= len(response.choices):
                         break
-                    print("❌ Invalid choice. Please choose 1 or 2.")
+                    print(f"❌ Invalid choice. Please choose between 1 and {len(response.choices)}.")
                 except ValueError:
                     print("❌ Please enter a number.")
             
