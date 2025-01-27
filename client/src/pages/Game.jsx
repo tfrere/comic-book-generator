@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { Box, LinearProgress, IconButton, Tooltip } from "@mui/material";
+import {
+  Box,
+  LinearProgress,
+  IconButton,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ComicLayout } from "../layouts/ComicLayout";
@@ -14,6 +20,7 @@ import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import PhotoCameraOutlinedIcon from "@mui/icons-material/PhotoCameraOutlined";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import CreateIcon from "@mui/icons-material/Create";
 import { getNextLayoutType, LAYOUTS } from "../layouts/config";
 
 // Constants
@@ -49,6 +56,12 @@ export function Game() {
     const stored = localStorage.getItem(SOUND_ENABLED_KEY);
     return stored === null ? true : stored === "true";
   });
+  const [loadingMessage, setLoadingMessage] = useState(0);
+  const messages = [
+    "waking up a sleepy AI...",
+    "teaching robots to tell bedtime stories...",
+    "bribing pixels to make pretty pictures...",
+  ];
 
   const { isNarratorSpeaking, playNarration, stopNarration } =
     useNarrator(isSoundEnabled);
@@ -64,6 +77,16 @@ export function Game() {
   useEffect(() => {
     handleStoryAction("restart");
   }, []);
+
+  // Add effect for message rotation
+  useEffect(() => {
+    if (isLoading && storySegments.length === 0) {
+      const interval = setInterval(() => {
+        setLoadingMessage((prev) => (prev + 1) % messages.length);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [isLoading, storySegments.length]);
 
   const handleBack = () => {
     playPageSound();
@@ -345,29 +368,79 @@ export function Game() {
           />
         ) : (
           <>
-            <ComicLayout
-              segments={storySegments}
-              choices={showChoices ? currentChoices : []}
-              onChoice={handleChoice}
-              isLoading={isLoading}
-              showScreenshot={storySegments.length > 0}
-              onScreenshot={handleCaptureStory}
-            />
-            {showChoices && (
-              <StoryChoices
-                choices={currentChoices}
-                onChoice={handleChoice}
-                disabled={isLoading}
-                isLastStep={
-                  storySegments.length > 0 &&
-                  storySegments[storySegments.length - 1].isLastStep
-                }
-                isGameOver={
-                  storySegments.length > 0 &&
-                  storySegments[storySegments.length - 1].isGameOver
-                }
-                containerRef={storyContainerRef}
-              />
+            {isLoading && storySegments.length === 0 ? (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                <motion.div
+                  animate={{
+                    y: [0, -10, 0],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <CreateIcon
+                    sx={{ fontSize: 40, color: "white", opacity: 0.2 }}
+                  />
+                </motion.div>
+                <motion.div
+                  key={loadingMessage}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: "white",
+                      opacity: 0.8,
+                      fontStyle: "italic",
+                    }}
+                  >
+                    {messages[loadingMessage]}
+                  </Typography>
+                </motion.div>
+              </Box>
+            ) : (
+              <>
+                <ComicLayout
+                  segments={storySegments}
+                  choices={showChoices ? currentChoices : []}
+                  onChoice={handleChoice}
+                  isLoading={isLoading}
+                  showScreenshot={storySegments.length > 0}
+                  onScreenshot={handleCaptureStory}
+                />
+                {showChoices && (
+                  <StoryChoices
+                    choices={currentChoices}
+                    onChoice={handleChoice}
+                    disabled={isLoading}
+                    isLastStep={
+                      storySegments.length > 0 &&
+                      storySegments[storySegments.length - 1].isLastStep
+                    }
+                    isGameOver={
+                      storySegments.length > 0 &&
+                      storySegments[storySegments.length - 1].isGameOver
+                    }
+                    containerRef={storyContainerRef}
+                  />
+                )}
+              </>
             )}
             <Box
               sx={{
