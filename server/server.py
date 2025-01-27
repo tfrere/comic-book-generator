@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 from dotenv import load_dotenv
-from fastapi.responses import FileResponse
 
 # Import local modules
 from core.game_logic import StoryGenerator
@@ -75,11 +74,7 @@ async def shutdown_event():
     await flux_client.close()
 
 # Mount static files (this should be after all API routes)
-app.mount("/static", StaticFiles(directory=STATIC_FILES_DIR), name="static")
-
-@app.get("/{full_path:path}")
-async def serve_static(full_path: str):
-    return FileResponse(os.path.join(STATIC_FILES_DIR, full_path if full_path else "index.html"))
+app.mount("/", StaticFiles(directory=STATIC_FILES_DIR, html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn

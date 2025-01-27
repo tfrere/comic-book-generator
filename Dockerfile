@@ -9,28 +9,22 @@ RUN mkdir -p dist && npm run build
 FROM python:3.10-slim
 WORKDIR /app
 
-# Install system dependencies
+# Create non-root user
+RUN useradd -m -u 1000 user
+
+# Install system dependencies and poetry
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install poetry
 
-# Install Poetry and add it to PATH
-RUN curl -sSL https://install.python-poetry.org | python3 - \
-    && ln -s /root/.local/bin/poetry /usr/local/bin/poetry
-
-# Copy Python dependencies files first
+# Copy and install Python dependencies
 COPY server/pyproject.toml server/poetry.lock* ./
-
-# Configure Poetry and install dependencies
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction --no-ansi --only main --no-root
 
-# Copy the rest of the application
-COPY . .
-
-# Create non-root user
-RUN useradd -m -u 1000 user
+# Copy server code
+COPY server/ ./server/
 
 # Copy client build
 COPY --from=client-build /app/dist ./static
@@ -50,4 +44,4 @@ USER user
 EXPOSE 7860
 
 # Start the server
-CMD ["poetry", "run", "python", "server/server.py"]
+CMD ["python", "-m", "uvicorn", "server.server:app", "--host", "0.0.0.0", "--port", "7860"]
