@@ -1,16 +1,20 @@
-import { useState, useEffect, useRef } from "react";
-import { Box, LinearProgress, IconButton, Tooltip } from "@mui/material";
-import { ComicLayout } from "../layouts/ComicLayout";
-import { storyApi } from "../utils/api";
-import { useNarrator } from "../hooks/useNarrator";
-import { useStoryCapture } from "../hooks/useStoryCapture";
-import { StoryChoices } from "../components/StoryChoices";
-import VolumeUpIcon from "@mui/icons-material/VolumeUp";
-import VolumeOffIcon from "@mui/icons-material/VolumeOff";
-import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import { useConversation } from '@11labs/react';
+import MicIcon from '@mui/icons-material/Mic';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import { Box, IconButton, LinearProgress, Tooltip } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+
+import { useNarrator } from '../hooks/useNarrator';
+import { useStoryCapture } from '../hooks/useStoryCapture';
+import { ComicLayout } from '../layouts/ComicLayout';
+import { storyApi } from '../utils/api';
+import { CLIENT_ID } from '../utils/session';
 
 // Constants
 const NARRATION_ENABLED_KEY = "narration_enabled";
+
+const AGENT_ID = "2MF9st3s1mNFbX01Y106";
 
 // Function to convert text with ** to Chip elements
 const formatTextWithBold = (text, isInPanel = false) => {
@@ -35,13 +39,40 @@ export function Game() {
   const [storySegments, setStorySegments] = useState([]);
   const [currentChoices, setCurrentChoices] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isConversationMode, setIsConversationMode] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const wsRef = useRef(null);
+
   const [isNarrationEnabled, setIsNarrationEnabled] = useState(() => {
-    // Initialiser depuis le localStorage avec true comme valeur par défaut
     const stored = localStorage.getItem(NARRATION_ENABLED_KEY);
     return stored === null ? true : stored === "true";
   });
+
   const { isNarratorSpeaking, playNarration, stopNarration } =
     useNarrator(isNarrationEnabled);
+
+  const conversation = useConversation({
+    agentId: AGENT_ID,
+    onResponse: async (response) => {
+      if (response.type === "audio") {
+        const audioBlob = new Blob([response.audio], { type: "audio/mpeg" });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        playNarration(audioUrl);
+      }
+    },
+    clientTools: {
+      make_decision: async ({ decision }) => {
+        console.log("AI made decision:", decision);
+        await conversation?.endSession();
+        setIsRecording(false);
+        await handleChoice(parseInt(decision));
+      },
+    },
+  });
+
+  const { isSpeaking } = conversation || {};
 
   // Sauvegarder l'état de la narration dans le localStorage
   useEffect(() => {
@@ -52,6 +83,100 @@ export function Game() {
   useEffect(() => {
     handleStoryAction("restart");
   }, []);
+
+  // Audio recording setup
+  const startRecording = async () => {
+    try {
+      // Stop narration audio if it's playing
+      if (isNarratorSpeaking) {
+        stopNarration();
+      }
+      
+      // Safely stop any conversation audio if playing
+      if (conversation?.audioRef?.current) {
+        conversation.audioRef.current.pause();
+        conversation.audioRef.current.currentTime = 0;
+      }
+
+      if (!isConversationMode) {
+        setIsConversationMode(true);
+        try {
+          if (!conversation) {
+            throw new Error("Conversation not initialized");
+          }
+          await conversation.startSession({
+            agentId: AGENT_ID,
+            initialContext: `This is the current situation : ${
+              storySegments[storySegments.length - 1].text
+            }. Those are the possible actions, ${currentChoices
+              .map((choice, index) => `decision ${index + 1} : ${choice.text}`)
+              .join(", ")}.`,
+          });
+          console.log("ElevenLabs WebSocket connected");
+        } catch (error) {
+          console.error("Error initializing ElevenLabs conversation:", error);
+          setIsConversationMode(false);
+          return;
+        }
+      } else if (isSpeaking && conversation) {
+        await conversation.endSession();
+        const wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${AGENT_ID}`;
+        await conversation.startSession({ url: wsUrl });
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: "audio/wav",
+        });
+        const reader = new FileReader();
+
+        reader.onload = async () => {
+          const base64Audio = reader.result.split(",")[1];
+          if (isConversationMode) {
+            try {
+              // Send audio to ElevenLabs conversation
+              await conversation.send({
+                type: "audio",
+                data: base64Audio,
+              });
+            } catch (error) {
+              console.error("Error sending audio to ElevenLabs:", error);
+            }
+          } else {
+            // Otherwise use the original WebSocket connection
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+              console.log("Sending audio to server via WebSocket");
+              wsRef.current.send(
+                JSON.stringify({
+                  type: "audio_input",
+                  audio: base64Audio,
+                  client_id: CLIENT_ID,
+                })
+              );
+            }
+          }
+        };
+
+        reader.readAsDataURL(audioBlob);
+      };
+
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+    }
+  };
+  
 
   const handleChoice = async (choiceId) => {
     // Si c'est l'option "Réessayer", on relance la dernière action
@@ -258,10 +383,6 @@ export function Game() {
     }
   };
 
-  // Filter out choice segments for display
-  const nonChoiceSegments = storySegments.filter(
-    (segment) => !segment.isChoice
-  );
 
   const handleCaptureStory = async () => {
     await downloadStoryImage(
@@ -305,6 +426,23 @@ export function Game() {
                 : "Activer la narration"
             }
           >
+          <IconButton
+            onClick={isRecording ? () => {
+              setIsRecording(false);
+              mediaRecorderRef.current?.stop();
+            } : startRecording}
+            sx={{
+              ml: 1,
+              backgroundColor: isRecording ? 'error.main' : 'rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              '&:hover': {
+                backgroundColor: isRecording ? 'error.dark' : 'rgba(255, 255, 255, 0.2)',
+              }
+            }}
+          >
+            <MicIcon />
+          </IconButton>
+
             <IconButton
               onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
               sx={{
