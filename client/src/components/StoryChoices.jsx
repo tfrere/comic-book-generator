@@ -1,4 +1,5 @@
 import { Box, Button, Typography, Chip } from "@mui/material";
+import { useStoryCapture } from "../hooks/useStoryCapture";
 
 // Function to convert text with ** to Chip elements
 const formatTextWithBold = (text) => {
@@ -24,7 +25,90 @@ const formatTextWithBold = (text) => {
   });
 };
 
-export function StoryChoices({ choices = [], onChoice, disabled = false }) {
+export function StoryChoices({
+  choices = [],
+  onChoice,
+  disabled = false,
+  isLastStep = false,
+  isGameOver = false,
+  containerRef,
+}) {
+  const { captureStory } = useStoryCapture();
+
+  console.log("ICI", isLastStep, isGameOver);
+  if (isGameOver) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 2,
+          p: 3,
+          minWidth: "150px",
+          height: "100%",
+          backgroundColor: "transparent",
+        }}
+      >
+        <Typography
+          variant="h3"
+          sx={{
+            color: "white",
+            textAlign: "center",
+            mb: 2,
+            textTransform: "uppercase",
+          }}
+        >
+          The End
+        </Typography>
+        <Button
+          variant="outlined"
+          size="large"
+          onClick={() => captureStory(containerRef)}
+          sx={{
+            width: "100%",
+            textTransform: "none",
+            cursor: "pointer",
+            fontSize: "1.1rem",
+            padding: "16px 24px",
+            lineHeight: 1.3,
+            color: "white",
+            borderColor: "rgba(255, 255, 255, 0.23)",
+            "&:hover": {
+              borderColor: "white",
+              backgroundColor: "rgba(255, 255, 255, 0.05)",
+            },
+            mb: 2,
+          }}
+        >
+          Save your story
+        </Button>
+        <Button
+          variant="outlined"
+          size="large"
+          onClick={() => window.location.reload()}
+          sx={{
+            width: "100%",
+            textTransform: "none",
+            cursor: "pointer",
+            fontSize: "1.1rem",
+            padding: "16px 24px",
+            lineHeight: 1.3,
+            color: "white",
+            borderColor: "rgba(255, 255, 255, 0.23)",
+            "&:hover": {
+              borderColor: "white",
+              backgroundColor: "rgba(255, 255, 255, 0.05)",
+            },
+          }}
+        >
+          Restart
+        </Button>
+      </Box>
+    );
+  }
+
   if (!choices || choices.length === 0) return null;
 
   return (

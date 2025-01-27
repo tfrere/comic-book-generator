@@ -22,6 +22,15 @@ function ComicPage({
     return total + (segment.images?.length || 0);
   }, 0);
 
+  console.log("ComicPage layout:", {
+    type: layout.type,
+    totalImages,
+    segments: layout.segments,
+    isLastPage,
+    hasChoices: choices?.length > 0,
+    showScreenshot,
+  });
+
   return (
     <Box
       sx={{
@@ -29,6 +38,7 @@ function ComicPage({
         flexDirection: "row",
         gap: 2,
         height: "100%",
+        position: "relative",
       }}
     >
       <Box
@@ -90,36 +100,32 @@ function ComicPage({
           {layoutIndex + 1}
         </Box>
       </Box>
-      {isLastPage && (choices?.length > 0 || showScreenshot) && (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {showScreenshot && (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
-              <Tooltip title="Capturer l'histoire">
-                <IconButton
-                  onClick={onScreenshot}
-                  sx={{
-                    border: "1px solid",
-                    borderColor: "rgba(255, 255, 255, 0.23)",
-                    color: "white",
-                    p: 2,
-                    "&:hover": {
-                      borderColor: "white",
-                      backgroundColor: "rgba(255, 255, 255, 0.05)",
-                    },
-                  }}
-                >
-                  <PhotoCameraIcon />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          )}
-          {choices?.length > 0 && (
-            <StoryChoices
-              choices={choices}
-              onChoice={onChoice}
-              disabled={isLoading}
-            />
-          )}
+      {isLastPage && (
+        <Box
+          sx={{
+            position: "absolute",
+            left: "100%",
+            top: "50%",
+            transform: "translateY(-50%)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            width: "350px",
+            ml: 4,
+          }}
+        >
+          <StoryChoices
+            choices={choices}
+            onChoice={onChoice}
+            disabled={isLoading}
+            isLastStep={
+              layout.segments[layout.segments.length - 1]?.is_last_step
+            }
+            isGameOver={
+              layout.segments[layout.segments.length - 1]?.isDeath ||
+              layout.segments[layout.segments.length - 1]?.isVictory
+            }
+          />
         </Box>
       )}
     </Box>
@@ -137,15 +143,40 @@ export function ComicLayout({
 }) {
   const scrollContainerRef = useRef(null);
 
-  // Effect to scroll to the right when new layouts are added
+  // Effect to scroll to the right when segments are loaded
   useEffect(() => {
-    if (scrollContainerRef.current) {
+    const loadedSegments = segments.filter((segment) => !segment.isLoading);
+    // Scroll à droite seulement si on a au moins un segment chargé
+    if (scrollContainerRef.current && loadedSegments.length > 0) {
       scrollContainerRef.current.scrollTo({
         left: scrollContainerRef.current.scrollWidth,
         behavior: "smooth",
       });
     }
-  }, [segments.length]);
+  }, [segments]); // Se déclenche à chaque modification des segments
+
+  // Prevent back/forward navigation on trackpad horizontal scroll
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e) => {
+      const max = container.scrollWidth - container.offsetWidth;
+      if (
+        container.scrollLeft + e.deltaX < 0 ||
+        container.scrollLeft + e.deltaX > max
+      ) {
+        e.preventDefault();
+        container.scrollLeft = Math.max(
+          0,
+          Math.min(max, container.scrollLeft + e.deltaX)
+        );
+      }
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, []);
 
   // Filtrer les segments qui sont en cours de chargement
   const loadedSegments = segments.filter((segment) => !segment.isLoading);
@@ -162,6 +193,7 @@ export function ComicLayout({
         height: "100%",
         width: "100%",
         px: layouts[0]?.type === "COVER" ? "calc(50% - (90vh * 0.5 * 0.5))" : 0,
+        py: 8, // 24px de padding vertical
         overflowX: "auto",
         overflowY: "hidden",
         "&::-webkit-scrollbar": {

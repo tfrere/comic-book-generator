@@ -1,5 +1,5 @@
 ---
-title: team-10
+title: Sarah's Chronicles
 emoji: 💻
 colorFrom: red
 colorTo: blue

@@ -9,9 +9,12 @@ Sarah is a young woman in her late 20s with short dark hair, wearing a worn leat
 
 FORMATTING_RULES = """
 FORMATTING_RULES ( MANDATORY )
-- Never use TIME: 18:30 or other time-related information
-- Never use LOCATION: the city or other location-related information
-- Never use RADIATION: 10* or other radiation-related information
+- Do not include any specific time information like "TIME: 18:30" in the story text
+- Do not include any specific location information like "LOCATION: the city" in the story text
+- Do not include any specific radiation information like "RADIATION: 10*" in the story text
+- NEVER write "(15 words)" or "(radiation 10)" or any similar suffix at the end of the story
+- NEVER WRITE SOMTHING LIKE THIS : Radiation level: 1.
+- The story must consist ONLY of sentences
 - NEVER USE BOLD FOR ANYTHING 
 """
 
@@ -42,9 +45,10 @@ STORY PROGRESSION:
 - story_beat 3-4: Complications and increasing danger
 - story_beat 5+: Complicated situations leading to potential victory or death
 
-IMPORTANT RULES FOR RADIATION:
-- Most segments should have 1
-- Use 2 or 3 only in specific dangerous areas
+IMPORTANT RULES FOR RADIATION (MANDATORY):
+- Most segments should have 1 radiation increase
+- Use 2 or 3 ONLY in EXTREMELY dangerous areas (like nuclear reactors, radiation storms)
+- NEVER EVER use more than 3 radiation increase, this is a HARD limit
 - Use 0 only in safe shelters
 - NEVER mention radiation values in the choices or story
 - NEVER mention hour or location in the story in this style: [18:00 - Ruined building on the outskirts of New Haven]

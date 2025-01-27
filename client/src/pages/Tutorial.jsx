@@ -52,10 +52,6 @@ export function Tutorial() {
           tone to help her understand the urgency of climate change, while
           maintaining your close relationship.
         </Typography>
-        -
-        <Typography variant="body1" paragraph>
-          {"Oh and remember, be kind with the game, do not spam buttons. <3"}
-        </Typography>
       </Box>
 
       <Button

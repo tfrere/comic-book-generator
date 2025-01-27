@@ -6,7 +6,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { theme } from "./theme";
 import { Home } from "./pages/Home";
 import { Game } from "./pages/Game";
-import { Tutorial } from "./pages/tutorial/Tutorial";
+import { Tutorial } from "./pages/Tutorial";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(

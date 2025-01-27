@@ -58,20 +58,18 @@ def get_chat_router(session_manager: SessionManager, story_generator):
             if game_state.story_beat == 0 and len(llm_response.image_prompts) > 1:
                 llm_response.image_prompts = [llm_response.image_prompts[0]]
             
-            # Convert LLM choices to API choices format
-            choices = [] if is_death or llm_response.is_victory else [
-                Choice(id=i, text=choice.strip())
-                for i, choice in enumerate(llm_response.choices, 1)
-            ]
-
             # Prepare response
             response = StoryResponse(
                 story_text=llm_response.story_text,
-                choices=choices,
+                choices=llm_response.choices,
+                raw_choices=llm_response.raw_choices,
                 radiation_level=game_state.radiation_level,
+                radiation_increase=llm_response.radiation_increase,
+                time=llm_response.time,
+                location=llm_response.location,
                 is_victory=llm_response.is_victory,
+                is_death=is_death,
                 is_first_step=game_state.story_beat == 0,
-                is_last_step=is_death or llm_response.is_victory,
                 image_prompts=llm_response.image_prompts
             )
             

@@ -23,11 +23,13 @@ def parse_args():
 def print_separator(char="=", length=50):
     print(f"\n{char * length}\n")
 
-def print_story_step(step_number, radiation_level, story_text, image_prompts, generation_time: float, story_history: str = None, show_context: bool = False, model_name: str = None):
+def print_story_step(step_number, radiation_level, story_text, image_prompts, generation_time: float, story_history: str = None, show_context: bool = False, model_name: str = None, is_death: bool = False, is_victory: bool = False):
     print_separator("=")
     print(f"📖 STEP {step_number}")
     print(f"☢️  Radiation level: {radiation_level}/10")
     print(f"⏱️  Generation time: {generation_time:.2f}s (model: {model_name})")
+    print(f"💀 Death: {is_death}")
+    print(f"🏆 Victory: {is_victory}")
     
     if show_context and story_history:
         print_separator("-")
@@ -93,7 +95,9 @@ async def play_game(show_context: bool = False):
             generation_time,
             story_history,
             show_context,
-            model_name
+            model_name,
+            response.is_death,
+            response.is_victory
         )
         
         # Check for radiation death

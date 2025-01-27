@@ -1,35 +1,79 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import List, Optional
+from core.constants import GameConfig
 
 class Choice(BaseModel):
     id: int
-    text: str = Field(description="The text of the choice. No more than 6 words.")
+    text: str = Field(description="The text of the choice.")
 
-# New response models for story generation steps
-class StoryTextResponse(BaseModel):
-    story_text: str = Field(description="The story text. No more than 15 words.")
+class StorySegmentBase(BaseModel):
+    """Base model for story segments with common validation logic"""
+    story_text: str = Field(description="The story text.")
+    is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
+    is_death: bool = Field(description="Whether this segment ends in Sarah's death", default=False)
+
+# Existing response models for story generation steps - preserved for API compatibility
+class StoryTextResponse(StorySegmentBase):
+    pass
 
 class StoryPromptsResponse(BaseModel):
-    image_prompts: List[str] = Field(description="List of 2 to 4 comic panel descriptions that illustrate the key moments of the scene. Use the word 'Sarah' only when referring to her.", min_items=1, max_items=4)
+    image_prompts: List[str] = Field(
+        description="List of comic panel descriptions that illustrate the key moments of the scene. Use the word 'Sarah' only when referring to her.",
+        min_items=GameConfig.MIN_PANELS,
+        max_items=GameConfig.MAX_PANELS
+    )
 
 class StoryMetadataResponse(BaseModel):
-    choices: List[str] = Field(description="Exactly two possible choices for the player", min_items=2, max_items=2)
+    radiation_increase: int = Field(
+        description=f"How much radiation this segment adds (0-3)",
+        ge=0,
+        le=3,
+        default=GameConfig.DEFAULT_RADIATION_INCREASE
+    )
     is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
-    radiation_increase: int = Field(description="How much radiation this segment adds (0-3)", ge=0, le=3, default=1)
-    is_last_step: bool = Field(description="Whether this is the last step (victory or death)", default=False)
+    is_death: bool = Field(description="Whether this segment ends in Sarah's death", default=False)
+    choices: List[str] = Field(description="Either empty list for victory/death, or exactly two choices for normal progression")
     time: str = Field(description="Current in-game time in 24h format (HH:MM). Time passes realistically based on actions.")
     location: str = Field(description="Current location.")
 
-# Complete story response combining all parts
-class StoryResponse(BaseModel):
-    story_text: str = Field(description="The story text. No more than 15 words.")
-    choices: List[Choice]
-    radiation_level: int = Field(description="Current radiation level from 0 to 10")
-    is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
-    is_first_step: bool = Field(description="Whether this is the first step of the story", default=False)
-    is_last_step: bool = Field(description="Whether this is the last step (victory or death)", default=False)
-    image_prompts: List[str] = Field(description="List of 2 to 4 comic panel descriptions that illustrate the key moments of the scene. Use the word 'Sarah' only when referring to her.", min_items=1, max_items=4)
+    @validator('choices')
+    def validate_choices(cls, v, values):
+        is_ending = values.get('is_victory', False) or values.get('is_death', False)
+        if is_ending:
+            if len(v) != 0:
+                raise ValueError('For victory/death, choices must be empty')
+        else:
+            if len(v) != 2:
+                raise ValueError('For normal progression, must have exactly 2 choices')
+        return v
 
+# Complete story response combining all parts - preserved for API compatibility
+class StoryResponse(StorySegmentBase):
+    choices: List[Choice]
+    raw_choices: List[str] = Field(description="Raw choice texts from LLM before conversion to Choice objects")
+    radiation_level: int = Field(description=f"Current radiation level")
+    radiation_increase: int = Field(description="How much radiation this segment adds (0-3)", ge=0, le=3, default=GameConfig.DEFAULT_RADIATION_INCREASE)
+    time: str = Field(description="Current in-game time in 24h format (HH:MM). Time passes realistically based on actions.")
+    location: str = Field(description="Current location.")
+    is_first_step: bool = Field(description="Whether this is the first step of the story", default=False)
+    image_prompts: List[str] = Field(
+        description="List of comic panel descriptions that illustrate the key moments of the scene. Use the word 'Sarah' only when referring to her.",
+        min_items=GameConfig.MIN_PANELS,
+        max_items=GameConfig.MAX_PANELS
+    )
+
+    @validator('choices')
+    def validate_choices(cls, v, values):
+        is_ending = values.get('is_victory', False) or values.get('is_death', False)
+        if is_ending:
+            if len(v) != 0:
+                raise ValueError('For victory/death, choices must be empty')
+        else:
+            if len(v) != 2:
+                raise ValueError('For normal progression, must have exactly 2 choices')
+        return v
+
+# Keep existing models unchanged for compatibility
 class ChatMessage(BaseModel):
     message: str
     choice_id: Optional[int] = None

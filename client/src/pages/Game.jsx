@@ -4,10 +4,14 @@ import { ComicLayout } from "../layouts/ComicLayout";
 import { storyApi } from "../utils/api";
 import { useNarrator } from "../hooks/useNarrator";
 import { useStoryCapture } from "../hooks/useStoryCapture";
+import { usePageSound } from "../hooks/usePageSound";
+import { useWritingSound } from "../hooks/useWritingSound";
 import { StoryChoices } from "../components/StoryChoices";
+import { ErrorDisplay } from "../components/ErrorDisplay";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import { getNextLayoutType, LAYOUTS } from "../layouts/config";
 
 // Constants
 const NARRATION_ENABLED_KEY = "narration_enabled";
@@ -35,6 +39,8 @@ export function Game() {
   const [storySegments, setStorySegments] = useState([]);
   const [currentChoices, setCurrentChoices] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showChoices, setShowChoices] = useState(true);
+  const [error, setError] = useState(null);
   const [isNarrationEnabled, setIsNarrationEnabled] = useState(() => {
     // Initialiser depuis le localStorage avec true comme valeur par défaut
     const stored = localStorage.getItem(NARRATION_ENABLED_KEY);
@@ -42,6 +48,8 @@ export function Game() {
   });
   const { isNarratorSpeaking, playNarration, stopNarration } =
     useNarrator(isNarrationEnabled);
+  const playPageSound = usePageSound();
+  const playWritingSound = useWritingSound();
 
   // Sauvegarder l'état de la narration dans le localStorage
   useEffect(() => {
@@ -54,6 +62,9 @@ export function Game() {
   }, []);
 
   const handleChoice = async (choiceId) => {
+    playPageSound();
+
+    setShowChoices(false); // Cacher les choix dès qu'on clique
     // Si c'est l'option "Réessayer", on relance la dernière action
     if (currentChoices.length === 1 && currentChoices[0].text === "Réessayer") {
       // Supprimer le segment d'erreur
@@ -84,6 +95,8 @@ export function Game() {
 
   const handleStoryAction = async (action, choiceId = null) => {
     setIsLoading(true);
+    setShowChoices(false);
+    setError(null); // Reset error state
     try {
       // Stop any ongoing narration
       if (isNarratorSpeaking) {
@@ -114,6 +127,8 @@ export function Game() {
         isLoading: true, // Ajout d'un flag pour indiquer que le segment est en cours de chargement
       };
 
+      playWritingSound();
+
       // 3. Update segments
       if (action === "restart") {
         setStorySegments([newSegment]);
@@ -133,7 +148,7 @@ export function Game() {
           "Starting image generation for prompts:",
           storyData.image_prompts
         );
-        generateImagesForStory(
+        await generateImagesForStory(
           storyData.image_prompts,
           action === "restart" ? 0 : storySegments.length,
           action === "restart" ? [newSegment] : [...storySegments, newSegment]
@@ -147,6 +162,9 @@ export function Game() {
           setStorySegments((prev) => [...prev.slice(0, -1), updatedSegment]);
         }
       }
+
+      // Réafficher les choix une fois tout chargé
+      setShowChoices(true);
     } catch (error) {
       console.error("Error in handleStoryAction:", error);
       const errorMessage =
@@ -154,32 +172,8 @@ export function Game() {
         error.message ||
         "Le conteur d'histoires est temporairement indisponible. Veuillez réessayer dans quelques instants...";
 
-      const errorSegment = {
-        text: errorMessage,
-        rawText: errorMessage,
-        isChoice: false,
-        isDeath: false,
-        isVictory: false,
-        radiationLevel:
-          storySegments.length > 0
-            ? storySegments[storySegments.length - 1].radiationLevel
-            : 0,
-        images: [],
-        isLoading: false,
-      };
-
-      if (action === "restart") {
-        setStorySegments([errorSegment]);
-      } else {
-        // En cas d'erreur sur un choix, on garde le segment précédent
-        setStorySegments((prev) => [...prev.slice(0, -1), errorSegment]);
-      }
-
-      // Set retry choice
-      setCurrentChoices([{ id: "retry", text: "Réessayer" }]);
-
-      // Play error message
-      await playNarration(errorSegment.rawText);
+      setError(errorMessage);
+      await playNarration(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -195,6 +189,12 @@ export function Game() {
       const images = Array(imagePrompts.length).fill(null);
       let allImagesGenerated = false;
 
+      // Déterminer le layout en fonction du nombre d'images
+      const layoutType = getNextLayoutType(0, imagePrompts.length);
+      console.log(
+        `Using layout ${layoutType} for ${imagePrompts.length} images`
+      );
+
       for (
         let promptIndex = 0;
         promptIndex < imagePrompts.length;
@@ -204,13 +204,19 @@ export function Game() {
         const maxRetries = 3;
         let success = false;
 
+        // Obtenir les dimensions pour ce panneau
+        const panelDimensions = LAYOUTS[layoutType].panels[promptIndex];
+        console.log(`Panel ${promptIndex} dimensions:`, panelDimensions);
+
         while (retryCount < maxRetries && !success) {
           try {
             console.log(
               `Generating image ${promptIndex + 1}/${imagePrompts.length}`
             );
             const result = await storyApi.generateImage(
-              imagePrompts[promptIndex]
+              imagePrompts[promptIndex],
+              panelDimensions.width,
+              panelDimensions.height
             );
 
             if (!result) {
@@ -261,11 +267,6 @@ export function Game() {
     }
   };
 
-  // Filter out choice segments for display
-  const nonChoiceSegments = storySegments.filter(
-    (segment) => !segment.isChoice
-  );
-
   const handleCaptureStory = async () => {
     await downloadStoryImage(
       storyContainerRef,
@@ -275,94 +276,112 @@ export function Game() {
 
   return (
     <Box
+      ref={storyContainerRef}
       sx={{
         height: "100vh",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: "background.paper",
+        width: "100vw",
+        backgroundColor: "#1a1a1a",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      <Box
-        sx={{
-          position: "relative",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          backgroundColor: "#121212",
-        }}
-      >
-        {/* Narration control - always visible in top right */}
-        <Box
+      {isLoading && (
+        <LinearProgress
           sx={{
-            position: "fixed",
-            top: 16,
-            right: 16,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
             zIndex: 1000,
           }}
-        >
-          <Tooltip
-            title={
-              isNarrationEnabled
-                ? "Désactiver la narration"
-                : "Activer la narration"
+        />
+      )}
+
+      {error ? (
+        <ErrorDisplay
+          message={error}
+          onRetry={() => {
+            if (storySegments.length === 0) {
+              handleStoryAction("restart");
+            } else {
+              handleStoryAction(
+                "choice",
+                storySegments[storySegments.length - 1]?.choiceId || null
+              );
             }
-          >
-            <IconButton
-              onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
-              sx={{
-                backgroundColor: isNarrationEnabled
-                  ? "primary.main"
-                  : "rgba(255, 255, 255, 0.1)",
-                color: "white",
-                "&:hover": {
-                  backgroundColor: isNarrationEnabled
-                    ? "primary.dark"
-                    : "rgba(255, 255, 255, 0.2)",
-                },
-              }}
-            >
-              {isNarrationEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
-            </IconButton>
-          </Tooltip>
-        </Box>
-
-        {/* Progress bar */}
-        {isLoading && (
-          <LinearProgress
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 1,
-            }}
-          />
-        )}
-
-        {/* Comic layout */}
-        <Box
-          ref={storyContainerRef}
-          sx={{
-            flex: 1,
-            overflow: "hidden",
-            position: "relative",
-            p: 4,
           }}
-        >
+        />
+      ) : (
+        <>
           <ComicLayout
             segments={storySegments}
-            choices={currentChoices}
+            choices={showChoices ? currentChoices : []}
             onChoice={handleChoice}
-            isLoading={isLoading || isNarratorSpeaking}
-            showScreenshot={
-              currentChoices.length === 1 &&
-              currentChoices[0].text === "Réessayer"
-            }
-            onScreenshot={() => downloadStoryImage(storyContainerRef)}
+            isLoading={isLoading}
+            showScreenshot={storySegments.length > 0}
+            onScreenshot={handleCaptureStory}
           />
-        </Box>
-      </Box>
+          {showChoices && (
+            <StoryChoices
+              choices={currentChoices}
+              onChoice={handleChoice}
+              disabled={isLoading}
+              isLastStep={
+                storySegments.length > 0 &&
+                storySegments[storySegments.length - 1].isLastStep
+              }
+              isGameOver={
+                storySegments.length > 0 &&
+                storySegments[storySegments.length - 1].isGameOver
+              }
+              containerRef={storyContainerRef}
+            />
+          )}
+          <Box
+            sx={{
+              position: "fixed",
+              top: 16,
+              right: 16,
+              display: "flex",
+              gap: 1,
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              padding: 1,
+              borderRadius: 1,
+            }}
+          >
+            <Tooltip title="Take a screenshot">
+              <IconButton
+                onClick={handleCaptureStory}
+                sx={{
+                  color: "white",
+                  "&:hover": {
+                    backgroundColor: "rgba(0, 0, 0, 0.7)",
+                  },
+                }}
+              >
+                <PhotoCameraIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip
+              title={
+                isNarrationEnabled ? "Disable narration" : "Enable narration"
+              }
+            >
+              <IconButton
+                onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
+                sx={{
+                  color: "white",
+                  "&:hover": {
+                    backgroundColor: "rgba(0, 0, 0, 0.7)",
+                  },
+                }}
+              >
+                {isNarrationEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </>
+      )}
     </Box>
   );
 }
