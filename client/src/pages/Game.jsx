@@ -277,10 +277,7 @@ export function Game() {
   };
 
   const handleCaptureStory = async () => {
-    await downloadStoryImage(
-      storyContainerRef,
-      `dont-lookup-story-${Date.now()}.png`
-    );
+    await downloadStoryImage(storyContainerRef, `your-story-${Date.now()}.png`);
   };
 
   return (
