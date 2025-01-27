@@ -80,28 +80,28 @@ if IS_DOCKER:
     # En mode Docker (HF Space), on monte les fichiers statiques avec des types MIME spécifiques
     app.mount("/assets", StaticFiles(directory=os.path.join(STATIC_FILES_DIR, "assets"), html=False), name="assets")
     
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        # Si le chemin pointe vers un fichier JavaScript
-        if full_path.endswith('.js'):
-            return FileResponse(
-                os.path.join(STATIC_FILES_DIR, full_path),
-                media_type='application/javascript'
-            )
-        # Si le chemin pointe vers un fichier CSS
-        elif full_path.endswith('.css'):
-            return FileResponse(
-                os.path.join(STATIC_FILES_DIR, full_path),
-                media_type='text/css'
-            )
-        # Pour tous les autres chemins, servir index.html
-        return FileResponse(
-            os.path.join(STATIC_FILES_DIR, "index.html"),
-            media_type='text/html'
-        )
-else:
-    # En local, on monte simplement à la racine
-    app.mount("/", StaticFiles(directory=STATIC_FILES_DIR, html=True), name="static")
+#     @app.get("/{full_path:path}")
+#     async def serve_spa(full_path: str):
+#         # Si le chemin pointe vers un fichier JavaScript
+#         if full_path.endswith('.js'):
+#             return FileResponse(
+#                 os.path.join(STATIC_FILES_DIR, full_path),
+#                 media_type='application/javascript'
+#             )
+#         # Si le chemin pointe vers un fichier CSS
+#         elif full_path.endswith('.css'):
+#             return FileResponse(
+#                 os.path.join(STATIC_FILES_DIR, full_path),
+#                 media_type='text/css'
+#             )
+#         # Pour tous les autres chemins, servir index.html
+#         return FileResponse(
+#             os.path.join(STATIC_FILES_DIR, "index.html"),
+#             media_type='text/html'
+#         )
+# else:
+#     # En local, on monte simplement à la racine
+#     app.mount("/", StaticFiles(directory=STATIC_FILES_DIR, html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
