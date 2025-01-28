@@ -5,6 +5,7 @@ import time
 import argparse
 from pathlib import Path
 from dotenv import load_dotenv
+import uuid
 
 # Add server directory to PYTHONPATH
 server_dir = Path(__file__).parent.parent
@@ -12,6 +13,7 @@ sys.path.append(str(server_dir))
 
 from core.game_logic import GameState, StoryGenerator
 from core.constants import GameConfig
+from core.generators.universe_generator import UniverseGenerator
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +25,16 @@ def parse_args():
 
 def print_separator(char="=", length=50):
     print(f"\n{char * length}\n")
+
+def print_universe_info(style: str, genre: str, epoch: str, base_story: str):
+    print_separator("*")
+    print("🌍 UNIVERSE GENERATED")
+    print(f"🎨 Style: {style}")
+    print(f"📚 Genre: {genre}")
+    print(f"⏳ Époque: {epoch}")
+    print("\n📖 Base Story:")
+    print(base_story)
+    print_separator("*")
 
 def print_story_step(step_number, radiation_level, story_text, image_prompts, generation_time: float, story_history: str = None, show_context: bool = False, model_name: str = None, is_death: bool = False, is_victory: bool = False):
     print_separator("=")
@@ -48,20 +60,48 @@ def print_story_step(step_number, radiation_level, story_text, image_prompts, ge
     print_separator("=")
 
 async def play_game(show_context: bool = False):
-    # Initialize game
-    game_state = GameState()
+    # Initialize components
     model_name = "mistral-small"
     story_generator = StoryGenerator(
         api_key=os.getenv("MISTRAL_API_KEY"),
         model_name=model_name
     )
     
+    # Create universe generator
+    universe_generator = UniverseGenerator(story_generator.mistral_client)
+    
     print("\n=== Don't Look Up - Test Mode ===\n")
     print("🎮 Starting adventure...")
-    print("You are Sarah, a survivor in a post-apocalyptic world.")
     if show_context:
         print("📚 Context display is enabled")
     print_separator()
+    
+    # Generate universe
+    print("🌍 Generating universe...")
+    style, genre, epoch = universe_generator._get_random_elements()
+    universe = await universe_generator.generate()
+    
+    # Create session and game state
+    session_id = str(uuid.uuid4())
+    game_state = GameState()
+    game_state.set_universe(
+        style=style["name"],
+        genre=genre,
+        epoch=epoch,
+        base_story=universe
+    )
+    
+    # Create text generator for this session
+    story_generator.create_text_generator(
+        session_id=session_id,
+        style=style["name"],
+        genre=genre,
+        epoch=epoch,
+        base_story=universe
+    )
+    
+    # Display universe information
+    print_universe_info(style["name"], genre, epoch, universe)
     
     last_choice = None
     
@@ -84,7 +124,11 @@ async def play_game(show_context: bool = False):
         
         # Mesurer le temps de génération
         start_time = time.time()
-        response = await story_generator.generate_story_segment(game_state, previous_choice)
+        response = await story_generator.generate_story_segment(
+            session_id=session_id,
+            game_state=game_state,
+            previous_choice=previous_choice
+        )
         generation_time = time.time() - start_time
         
         # Display current step
@@ -117,7 +161,7 @@ async def play_game(show_context: bool = False):
         if response.choices:
             print("\n🤔 AVAILABLE CHOICES:")
             for i, choice in enumerate(response.choices, 1):
-                print(f"{i}. {choice}")
+                print(f"{i}. {choice.text}")
                 
             # Get player choice
             while True:

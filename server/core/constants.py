@@ -2,7 +2,7 @@ class GameConfig:
     # Game state constants
     MAX_RADIATION = 12
     STARTING_TIME = "18:00"
-    STARTING_LOCATION = "Outskirts of New Haven"
+    STARTING_LOCATION = "Home"
     
     # Story constraints
     MIN_PANELS = 1

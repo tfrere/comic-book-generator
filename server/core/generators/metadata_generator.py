@@ -46,7 +46,7 @@ Generate the metadata following the format specified."""
             raise ValueError(str(e))
 
     async def generate(self, story_text: str, current_time: str, current_location: str, story_beat: int, error_feedback: str = "") -> StoryMetadataResponse:
-        """Génère les métadonnées basées sur le texte de l'histoire."""
+        """Surcharge de generate pour inclure le error_feedback par défaut."""
         return await super().generate(
             story_text=story_text,
             current_time=current_time,

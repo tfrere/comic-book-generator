@@ -14,6 +14,7 @@ import { useNarrator } from "../hooks/useNarrator";
 import { useStoryCapture } from "../hooks/useStoryCapture";
 import { usePageSound } from "../hooks/usePageSound";
 import { useWritingSound } from "../hooks/useWritingSound";
+import { useGameSession } from "../hooks/useGameSession";
 import { StoryChoices } from "../components/StoryChoices";
 import { ErrorDisplay } from "../components/ErrorDisplay";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
@@ -22,6 +23,7 @@ import PhotoCameraOutlinedIcon from "@mui/icons-material/PhotoCameraOutlined";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CreateIcon from "@mui/icons-material/Create";
 import { getNextLayoutType, LAYOUTS } from "../layouts/config";
+import { LoadingScreen } from "../components/LoadingScreen";
 
 // Constants
 const SOUND_ENABLED_KEY = "sound_enabled";
@@ -67,16 +69,24 @@ export function Game() {
     useNarrator(isSoundEnabled);
   const playPageSound = usePageSound(isSoundEnabled);
   const playWritingSound = useWritingSound(isSoundEnabled);
+  const {
+    sessionId,
+    universe,
+    isLoading: isSessionLoading,
+    error: sessionError,
+  } = useGameSession();
 
   // Sauvegarder l'état du son dans le localStorage
   useEffect(() => {
     localStorage.setItem(SOUND_ENABLED_KEY, isSoundEnabled);
   }, [isSoundEnabled]);
 
-  // Start the story on first render
+  // Start the story when session is ready
   useEffect(() => {
-    handleStoryAction("restart");
-  }, []);
+    if (sessionId && !isSessionLoading) {
+      handleStoryAction("restart");
+    }
+  }, [sessionId, isSessionLoading]);
 
   // Add effect for message rotation
   useEffect(() => {
@@ -128,18 +138,17 @@ export function Game() {
   const handleStoryAction = async (action, choiceId = null) => {
     setIsLoading(true);
     setShowChoices(false);
-    setError(null); // Reset error state
+    setError(null);
     try {
-      // Stop any ongoing narration
       if (isNarratorSpeaking) {
         stopNarration();
       }
 
       console.log("Starting story action:", action);
-      // 1. Get the story
+      // Pass sessionId to API calls
       const storyData = await (action === "restart"
-        ? storyApi.start()
-        : storyApi.makeChoice(choiceId));
+        ? storyApi.start(sessionId)
+        : storyApi.makeChoice(choiceId, sessionId));
 
       if (!storyData) {
         throw new Error("Pas de données reçues du serveur");
@@ -303,6 +312,33 @@ export function Game() {
     await downloadStoryImage(storyContainerRef, `your-story-${Date.now()}.png`);
   };
 
+  // Show session error if any
+  if (sessionError) {
+    return (
+      <ErrorDisplay
+        message="Impossible d'initialiser la session de jeu. Veuillez rafraîchir la page."
+        error={sessionError}
+      />
+    );
+  }
+
+  // Show loading state while session is initializing
+  if (isSessionLoading) {
+    return (
+      <Box sx={{ width: "100%", height: "100vh", backgroundColor: "#1a1a1a" }}>
+        <LoadingScreen
+          icon="universe"
+          messages={[
+            "Creating a new universe...",
+            "Gathering comic book inspiration...",
+            "Drawing the first panels...",
+            "Setting up the story...",
+          ]}
+        />
+      </Box>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -369,51 +405,16 @@ export function Game() {
         ) : (
           <>
             {isLoading && storySegments.length === 0 ? (
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: 2,
-                }}
-              >
-                <motion.div
-                  animate={{
-                    y: [0, -10, 0],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <CreateIcon
-                    sx={{ fontSize: 40, color: "white", opacity: 0.2 }}
-                  />
-                </motion.div>
-                <motion.div
-                  key={loadingMessage}
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      color: "white",
-                      opacity: 0.8,
-                      fontStyle: "italic",
-                    }}
-                  >
-                    {messages[loadingMessage]}
-                  </Typography>
-                </motion.div>
-              </Box>
+              <LoadingScreen
+                icon="story"
+                messages={[
+                  "Bringing the universe to life...",
+                  "Awakening the characters...",
+                  "Polishing the first scene...",
+                  "Preparing the adventure...",
+                  "Adding final touches to the world...",
+                ]}
+              />
             ) : (
               <>
                 <ComicLayout

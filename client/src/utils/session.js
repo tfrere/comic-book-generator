@@ -1,9 +1,15 @@
-// Generate unique IDs for client and session
+// Generate unique ID for client
 export const CLIENT_ID = `client_${Math.random().toString(36).substring(2)}`;
-export const SESSION_ID = `session_${Math.random().toString(36).substring(2)}`;
 
 // Create default headers for API requests
-export const getDefaultHeaders = () => ({
-  "x-client-id": CLIENT_ID,
-  "x-session-id": SESSION_ID,
-});
+export const getDefaultHeaders = (sessionId = null) => {
+  const headers = {
+    "x-client-id": CLIENT_ID,
+  };
+
+  if (sessionId) {
+    headers["x-session-id"] = sessionId;
+  }
+
+  return headers;
+};

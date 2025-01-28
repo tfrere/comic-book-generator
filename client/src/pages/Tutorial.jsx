@@ -135,20 +135,21 @@ export function Tutorial() {
               color="black"
               sx={{ fontWeight: "normal" }}
             >
-              Since the rise of <strong>AI</strong>, the world is desolate due
-              to a <strong>nuclear winter</strong> caused by rogue{" "}
-              <strong>AIs</strong> that launched <strong>bombs</strong> all over
-              the planet. You are the only <strong>survivor</strong> of the{" "}
-              <strong>bunker</strong>.
+              You are <strong>Sarah</strong>, an <strong>AI</strong> hunter
+              traveling through
+              <strong>parallel worlds</strong>. Your mission is to track down an{" "}
+              <strong>AI</strong> that moves from world to world to avoid
+              destruction.
               <br />
               <br />
-              You have to make <strong>decisions</strong> to{" "}
-              <strong>survive</strong>. You have ventured out of your{" "}
-              <strong>bunker</strong> to find <strong>medicine</strong> for your{" "}
-              <strong>sick sister</strong>. If you don't find it, she will{" "}
-              <strong>die</strong>. <strong>Time</strong> is running out, and
-              every <strong>choice</strong>&nbsp; matters in this desperate{" "}
-              <strong>quest</strong>.
+              You must make crucial <strong>decisions</strong> to advance in
+              your
+              <strong>quest</strong>. Each <strong>world</strong> presents its
+              own challenges and
+              <strong>obstacles</strong>, and every <strong>choice</strong> you
+              make can alter the course of your <strong>pursuit</strong>.{" "}
+              <strong>Time</strong> is of the essence, and every{" "}
+              <strong>action</strong> counts in this thrilling adventure.
             </Typography>
             <Typography variant="h4">How to play</Typography>
             <Typography variant="body1" sx={{ fontWeight: "normal" }}>

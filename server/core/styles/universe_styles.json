@@ -1,0 +1,92 @@
+{
+  "styles": [
+    {
+      "name": "Franco-Belge Ligne Claire",
+      "description": "Style épuré avec des lignes nettes et des couleurs plates",
+      "references": [
+        {
+          "artist": "Hergé",
+          "works": ["Tintin", "Les Aventures de Jo, Zette et Jocko"]
+        },
+        {
+          "artist": "Edgar P. Jacobs",
+          "works": ["Blake et Mortimer"]
+        },
+        {
+          "artist": "Yves Chaland",
+          "works": ["Freddy Lombard", "Bob Fish"]
+        },
+        {
+          "artist": "Joost Swarte",
+          "works": ["Modern Art", "L'Art Moderne"]
+        }
+      ]
+    },
+    {
+      "name": "Science-Fiction Européenne",
+      "description": "Style visionnaire mêlant précision technique et onirisme",
+      "references": [
+        {
+          "artist": "Moebius (Jean Giraud)",
+          "works": ["L'Incal", "Arzak", "Le Garage Hermétique", "Aedena"]
+        },
+        {
+          "artist": "Philippe Druillet",
+          "works": ["Lone Sloane", "Salammbô", "Delirius"]
+        },
+        {
+          "artist": "François Schuiten",
+          "works": ["Les Cités Obscures", "La Fièvre d'Urbicande"]
+        }
+      ]
+    },
+    {
+      "name": "Comics Américain Classique",
+      "description": "Style dynamique avec des couleurs vives et des ombrages marqués",
+      "references": [
+        {
+          "artist": "Jack Kirby",
+          "works": ["Fantastic Four", "New Gods", "Captain America"]
+        },
+        {
+          "artist": "Steve Ditko",
+          "works": ["Spider-Man", "Doctor Strange", "Mr. A"]
+        },
+        {
+          "artist": "Neal Adams",
+          "works": ["Batman", "Green Lantern/Green Arrow", "X-Men"]
+        }
+      ]
+    }
+  ],
+  "genres": [
+    "Steampunk",
+    "Cyberpunk",
+    "Post-apocalyptique",
+    "Fantasy",
+    "Space Opera",
+    "Western",
+    "Film Noir",
+    "Horror",
+    "Mythologie",
+    "Dystopie",
+    "Uchronie",
+    "Heroic Fantasy",
+    "Urban Fantasy"
+  ],
+  "epochs": [
+    "Préhistoire",
+    "Antiquité",
+    "Moyen Âge",
+    "Renaissance",
+    "Révolution Industrielle",
+    "Années 1920",
+    "Années 1950",
+    "Époque Contemporaine",
+    "Futur Proche",
+    "Futur Lointain",
+    "Post-Apocalyptique",
+    "Âge d'Or",
+    "Ère Spatiale"
+  ]
+}

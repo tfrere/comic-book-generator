@@ -12,6 +12,7 @@ from services.flux_client import FluxClient
 from api.routes.chat import get_chat_router
 from api.routes.image import get_image_router
 from api.routes.speech import get_speech_router
+from api.routes.universe import get_universe_router
 
 # Load environment variables
 load_dotenv()
@@ -46,6 +47,7 @@ mistral_api_key = os.getenv("MISTRAL_API_KEY")
 if not mistral_api_key:
     raise ValueError("MISTRAL_API_KEY environment variable is not set")
 
+print("Creating global SessionManager")
 session_manager = SessionManager()
 story_generator = StoryGenerator(api_key=mistral_api_key)
 flux_client = FluxClient(api_key=HF_API_KEY)
@@ -57,9 +59,11 @@ async def health_check():
     return {"status": "healthy"}
 
 # Register route handlers
+print("Registering route handlers with SessionManager", id(session_manager))
 app.include_router(get_chat_router(session_manager, story_generator), prefix="/api")
 app.include_router(get_image_router(flux_client), prefix="/api")
 app.include_router(get_speech_router(), prefix="/api")
+app.include_router(get_universe_router(session_manager, story_generator), prefix="/api")
 
 @app.on_event("startup")
 async def startup_event():

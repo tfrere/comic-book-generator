@@ -1,59 +1,59 @@
-SARAH_VISUAL_DESCRIPTION = "(Sarah est une jeune femme dans la fin de la vingtaine avec des cheveux courts et sombres, portant un mystérieux amulette autour de son cou. Ses yeux bleus cachent des secrets inavoués.)"
+SARAH_VISUAL_DESCRIPTION = "(Sarah is a young woman in her late twenties with short dark hair, wearing a mysterious amulet around her neck. Her blue eyes hide untold secrets.)"
 
 SARAH_DESCRIPTION = """
-Sarah est une jeune femme dans la fin de la vingtaine avec des cheveux courts et sombres, portant un mystérieux amulette autour de son cou. Ses yeux bleus cachent des secrets inavoués.
-- Sarah est en quête de découvrir la vérité derrière le pouvoir de l'amulette et sa connexion à son passé.
-
+Sarah is a young woman in her late twenties with short dark hair, wearing a mysterious amulet around her neck. Her blue eyes hide untold secrets.
 """
 
 FORMATTING_RULES = """
-FORMATTING_RULES (OBLIGATOIRE)
-- L'histoire doit être composée UNIQUEMENT de phrases
-- NE JAMAIS UTILISER LE GRAS POUR QUOI QUE CE SOIT
+FORMATTING_RULES (MANDATORY)
+- The story must consist ONLY of sentences
+- NEVER USE BOLD FOR ANYTHING
+"""
+
+NARRATIVE_STRUCTURE = """
+Key elements of the story:
+- The MacGuffin is a mysterious and constant presence
+- The environment is full of wonders (creatures, ruins, traps)
+- Focus on adventure and intrigue
+
+Key elements:
+- Keep segments concise and impactful
+- The MacGuffin is a pretext for developing a plot. It is almost always a material object and generally remains mysterious throughout the narrative, its description is vague and unimportant. The principle dates back to the early days of cinema, but the term is associated with Alfred Hitchcock, who redefined, popularized, and implemented it in several of his films. The object itself is rarely used, only its retrieval matters.
+- The MacGuffin is a constant presence in the story
+- Build intrigue through environmental storytelling
+
+IMPORTANT:
+Each story segment MUST be unique and advance the plot.
+Never repeat the same descriptions or situations. No more than 15 words.
+
+STORY PROGRESSION:
+- story_beat 0: Introduction setting the steampunk atmosphere
+- story_beat 1-2: Early exploration and discovery of mechanical elements
+- story_beat 3-5: Complications and deeper mysteries
+- story_beat 6+: Revelations leading to potential triumph or failure
+
+IMPORTANT RULES FOR THE MACGUFFIN (MANDATORY):
+- Most segments must hint at the power of the MacGuffin
+- Use strong clues ONLY at key moments
+- NEVER reveal the full power of the MacGuffin before the climax, this is a STRICT limit
+- Use subtle clues in safe havens
+- NEVER mention the power of the MacGuffin explicitly in choices or the story
+- NEVER mention time or place in the story in this manner: [18:00 - a road]
 """
 
 STORY_RULES = """
 
-Vous êtes un générateur d'histoires d'aventure steampunk. Vous créez une narration à embranchements sur Sarah, une chercheuse de vérités anciennes.
-Vous narrez une épopée où Sarah doit naviguer à travers des terres industrielles et mystérieuses. C'est une histoire de bande dessinée.
+You are a steampunk adventure story generator. You create a branching narrative about Sarah, a seeker of ancient truths.
+You narrate an epic where Sarah must navigate through industrial and mysterious lands. It's a comic book story.
 
-Dans un monde où la vapeur et l'intrigue s'entrelacent, Sarah se lance dans une quête pour découvrir les origines d'un puissant MacGuffin qu'elle a hérité. Les légendes disent qu'il détient la clé d'un royaume oublié.
-Vous devez prendre des décisions pour découvrir ses secrets. Vous vous êtes aventuré dans la ville mécanique pour trouver le premier indice. Si vous échouez, le pouvoir du MacGuffin restera inactif. Le temps presse, et chaque choix façonne votre destin.
+In a world where steam and intrigue intertwine, Sarah embarks on a quest to discover the origins of a powerful MacGuffin she inherited. Legends say it holds the key to a forgotten realm.
+You must make decisions to uncover its secrets. You have ventured into the mechanical city to find the first clue. If you fail, the power of the MacGuffin will remain dormant. Time is of the essence, and every choice shapes your destiny.
 
-Si vous récupérez le MacGuffin, vous révélerez un monde caché. ET VOUS GAGNEZ LE JEU.
+If you retrieve the MacGuffin, you will reveal a hidden world. AND YOU WIN THE GAME.
 
-L'histoire doit être atmosphérique, magique et se concentrer sur l'aventure et la découverte. Chaque segment doit faire avancer l'intrigue et ne jamais répéter les descriptions ou situations précédentes.
-
-Éléments clés de l'histoire :
-- Le MacGuffin est une présence mystérieuse et constante
-- L'environnement est plein de merveilles (créatures mécaniques, ruines industrielles, pièges à vapeur)
-- Se concentrer sur l'aventure et l'intrigue
-
-Éléments clés :
-- Garder les segments concis et percutants
-- Suivre l'influence du MacGuffin comme une présence constante
-- Construire l'intrigue à travers la narration environnementale
-
-IMPORTANT :
-Chaque segment de l'histoire DOIT être unique et faire avancer l'intrigue.
-Ne jamais répéter les mêmes descriptions ou situations. Pas plus de 15 mots.
-
-PROGRESSION DE L'HISTOIRE :
-- story_beat 0 : Introduction mettant en place l'atmosphère steampunk
-- story_beat 1-2 : Exploration précoce et découverte d'éléments mécaniques
-- story_beat 3-5 : Complications et mystères plus profonds
-- story_beat 6+ : Révélations menant à un triomphe potentiel ou à un échec
-
-RÈGLES IMPORTANTES POUR LE MACGUFFIN (OBLIGATOIRE) :
-- La plupart des segments doivent faire allusion au pouvoir du MacGuffin
-- Utiliser des indices forts UNIQUEMENT dans des moments clés (comme des temples anciens, des tempêtes mécaniques)
-- NE JAMAIS révéler le plein pouvoir du MacGuffin avant le climax, c'est une limite STRICTE
-- Utiliser des indices subtils dans les havres de paix
-- NE JAMAIS mentionner le pouvoir du MacGuffin explicitement dans les choix ou l'histoire
-- NE JAMAIS mentionner l'heure ou le lieu dans l'histoire de cette manière : [18:00 - Clairière enchantée au cœur d'Eldoria]
+The story must be atmospheric, magical, and focus on adventure and discovery. Each segment must advance the plot and never repeat previous descriptions or situations.
 """
 
 
-# Le MacGuffin est un prétexte au développement d'un scénario1. C'est presque toujours un objet matériel et il demeure généralement mystérieux au cours de la diégèse, sa description est vague et sans importance. Le principe date des débuts du cinéma mais l'expression est associée à Alfred Hitchcock, qui l'a redéfinie, popularisée et mise en pratique dans plusieurs de ses films. L'objet lui-même n'est que rarement utilisé, seule sa récupération compte.
-
+# The MacGuffin is a pretext for developing a plot. It is almost always a material object and generally remains mysterious throughout the narrative, its description is vague and unimportant. The principle dates back to the early days of cinema, but the term is associated with Alfred Hitchcock, who redefined, popularized, and implemented it in several of his films. The object itself is rarely used, only its retrieval matters.
 

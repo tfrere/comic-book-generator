@@ -25,7 +25,7 @@ IMPORTANT RULES FOR STORY TEXT:
 - Never tell that you are using 15 words or any reference to it 
 
 IMPORTANT RULES FOR STORY ENDINGS:
-- If Sarah dies, describe her final moments in a way that fits the current situation (combat, radiation, etc.)
+- If Sarah dies, describe her final moments in a way that fits the current situation (combat, etc.)
 - If Sarah achieves victory, describe her triumph in a way that fits how she won (finding her sister, defeating AI, etc.)
 - Keep the ending text dramatic and impactful
 - The ending should feel like a natural conclusion to the current scene

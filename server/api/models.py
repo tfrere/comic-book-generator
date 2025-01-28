@@ -85,4 +85,12 @@ class ImageGenerationRequest(BaseModel):
 
 class TextToSpeechRequest(BaseModel):
     text: str
-    voice_id: str = "nPczCjzI2devNBz1zQrb"  # Default voice ID (Rachel) 
+    voice_id: str = "nPczCjzI2devNBz1zQrb"  # Default voice ID (Rachel)
+
+class UniverseResponse(BaseModel):
+    status: str
+    session_id: str
+    style: str
+    genre: str
+    epoch: str
+    base_story: str = Field(description="The generated story for this universe")

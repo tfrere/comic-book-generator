@@ -20,19 +20,48 @@ def get_chat_router(session_manager: SessionManager, story_generator):
 
             print(f"Processing chat message for session {x_session_id}:", chat_message)
             
-            # Get or create game state for this session
-            game_state = session_manager.get_or_create_session(x_session_id)
+            # Get game state for this session
+            game_state = session_manager.get_session(x_session_id)
+            print(f"Retrieved game state for session {x_session_id}: {'found' if game_state else 'not found'}")
+            
+            if game_state is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid session ID. Generate a universe first to start a new game session."
+                )
+                
+            # Vérifier que l'univers est configuré
+            has_universe = game_state.has_universe()
+            print(f"Universe configured for session {x_session_id}: {has_universe}")
+            print(f"Universe details: style={game_state.universe_style}, genre={game_state.universe_genre}, epoch={game_state.universe_epoch}")
+            
+            if not has_universe:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Universe not configured for this session. Generate a universe first."
+                )
             
             # Handle restart
             if chat_message.message.lower() == "restart":
                 print(f"Handling restart for session {x_session_id}")
+                # On garde le même univers mais on réinitialise l'histoire
                 game_state.reset()
+                game_state.set_universe(
+                    style=game_state.universe_style,
+                    genre=game_state.universe_genre,
+                    epoch=game_state.universe_epoch,
+                    base_story=game_state.universe_story
+                )
                 previous_choice = "none"
             else:
                 previous_choice = f"Choice {chat_message.choice_id}" if chat_message.choice_id else "none"
 
             # Generate story segment
-            llm_response = await story_generator.generate_story_segment(game_state, previous_choice)
+            llm_response = await story_generator.generate_story_segment(
+                session_id=x_session_id,
+                game_state=game_state,
+                previous_choice=previous_choice
+            )
             
             # Update radiation level
             game_state.radiation_level += llm_response.radiation_increase

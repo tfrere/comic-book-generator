@@ -10,10 +10,26 @@ const API_URL = isHFSpace
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_URL,
-  headers: getDefaultHeaders(),
   ...(isHFSpace && {
     baseURL: window.location.origin,
   }),
+});
+
+// Add request interceptor to handle headers
+api.interceptors.request.use((config) => {
+  // Routes qui ne nécessitent pas de session_id
+  const noSessionRoutes = ["/api/universe/generate", "/api/generate-image"];
+
+  if (noSessionRoutes.includes(config.url)) {
+    return config;
+  }
+
+  // Pour toutes les autres requêtes, s'assurer qu'on a un session_id
+  if (!config.headers["x-session-id"]) {
+    throw new Error("Session ID is required for this request");
+  }
+
+  return config;
 });
 
 // Error handling middleware
@@ -48,12 +64,18 @@ const handleApiError = (error) => {
 
 // Story related API calls
 export const storyApi = {
-  start: async () => {
+  start: async (sessionId) => {
     try {
-      console.log("Calling start API...");
-      const response = await api.post("/api/chat", {
-        message: "restart",
-      });
+      console.log("Calling start API with session:", sessionId);
+      const response = await api.post(
+        "/api/chat",
+        {
+          message: "restart",
+        },
+        {
+          headers: getDefaultHeaders(sessionId),
+        }
+      );
       console.log("Start API response:", response.data);
       return response.data;
     } catch (error) {
@@ -61,13 +83,19 @@ export const storyApi = {
     }
   },
 
-  makeChoice: async (choiceId) => {
+  makeChoice: async (choiceId, sessionId) => {
     try {
-      console.log("Making choice:", choiceId);
-      const response = await api.post("/api/chat", {
-        message: "choice",
-        choice_id: choiceId,
-      });
+      console.log("Making choice:", choiceId, "for session:", sessionId);
+      const response = await api.post(
+        "/api/chat",
+        {
+          message: "choice",
+          choice_id: choiceId,
+        },
+        {
+          headers: getDefaultHeaders(sessionId),
+        }
+      );
       console.log("Choice API response:", response.data);
       return response.data;
     } catch (error) {
@@ -75,14 +103,26 @@ export const storyApi = {
     }
   },
 
-  generateImage: async (prompt, width = 512, height = 512) => {
+  generateImage: async (
+    prompt,
+    width = 512,
+    height = 512,
+    sessionId = null
+  ) => {
     try {
       console.log("Generating image with prompt:", prompt);
-      const response = await api.post("/api/generate-image", {
+      const config = {
         prompt,
         width,
         height,
-      });
+      };
+
+      const options = {};
+      if (sessionId) {
+        options.headers = getDefaultHeaders(sessionId);
+      }
+
+      const response = await api.post("/api/generate-image", config, options);
       console.log("Image generation response:", {
         success: response.data.success,
         hasImage: !!response.data.image_base64,
@@ -94,12 +134,18 @@ export const storyApi = {
   },
 
   // Narration related API calls
-  narrate: async (text) => {
+  narrate: async (text, sessionId) => {
     try {
       console.log("Requesting narration for:", text);
-      const response = await api.post("/api/text-to-speech", {
-        text,
-      });
+      const response = await api.post(
+        "/api/text-to-speech",
+        {
+          text,
+        },
+        {
+          headers: getDefaultHeaders(sessionId),
+        }
+      );
       console.log("Narration response received");
       return response.data;
     } catch (error) {
@@ -110,6 +156,17 @@ export const storyApi = {
 
 // WebSocket URL
 export const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/ws";
+
+export const universeApi = {
+  generate: async () => {
+    try {
+      const response = await api.post("/api/universe/generate");
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+};
 
 // Export the base API instance for other uses
 export default api;
