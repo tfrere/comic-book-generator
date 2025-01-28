@@ -37,7 +37,10 @@ export function Home() {
           sx={{
             position: "relative",
             height: "80vh",
-            width: "auto",
+            width: "calc(80vh * 0.66666667)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           {/* Container principal pour l'image et tout le contenu */}
@@ -45,7 +48,7 @@ export function Home() {
             sx={{
               position: "relative",
               height: "100%",
-              width: "auto",
+              width: "100%",
               zIndex: 1,
             }}
           >
@@ -56,7 +59,7 @@ export function Home() {
               sx={{
                 position: "relative",
                 height: "100%",
-                width: "auto",
+                width: "100%",
                 zIndex: 1,
               }}
             >
@@ -66,8 +69,8 @@ export function Home() {
                 alt="Book cover"
                 sx={{
                   height: "100%",
-                  width: "auto",
-                  objectFit: "contain",
+                  width: "100%",
+                  objectFit: "cover",
                   borderRadius: "4px",
                   position: "relative",
                   boxShadow: "0 0 20px rgba(0,0,0,0.2)",
