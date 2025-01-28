@@ -2,7 +2,6 @@ import {
   Box,
   Typography,
   Button,
-  Chip,
   Paper,
   IconButton,
   Tooltip,
@@ -12,6 +11,8 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { usePageSound } from "../hooks/usePageSound";
 import { motion } from "framer-motion";
+import { StyledText } from "../components/StyledText";
+import { BookPages } from "../components/BookPages";
 
 export function Tutorial() {
   const navigate = useNavigate();
@@ -61,6 +62,7 @@ export function Tutorial() {
               "&:hover": {
                 backgroundColor: "rgba(0, 0, 0, 0.7)",
               },
+              zIndex: 10,
             }}
           >
             <ArrowBackIcon />
@@ -74,31 +76,14 @@ export function Tutorial() {
             height: "80vh",
             aspectRatio: "0.66666667",
             display: "flex",
-            alignItems: "center", // Center vertically
-            justifyContent: "center", // Center horizontally
-            "&::before, &::after": {
-              content: '""',
-              position: "absolute",
-              width: "100%",
-              height: "100%",
-              background: "white",
-              borderRadius: 1,
-              boxShadow: "0px 1px 3px rgba(0,0,0,0.2)",
-            },
-            "&::before": {
-              top: "4px",
-              left: "4px",
-              transform: "rotate(-1deg)",
-              zIndex: 1,
-            },
-            "&::after": {
-              top: "8px",
-              left: "8px",
-              transform: "rotate(1deg)",
-              zIndex: 0,
-            },
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
+          {/* Pages d'arrière-plan */}
+          <BookPages />
+
+          {/* Page principale */}
           <Paper
             elevation={3}
             sx={{
@@ -106,55 +91,169 @@ export function Tutorial() {
               zIndex: 2,
               width: "100%",
               height: "100%",
-              backgroundColor: "white",
+              backgroundColor: "#fff",
               color: "black",
-              padding: 6,
-              borderRadius: 1,
+              padding: "3rem 3rem 3rem 2rem",
+              borderRadius: "4px",
               display: "flex",
               flexDirection: "column",
-              alignItems: "center", // Center align items
-              justifyContent: "center", // Ensure content is centered vertically
-              textAlign: "center",
-              gap: 4,
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 2,
               overflowY: "auto",
+              boxShadow: "0 0 20px rgba(0,0,0,0.2)",
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                top: 0,
+                left: "4px",
+                bottom: 0,
+                width: "120px",
+                background:
+                  "linear-gradient(to right, rgba(0,0,0,0.25), rgba(0,0,0,0))",
+                opacity: 0.2,
+                pointerEvents: "none",
+                zIndex: 1,
+              },
+              "&::after": {
+                content: '""',
+                position: "absolute",
+                top: 0,
+                left: "4px",
+                bottom: 0,
+                width: "1px",
+                background:
+                  "linear-gradient(to right, rgba(0,0,0,0.15), transparent)",
+                borderRadius: "1px",
+                zIndex: 2,
+              },
+              "&::-webkit-scrollbar": {
+                width: "8px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "transparent",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "rgba(0,0,0,0.1)",
+                borderRadius: "4px",
+              },
             }}
           >
-            <Typography
-              variant="h2"
-              component="h1"
-              textAlign="center"
-              gutterBottom
-              color="black"
-              sx={{ width: "100%" }}
+            {/* Section Synopsis */}
+            <Box
+              sx={{
+                maxWidth: "600px",
+                margin: "auto",
+                textAlign: "center",
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+              }}
             >
-              Synopsis
-            </Typography>
-            <Typography
-              variant="body1"
-              paragraph
-              color="black"
-              sx={{ fontWeight: "normal" }}
+              <Typography
+                variant="h3"
+                component="h1"
+                textAlign="center"
+                gutterBottom
+                sx={{
+                  width: "100%",
+                  color: "#2c1810",
+                  fontWeight: "bold",
+                  textShadow: `
+                    0 -1px 1px rgba(0,0,0,0.2),
+                    0 1px 1px rgba(255,255,255,0.3)
+                  `,
+                  letterSpacing: "0.5px",
+                  marginBottom: 3,
+                  "&::after": {
+                    content: '""',
+                    display: "block",
+                    width: "40%",
+                    height: "1px",
+                    background: "rgba(0,0,0,0.2)",
+                    margin: "0.5rem auto",
+                  },
+                }}
+              >
+                Synopsis
+              </Typography>
+              <StyledText
+                variant="body1"
+                paragraph
+                sx={{
+                  fontWeight: "normal",
+                  color: "#2c1810",
+                  fontSize: "0.95rem",
+                  lineHeight: 1.6,
+                  marginBottom: 1.5,
+                }}
+                text={`You are <strong>Sarah</strong>, an <strong>AI</strong> hunter traveling through <strong>parallel worlds</strong>. Your mission is to track down an <strong>AI</strong> that moves from world to world to avoid destruction.`}
+              />
+              <StyledText
+                variant="body1"
+                paragraph
+                sx={{
+                  fontWeight: "normal",
+                  color: "#2c1810",
+                  fontSize: "0.95rem",
+                  lineHeight: 1.6,
+                  marginBottom: 1.5,
+                }}
+                text={`With each story, you land in a completely new universe. Each <strong>world</strong> presents its own challenges and <strong>obstacles</strong>. You must make crucial <strong>decisions</strong> to advance in your <strong>quest</strong>.`}
+              />
+              <StyledText
+                variant="body1"
+                paragraph
+                sx={{
+                  fontWeight: "normal",
+                  color: "#2c1810",
+                  fontSize: "0.95rem",
+                  lineHeight: 1.6,
+                  marginBottom: 0,
+                }}
+                text={`Every <strong>choice</strong> you make can alter the course of your <strong>pursuit</strong>. <strong>Time</strong> is of the essence, and every <strong>action</strong> counts in this thrilling adventure.`}
+              />
+            </Box>
+
+            {/* Section How to Play */}
+            <Box
+              sx={{
+                width: "100%",
+                borderTop: "1px solid rgba(0,0,0,0.1)",
+                paddingTop: 1.5,
+                marginTop: 2,
+              }}
             >
-              You are <strong>Sarah</strong>, an <strong>AI</strong> hunter
-              traveling through
-              <strong>parallel worlds</strong>. Your mission is to track down an{" "}
-              <strong>AI</strong> that moves from world to world to avoid
-              destruction.
-              <br />
-              <br />
-              You must make crucial <strong>decisions</strong> to advance in
-              your
-              <strong>quest</strong>. Each <strong>world</strong> presents its
-              own challenges and
-              <strong>obstacles</strong>, and every <strong>choice</strong> you
-              make can alter the course of your <strong>pursuit</strong>.{" "}
-              <strong>Time</strong> is of the essence, and every{" "}
-              <strong>action</strong> counts in this thrilling adventure.
-            </Typography>
-            <Typography variant="h4">How to play</Typography>
-            <Typography variant="body1" sx={{ fontWeight: "normal" }}>
-              At each step, click one of the available <strong>choices</strong>.
-            </Typography>
+              <Typography
+                variant="h6"
+                sx={{
+                  color: "#2c1810",
+                  fontWeight: "bold",
+                  textShadow: `
+                    0 -1px 1px rgba(0,0,0,0.2),
+                    0 1px 1px rgba(255,255,255,0.3)
+                  `,
+                  marginBottom: 0.5,
+                  textAlign: "center",
+                  fontSize: "1rem",
+                }}
+              >
+                How to play
+              </Typography>
+              <StyledText
+                variant="body1"
+                sx={{
+                  fontWeight: "normal",
+                  color: "#2c1810",
+                  fontSize: "0.9rem",
+                  lineHeight: 1.5,
+                  textAlign: "center",
+                  fontStyle: "italic",
+                }}
+                text="At each step, click one of the available <strong>choices</strong>."
+              />
+            </Box>
           </Paper>
         </Box>
 

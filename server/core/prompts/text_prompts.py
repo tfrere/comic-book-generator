@@ -23,6 +23,7 @@ IMPORTANT RULES FOR STORY TEXT:
 - Focus purely on describing what is happening in the current scene
 - Keep the text concise and impactful
 - Never tell that you are using 15 words or any reference to it 
+- One story beat at a time; never write more than one story beat. And never mention the story beat number.
 
 IMPORTANT RULES FOR STORY ENDINGS:
 - If Sarah dies, describe her final moments in a way that fits the current situation (combat, etc.)

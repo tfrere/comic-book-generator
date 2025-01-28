@@ -365,6 +365,13 @@ export function Game() {
               left: 0,
               right: 0,
               zIndex: 1000,
+              height: 8,
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              "& .MuiLinearProgress-bar": {
+                backgroundColor: "rgba(255, 255, 255, 0.8)",
+                backgroundImage:
+                  "linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.2) 100%)",
+              },
             }}
           />
         )}

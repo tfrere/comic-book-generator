@@ -41,7 +41,7 @@ class MistralClient:
         # Pour gérer le rate limit
         self.last_call_time = 0
         self.min_delay = 1  # 1 seconde minimum entre les appels
-        self.max_retries = 3
+        self.max_retries = 5
     
     async def _wait_for_rate_limit(self):
         """Attend le temps nécessaire pour respecter le rate limit."""
