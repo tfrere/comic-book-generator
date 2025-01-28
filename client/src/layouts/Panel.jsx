@@ -9,11 +9,6 @@ export function Panel({ segment, panel, panelIndex }) {
   // Reset states when the image changes
   useEffect(() => {
     const hasImage = !!segment?.images?.[panelIndex];
-    console.log(`[Panel ${panelIndex}] Image changed:`, {
-      hasSegment: !!segment,
-      hasImage,
-      imageContent: segment?.images?.[panelIndex]?.slice(0, 50),
-    });
 
     // Ne réinitialiser les états que si on n'a pas d'image
     if (!hasImage) {
@@ -23,17 +18,9 @@ export function Panel({ segment, panel, panelIndex }) {
   }, [segment?.images?.[panelIndex]]);
 
   // Log component state changes
-  useEffect(() => {
-    console.log(`[Panel ${panelIndex}] State updated:`, {
-      imageLoaded,
-      isLoading,
-      hasSegment: !!segment,
-      hasImage: !!segment?.images?.[panelIndex],
-    });
-  }, [imageLoaded, isLoading, segment, panelIndex]);
+  useEffect(() => {}, [imageLoaded, isLoading, segment, panelIndex]);
 
   const handleImageLoad = () => {
-    console.log(`[Panel ${panelIndex}] Image loaded successfully`);
     setImageLoaded(true);
     setIsLoading(false);
   };

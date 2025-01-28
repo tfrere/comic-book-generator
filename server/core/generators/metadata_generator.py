@@ -34,10 +34,12 @@ Generate the metadata following the format specified."""
             is_ending = data.get('is_victory', False) or data.get('is_death', False)
             choices = data.get('choices', [])
             
-            if is_ending and len(choices) != 0:
-                raise ValueError('For victory/death, choices must be empty')
-            if not is_ending and len(choices) != 2:
-                raise ValueError('For normal progression, must have exactly 2 choices')
+            # Si c'est une fin, forcer les choix à être vides
+            if is_ending:
+                data['choices'] = []
+            # Sinon, vérifier qu'il y a entre 1 et 4 choix
+            elif not (1 <= len(choices) <= 4):
+                raise ValueError('For normal progression, must have between 1 and 4 choices')
             
             return StoryMetadataResponse(**data)
         except json.JSONDecodeError:

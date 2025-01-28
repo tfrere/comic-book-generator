@@ -1,10 +1,5 @@
 from pydantic import BaseModel, Field
 from typing import List, Tuple
-from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
-import os
-import asyncio
-from uuid import uuid4
 
 from core.constants import GameConfig
 from core.prompts.system import SARAH_DESCRIPTION
@@ -47,7 +42,6 @@ def format_image_prompt(prompt: str, time: str, location: str) -> str:
 class GameState:
     def __init__(self):
         self.story_beat = GameConfig.STORY_BEAT_INTRO
-        self.radiation_level = 0
         self.story_history = []
         self.current_time = GameConfig.STARTING_TIME
         self.current_location = GameConfig.STARTING_LOCATION
@@ -67,7 +61,6 @@ class GameState:
         
         # Réinitialiser l'état du jeu
         self.story_beat = GameConfig.STORY_BEAT_INTRO
-        self.radiation_level = 0
         self.story_history = []
         self.current_time = GameConfig.STARTING_TIME
         self.current_location = GameConfig.STARTING_LOCATION
@@ -108,10 +101,9 @@ class GameState:
 # Story output structure
 class StoryLLMResponse(BaseModel):
     story_text: str = Field(description="The next segment of the story. No more than 15 words THIS IS MANDATORY. Never mention story beat directly. ")
-    choices: List[str] = Field(description="Between one and four possible choices for the player. Each choice should be a clear path to follow in the story", min_items=1, max_items=4)
+    choices: List[str] = Field(description="Between two and four possible choices for the player. Each choice should be a clear path to follow in the story", min_items=1, max_items=4)
     is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
     is_death: bool = Field(description="Whether this segment ends in Sarah's death", default=False)
-    radiation_increase: int = Field(description="How much radiation this segment adds (0-3)", ge=0, le=3, default=1)
     image_prompts: List[str] = Field(description="List of 1 to 4 comic panel descriptions that illustrate the key moments of the scene", min_items=1, max_items=4)
     time: str = Field(description="Current in-game time in 24h format (HH:MM). Time passes realistically based on actions.", default=GameConfig.STARTING_TIME)
     location: str = Field(description="Current location.", default=GameConfig.STARTING_LOCATION)
@@ -171,14 +163,13 @@ class StoryGenerator:
         return story_history
 
     async def generate_story_segment(self, session_id: str, game_state: GameState, previous_choice: str) -> StoryResponse:
-        """Génère un segment d'histoire complet en plusieurs étapes."""
+        """Génère un segment d'histoire."""
         text_generator = self.get_text_generator(session_id)
-
+        
         # 1. Générer le texte de l'histoire initial
         story_history = self._format_story_history(game_state)
         text_response = await text_generator.generate(
             story_beat=game_state.story_beat,
-            radiation_level=game_state.radiation_level,
             current_time=game_state.current_time,
             current_location=game_state.current_location,
             previous_choice=previous_choice,
@@ -194,8 +185,7 @@ class StoryGenerator:
         )
         
         # 3. Vérifier si c'est une fin (mort ou victoire)
-        is_radiation_death = game_state.radiation_level + metadata_response.radiation_increase >= GameConfig.MAX_RADIATION
-        is_ending = is_radiation_death or metadata_response.is_death or metadata_response.is_victory
+        is_ending = metadata_response.is_death or metadata_response.is_victory
         
         if is_ending:
             # Regénérer le texte avec le contexte de fin
@@ -206,9 +196,6 @@ class StoryGenerator:
                 current_scene=text_response.story_text,
                 story_history=story_history
             )
-            if is_radiation_death:
-                metadata_response.is_death = True
-            
             # Ne générer qu'une seule image pour la fin
             prompts_response = await self.image_generator.generate(text_response.story_text)
             if len(prompts_response.image_prompts) > 1:
@@ -228,11 +215,9 @@ class StoryGenerator:
             choices=choices,
             is_victory=metadata_response.is_victory,
             is_death=metadata_response.is_death,
-            radiation_level=game_state.radiation_level,
-            radiation_increase=metadata_response.radiation_increase,
             time=metadata_response.time,
             location=metadata_response.location,
-            raw_choices=metadata_response.choices,
+            raw_choices=metadata_response.choices if not is_ending else [],
             image_prompts=[format_image_prompt(prompt, metadata_response.time, metadata_response.location) 
                           for prompt in prompts_response.image_prompts],
             is_first_step=(game_state.story_beat == GameConfig.STORY_BEAT_INTRO)
@@ -242,8 +227,3 @@ class StoryGenerator:
 
     async def transform_story_to_art_prompt(self, story_text: str) -> str:
         return await self.mistral_client.transform_prompt(story_text, CINEMATIC_SYSTEM_PROMPT)
-
-    def process_radiation_death(self, segment: StoryLLMResponse) -> StoryLLMResponse:
-        segment.is_death = True
-        segment.story_text += "\n\nThe end... ?"
-        return segment 

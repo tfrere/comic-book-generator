@@ -18,7 +18,6 @@ class StoryOrchestrator:
     def _is_ending(self, game_state: GameState, metadata_response) -> bool:
         """Détermine si c'est une fin de jeu."""
         return (
-            game_state.is_radiation_death(metadata_response.radiation_increase) or
             metadata_response.is_death or
             metadata_response.is_victory
         )
@@ -70,8 +69,6 @@ class StoryOrchestrator:
             choices=choices,
             is_victory=metadata_response.is_victory,
             is_death=metadata_response.is_death,
-            radiation_level=game_state.radiation_level,
-            radiation_increase=metadata_response.radiation_increase,
             time=metadata_response.time,
             location=metadata_response.location,
             raw_choices=metadata_response.choices,
@@ -84,7 +81,6 @@ class StoryOrchestrator:
         # 1. Générer le texte de l'histoire
         text_response = await self.text_generator.generate(
             story_beat=game_state.story_beat,
-            radiation_level=game_state.radiation_level,
             current_time=game_state.current_time,
             current_location=game_state.current_location,
             previous_choice=previous_choice,

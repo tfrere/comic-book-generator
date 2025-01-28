@@ -18,7 +18,11 @@ const api = axios.create({
 // Add request interceptor to handle headers
 api.interceptors.request.use((config) => {
   // Routes qui ne nécessitent pas de session_id
-  const noSessionRoutes = ["/api/universe/generate", "/api/generate-image"];
+  const noSessionRoutes = [
+    "/api/universe/generate",
+    "/api/generate-image",
+    "/api/text-to-speech",
+  ];
 
   if (noSessionRoutes.includes(config.url)) {
     return config;
@@ -66,7 +70,6 @@ const handleApiError = (error) => {
 export const storyApi = {
   start: async (sessionId) => {
     try {
-      console.log("Calling start API with session:", sessionId);
       const response = await api.post(
         "/api/chat",
         {
@@ -76,7 +79,6 @@ export const storyApi = {
           headers: getDefaultHeaders(sessionId),
         }
       );
-      console.log("Start API response:", response.data);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -85,7 +87,6 @@ export const storyApi = {
 
   makeChoice: async (choiceId, sessionId) => {
     try {
-      console.log("Making choice:", choiceId, "for session:", sessionId);
       const response = await api.post(
         "/api/chat",
         {
@@ -96,7 +97,6 @@ export const storyApi = {
           headers: getDefaultHeaders(sessionId),
         }
       );
-      console.log("Choice API response:", response.data);
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -110,7 +110,6 @@ export const storyApi = {
     sessionId = null
   ) => {
     try {
-      console.log("Generating image with prompt:", prompt);
       const config = {
         prompt,
         width,
@@ -123,10 +122,6 @@ export const storyApi = {
       }
 
       const response = await api.post("/api/generate-image", config, options);
-      console.log("Image generation response:", {
-        success: response.data.success,
-        hasImage: !!response.data.image_base64,
-      });
       return response.data;
     } catch (error) {
       return handleApiError(error);
@@ -136,7 +131,6 @@ export const storyApi = {
   // Narration related API calls
   narrate: async (text, sessionId) => {
     try {
-      console.log("Requesting narration for:", text);
       const response = await api.post(
         "/api/text-to-speech",
         {
@@ -146,7 +140,6 @@ export const storyApi = {
           headers: getDefaultHeaders(sessionId),
         }
       );
-      console.log("Narration response received");
       return response.data;
     } catch (error) {
       return handleApiError(error);

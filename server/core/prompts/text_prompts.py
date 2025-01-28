@@ -1,4 +1,4 @@
-from core.prompts.system import FORMATTING_RULES, STORY_RULES, SARAH_DESCRIPTION
+from core.prompts.system import FORMATTING_RULES, STORY_RULES, SARAH_DESCRIPTION, NARRATIVE_STRUCTURE
 from core.prompts.cinematic import CINEMATIC_SYSTEM_PROMPT
 
 
@@ -11,9 +11,11 @@ CRITICAL LENGTH RULE:
 - Count your words carefully before returning the text
 - Be concise while keeping the story impactful
 
-{STORY_RULES}
+{NARRATIVE_STRUCTURE}
 
 {SARAH_DESCRIPTION}
+
+{STORY_RULES}
 
 IMPORTANT RULES FOR STORY TEXT:
 - Write ONLY a descriptive narrative text
@@ -52,7 +54,6 @@ IMPORTANT RULES FOR CHOICES:
 
 You must return a JSON object with the following format:
 {{{{
-    "radiation_increase": 1,
     "is_victory": false,
     "is_death": false,
     "choices": ["Choice 1", "Choice 2"],  # ALWAYS exactly two choices, each max 6 words

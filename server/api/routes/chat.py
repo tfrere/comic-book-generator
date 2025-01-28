@@ -63,12 +63,7 @@ def get_chat_router(session_manager: SessionManager, story_generator):
                 previous_choice=previous_choice
             )
             
-            # Update radiation level
-            game_state.radiation_level += llm_response.radiation_increase
-            
-            # Check for radiation death
-            is_death = game_state.radiation_level >= GameConfig.MAX_RADIATION
-            if is_death:
+            if llm_response.is_death:
                 llm_response.choices = []
                 llm_response.story_text += "\You have succumbed to the harsh wastelands, and your journey concludes here. THE END."
                 if len(llm_response.image_prompts) > 1:
@@ -92,18 +87,16 @@ def get_chat_router(session_manager: SessionManager, story_generator):
                 story_text=llm_response.story_text,
                 choices=llm_response.choices,
                 raw_choices=llm_response.raw_choices,
-                radiation_level=game_state.radiation_level,
-                radiation_increase=llm_response.radiation_increase,
                 time=llm_response.time,
                 location=llm_response.location,
                 is_victory=llm_response.is_victory,
-                is_death=is_death,
+                is_death=llm_response.is_death,
                 is_first_step=game_state.story_beat == 0,
                 image_prompts=llm_response.image_prompts
             )
             
             # Only increment story beat if not dead and not victory
-            if not is_death and not llm_response.is_victory:
+            if not llm_response.is_death and not llm_response.is_victory:
                 game_state.story_beat += 1
                 
             return response

@@ -8,7 +8,7 @@ class Choice(BaseModel):
 
 class StorySegmentBase(BaseModel):
     """Base model for story segments with common validation logic"""
-    story_text: str = Field(description="The story text. No more than 15 words THIS IS MANDATORY.  Never mention story beat or radiation level directly. ")
+    story_text: str = Field(description="The story text. No more than 15 words THIS IS MANDATORY.  Never mention story beat directly. ")
     is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
     is_death: bool = Field(description="Whether this segment ends in Sarah's death", default=False)
 
@@ -24,12 +24,6 @@ class StoryPromptsResponse(BaseModel):
     )
 
 class StoryMetadataResponse(BaseModel):
-    radiation_increase: int = Field(
-        description=f"How much radiation this segment adds (0-3)",
-        ge=0,
-        le=3,
-        default=GameConfig.DEFAULT_RADIATION_INCREASE
-    )
     is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
     is_death: bool = Field(description="Whether this segment ends in Sarah's death", default=False)
     choices: List[str] = Field(description="Either empty list for victory/death, or exactly two choices for normal progression")
@@ -51,8 +45,6 @@ class StoryMetadataResponse(BaseModel):
 class StoryResponse(StorySegmentBase):
     choices: List[Choice]
     raw_choices: List[str] = Field(description="Raw choice texts from LLM before conversion to Choice objects")
-    radiation_level: int = Field(description=f"Current radiation level")
-    radiation_increase: int = Field(description="How much radiation this segment adds (0-3)", ge=0, le=3, default=GameConfig.DEFAULT_RADIATION_INCREASE)
     time: str = Field(description="Current in-game time in 24h format (HH:MM). Time passes realistically based on actions.")
     location: str = Field(description="Current location.")
     is_first_step: bool = Field(description="Whether this is the first step of the story", default=False)

@@ -6,7 +6,6 @@ class GameState:
     
     def __init__(self):
         self.story_beat = GameConfig.STORY_BEAT_INTRO
-        self.radiation_level = 0
         self.story_history = []
         self.current_time = GameConfig.STARTING_TIME
         self.current_location = GameConfig.STARTING_LOCATION
@@ -38,10 +37,3 @@ class GameState:
         
         return "\n\n---\n\n".join(segments)
         
-    def is_radiation_death(self, additional_radiation: int) -> bool:
-        """Vérifie si le niveau de radiation serait fatal."""
-        return self.radiation_level + additional_radiation >= GameConfig.MAX_RADIATION
-        
-    def add_radiation(self, amount: int):
-        """Ajoute de la radiation au compteur."""
-        self.radiation_level += amount 

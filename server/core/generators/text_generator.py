@@ -35,7 +35,6 @@ Your task is to generate the next segment of the story, following these rules:
 
         human_template = """Current game state:
 - Story beat: {story_beat}
-- Radiation level: {radiation_level}
 - Current time: {current_time}
 - Current location: {current_location}
 - Previous choice: {previous_choice}
@@ -71,8 +70,6 @@ The ending should feel like a natural continuation of the current scene."""
     def _clean_story_text(self, text: str) -> str:
         """Nettoie le texte des métadonnées et autres suffixes."""
         text = text.replace("\n", " ").strip()
-        text = text.split("Radiation level:")[0].strip()
-        text = text.split("RADIATION:")[0].strip()
         text = text.split("[")[0].strip()  # Supprimer les métadonnées entre crochets
         return text
 
@@ -90,11 +87,10 @@ The ending should feel like a natural continuation of the current scene."""
             cleaned_text = self._clean_story_text(response_content.strip())
             return StoryTextResponse(story_text=cleaned_text)
 
-    async def generate(self, story_beat: int, radiation_level: int, current_time: str, current_location: str, previous_choice: str, story_history: str = "") -> StoryTextResponse:
+    async def generate(self, story_beat: int, current_time: str, current_location: str, previous_choice: str, story_history: str = "") -> StoryTextResponse:
         """Génère le prochain segment de l'histoire."""
         return await super().generate(
             story_beat=story_beat,
-            radiation_level=radiation_level,
             current_time=current_time,
             current_location=current_location,
             previous_choice=previous_choice,

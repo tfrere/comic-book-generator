@@ -14,6 +14,7 @@ import { useNarrator } from "../hooks/useNarrator";
 import { useStoryCapture } from "../hooks/useStoryCapture";
 import { usePageSound } from "../hooks/usePageSound";
 import { useWritingSound } from "../hooks/useWritingSound";
+import { useTransitionSound } from "../hooks/useTransitionSound";
 import { useGameSession } from "../hooks/useGameSession";
 import { StoryChoices } from "../components/StoryChoices";
 import { ErrorDisplay } from "../components/ErrorDisplay";
@@ -24,6 +25,8 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CreateIcon from "@mui/icons-material/Create";
 import { getNextLayoutType, LAYOUTS } from "../layouts/config";
 import { LoadingScreen } from "../components/LoadingScreen";
+
+import { TalkWithSarah } from "../components/TalkWithSarah";
 
 // Constants
 const SOUND_ENABLED_KEY = "sound_enabled";
@@ -69,12 +72,22 @@ export function Game() {
     useNarrator(isSoundEnabled);
   const playPageSound = usePageSound(isSoundEnabled);
   const playWritingSound = useWritingSound(isSoundEnabled);
+  const playTransitionSound = useTransitionSound(isSoundEnabled);
   const {
     sessionId,
     universe,
     isLoading: isSessionLoading,
     error: sessionError,
   } = useGameSession();
+
+  // Jouer le son de transition une fois que la session est chargée
+  useEffect(() => {
+    if (!isSessionLoading && sessionId && !error && !sessionError) {
+      setTimeout(() => {
+        playTransitionSound();
+      }, 100);
+    }
+  }, [isSessionLoading, sessionId, error, sessionError]);
 
   // Sauvegarder l'état du son dans le localStorage
   useEffect(() => {
@@ -144,7 +157,6 @@ export function Game() {
         stopNarration();
       }
 
-      console.log("Starting story action:", action);
       // Pass sessionId to API calls
       const storyData = await (action === "restart"
         ? storyApi.start(sessionId)
@@ -161,7 +173,6 @@ export function Game() {
         isChoice: false,
         isDeath: storyData.is_death,
         isVictory: storyData.is_victory,
-        radiationLevel: storyData.radiation_level,
         is_first_step: storyData.is_first_step,
         is_last_step: storyData.is_last_step,
         images: [],
@@ -185,10 +196,6 @@ export function Game() {
 
       // 6. Generate images in parallel
       if (storyData.image_prompts && storyData.image_prompts.length > 0) {
-        console.log(
-          "Starting image generation for prompts:",
-          storyData.image_prompts
-        );
         await generateImagesForStory(
           storyData.image_prompts,
           action === "restart" ? 0 : storySegments.length,
@@ -232,9 +239,6 @@ export function Game() {
 
       // Déterminer le layout en fonction du nombre d'images
       const layoutType = getNextLayoutType(0, imagePrompts.length);
-      console.log(
-        `Using layout ${layoutType} for ${imagePrompts.length} images`
-      );
 
       for (
         let promptIndex = 0;
@@ -247,13 +251,9 @@ export function Game() {
 
         // Obtenir les dimensions pour ce panneau
         const panelDimensions = LAYOUTS[layoutType].panels[promptIndex];
-        console.log(`Panel ${promptIndex} dimensions:`, panelDimensions);
 
         while (retryCount < maxRetries && !success) {
           try {
-            console.log(
-              `Generating image ${promptIndex + 1}/${imagePrompts.length}`
-            );
             const result = await storyApi.generateImage(
               imagePrompts[promptIndex],
               panelDimensions.width,
@@ -265,7 +265,6 @@ export function Game() {
             }
 
             if (result.success) {
-              console.log(`Successfully generated image ${promptIndex + 1}`);
               images[promptIndex] = result.image_base64;
 
               // Vérifier si toutes les images sont générées
@@ -432,6 +431,24 @@ export function Game() {
                   showScreenshot={storySegments.length > 0}
                   onScreenshot={handleCaptureStory}
                 />
+
+                {storySegments.length > 0 && currentChoices.length > 0 && (
+                  <TalkWithSarah
+                    isNarratorSpeaking={isNarratorSpeaking}
+                    stopNarration={stopNarration}
+                    playNarration={playNarration}
+                    onDecisionMade={handleChoice}
+                    currentContext={`Sarah this is the situation you're in : ${
+                      storySegments[storySegments.length - 1].text
+                    }. Those are your possible decisions : \n ${currentChoices
+                      .map(
+                        (choice, index) =>
+                          `decision ${index + 1} : ${choice.text}`
+                      )
+                      .join("\n ")}.`}
+                  />
+                )}
+
                 {showChoices && (
                   <StoryChoices
                     choices={currentChoices}

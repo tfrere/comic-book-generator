@@ -36,10 +36,9 @@ def print_universe_info(style: str, genre: str, epoch: str, base_story: str):
     print(base_story)
     print_separator("*")
 
-def print_story_step(step_number, radiation_level, story_text, image_prompts, generation_time: float, story_history: str = None, show_context: bool = False, model_name: str = None, is_death: bool = False, is_victory: bool = False):
+def print_story_step(step_number, story_text, image_prompts, generation_time: float, story_history: str = None, show_context: bool = False, model_name: str = None, is_death: bool = False, is_victory: bool = False):
     print_separator("=")
     print(f"📖 STEP {step_number}")
-    print(f"☢️  Radiation level: {radiation_level}/{GameConfig.MAX_RADIATION}")
     print(f"⏱️  Generation time: {generation_time:.2f}s (model: {model_name})")
     print(f"💀 Death: {is_death}")
     print(f"🏆 Victory: {is_victory}")
@@ -134,7 +133,6 @@ async def play_game(show_context: bool = False):
         # Display current step
         print_story_step(
             game_state.story_beat,
-            game_state.radiation_level,
             response.story_text,
             response.image_prompts,
             generation_time,
@@ -145,10 +143,9 @@ async def play_game(show_context: bool = False):
             response.is_victory
         )
         
-        # Check for radiation death
-        if game_state.radiation_level >= GameConfig.MAX_RADIATION:
-            print("\n☢️  GAME OVER - Death by radiation ☢️")
-            print("Sarah has succumbed to the toxic radiation...")
+        if response.is_death:
+            print("\n☢️  GAME OVER - Death ☢️")
+            print("Sarah has succumbed...")
             break
             
         # Check for victory
@@ -174,7 +171,6 @@ async def play_game(show_context: bool = False):
                     print("❌ Please enter a number.")
             
             # Update game state
-            game_state.radiation_level += response.radiation_increase
             game_state.story_beat += 1
             game_state.add_to_history(
                 response.story_text,
@@ -184,9 +180,6 @@ async def play_game(show_context: bool = False):
                 response.location
             )
             
-            # Display radiation impact
-            if response.radiation_increase > 0:
-                print(f"\n⚠️  This choice increases your radiation level by {response.radiation_increase} points!")
         else:
             break
 

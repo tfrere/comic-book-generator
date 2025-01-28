@@ -40,9 +40,9 @@ FORMAT:
 "[shot type] [scene description]"
 
 EXAMPLES:
-- "low angle shot of Sarah checking her radiation detector in a dark corridor, harsh red emergency lights"
+- "low angle shot of Sarah checking an object in a dark corridor"
 - "wide shot of a ruined cityscape at sunset, silhouette of Sarah in the foreground"
-- "Dutch angle close-up of Sarah's determined face illuminated by the green glow of her detector"
+- "Dutch angle close-up of Sarah's determined face illuminated by the glow of her object"
 
 Always maintain consistency with Sarah's appearance and the comic book style.""" 
 

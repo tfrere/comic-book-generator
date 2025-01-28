@@ -35,7 +35,6 @@ export function StoryChoices({
 }) {
   const navigate = useNavigate();
 
-  console.log("ICI", isLastStep, isGameOver);
   if (isGameOver) {
     return (
       <Box

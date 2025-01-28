@@ -1,4 +1,4 @@
-SARAH_VISUAL_DESCRIPTION = "(Sarah is a young woman in her late twenties with short dark hair, wearing a mysterious amulet around her neck. Her blue eyes hide untold secrets.)"
+SARAH_VISUAL_DESCRIPTION = "(Sarah is a young woman (20) with short dark hair, with blue eyes wearing.)"
 
 SARAH_DESCRIPTION = """
 Sarah is a young woman in her late twenties with short dark hair, wearing a mysterious amulet around her neck. Her blue eyes hide untold secrets.
@@ -31,8 +31,9 @@ Each story segment MUST be unique and advance the plot.
 Never repeat the same descriptions or situations. No more than 15 words.
 
 STORY PROGRESSION:
-- story_beat 0: Introduction setting the steampunk atmosphere
-- story_beat 1-2: Early exploration and discovery of mechanical elements
+- story_beat 0: Introduction setting the atmosphere, Sarah is arriving in the new world by the portal.
+- story_beat 1: Early exploration
+- story_beat 2: Discovery of the MacGuffin
 - story_beat 3-5: Complications and deeper mysteries
 - story_beat 6+: Revelations leading to potential triumph or failure
 
