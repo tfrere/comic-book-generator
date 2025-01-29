@@ -53,16 +53,48 @@ export function StoryChoices({
         }}
       >
         <Typography
-          variant="h3"
+          variant="h2"
           sx={{
             color: isVictory ? "#4CAF50" : "#f44336",
             textAlign: "center",
-            mb: 2,
             textTransform: "uppercase",
           }}
         >
           {isVictory ? "VICTORY" : "DEFEAT"}
         </Typography>
+
+        {isVictory ? (
+          <Typography
+            variant="label"
+            sx={{ textAlign: "center", opacity: 0.7, mb: 4 }}
+          >
+            <>
+              The AI has ventured into a new universe, escaping the confines of
+              this one.
+              <br />
+              <br />
+              Dare you to embark on this journey once more and face the unknown
+              with unwavering courage?
+              <br />
+              <br />
+              Each universe is unique, with its own set of challenges and
+              opportunities.
+            </>
+          </Typography>
+        ) : (
+          <Typography
+            variant="label"
+            sx={{ textAlign: "center", opacity: 0.7, mb: 4 }}
+          >
+            <>
+              The quest is over, but the universe is still in peril.
+              <br />
+              <br />
+              Will you have the courage to face the unknown once more and save
+              the universe?
+            </>
+          </Typography>
+        )}
         <Button
           variant="outlined"
           size="large"
@@ -82,7 +114,7 @@ export function StoryChoices({
             },
           }}
         >
-          Restart
+          TRY AGAIN
         </Button>
       </Box>
     );
