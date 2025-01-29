@@ -20,19 +20,51 @@ export function Home() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      style={{ backgroundColor: "#121212", width: "100%" }}
+      style={{ width: "100%", height: "100vh", position: "relative" }}
     >
       <Box
         sx={{
-          minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: 4,
-          bgcolor: "background.default",
+          minHeight: "100vh",
+          width: "100%",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: "url('/home.webp')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            opacity: 0.3,
+            zIndex: 0,
+          },
         }}
       >
+        {/* <Typography
+          variant="h1"
+          component="h1"
+          sx={{
+            fontWeight: "bold",
+            marginBottom: 2,
+            color: "#f0e6d9",
+            textShadow: `
+                      0 -1px 1px rgba(0,0,0,0.3),
+                      0 1px 1px rgba(255,255,255,0.2)
+                    `,
+            letterSpacing: "0.5px",
+            filter: "brightness(0.95)",
+          }}
+        >
+          Sarah's
+          <br /> Chronicles
+        </Typography> */}
         <Box
           sx={{
             position: "relative",
@@ -43,7 +75,6 @@ export function Home() {
             justifyContent: "center",
           }}
         >
-          {/* Container principal pour l'image et tout le contenu */}
           <Box
             sx={{
               position: "relative",
@@ -52,9 +83,7 @@ export function Home() {
               zIndex: 1,
             }}
           >
-            {/* Pages d'arrière-plan */}
             <BookPages />
-            {/* Image de couverture */}
             <Box
               sx={{
                 position: "relative",
@@ -76,7 +105,6 @@ export function Home() {
                   boxShadow: "0 0 20px rgba(0,0,0,0.2)",
                 }}
               />
-              {/* Effet de reliure */}
               <Box
                 sx={{
                   position: "absolute",
@@ -102,7 +130,6 @@ export function Home() {
                 }}
               />
             </Box>
-            {/* Overlay gradient */}
             <Box
               sx={{
                 position: "absolute",
@@ -116,7 +143,6 @@ export function Home() {
                 zIndex: 2,
               }}
             />
-            {/* Contenu texte */}
             <Box
               sx={{
                 position: "absolute",
@@ -210,6 +236,7 @@ export function Home() {
           size="large"
           onClick={handlePlay}
           sx={{
+            mt: 4,
             fontSize: "1.2rem",
             padding: "12px 36px",
           }}
