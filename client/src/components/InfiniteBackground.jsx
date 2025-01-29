@@ -146,7 +146,9 @@ export function InfiniteBackground() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: "rgba(0, 0, 0, 0.85)",
+          background: "rgba(0, 0, 0, 0.75)",
+          backdropFilter: "blur(1px)",
+          WebkitBackdropFilter: "blur(1px)", // Pour Safari
           zIndex: 1,
         },
       }}
