@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from typing import TypeVar, Type, Optional, Callable
 from pydantic import BaseModel
 from langchain_mistralai.chat_models import ChatMistralAI
@@ -7,6 +8,10 @@ from langchain.schema import SystemMessage, HumanMessage
 from langchain.schema.messages import BaseMessage
 
 T = TypeVar('T', bound=BaseModel)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Available Mistral models:
 # - mistral-tiny     : Fastest, cheapest, good for testing
@@ -27,6 +32,7 @@ T = TypeVar('T', bound=BaseModel)
 
 class MistralClient:
     def __init__(self, api_key: str, model_name: str = "mistral-small"):
+        logger.info(f"Initializing MistralClient with model: {model_name}")
         self.model = ChatMistralAI(
             mistral_api_key=api_key,
             model=model_name,
@@ -49,7 +55,9 @@ class MistralClient:
         time_since_last_call = current_time - self.last_call_time
         
         if time_since_last_call < self.min_delay:
-            await asyncio.sleep(self.min_delay - time_since_last_call)
+            delay = self.min_delay - time_since_last_call
+            logger.debug(f"Rate limit: waiting for {delay:.2f} seconds")
+            await asyncio.sleep(delay)
         
         self.last_call_time = asyncio.get_event_loop().time()
 
@@ -74,15 +82,31 @@ class MistralClient:
         
         while retry_count < self.max_retries:
             try:
+                # Log attempt
+                logger.info(f"Attempt {retry_count + 1}/{self.max_retries}")
+                
                 # Ajouter le feedback d'erreur si présent
                 current_messages = messages.copy()
                 if error_feedback and retry_count > 0:
+                    logger.info(f"Adding error feedback: {error_feedback}")
                     current_messages.append(HumanMessage(content=f"Previous error: {error_feedback}. Please try again."))
+                
+                # Log request details
+                logger.debug("Request details:")
+                for msg in current_messages:
+                    logger.debug(f"- {msg.type}: {msg.content[:100]}...")
                 
                 # Générer la réponse
                 await self._wait_for_rate_limit()
-                response = await self.model.ainvoke(current_messages)
-                content = response.content
+                try:
+                    response = await self.model.ainvoke(current_messages)
+                    content = response.content
+                    logger.debug(f"Raw response: {content[:100]}...")
+                except Exception as api_error:
+                    logger.error(f"API Error: {str(api_error)}")
+                    if "403" in str(api_error):
+                        logger.error("Received 403 Forbidden - This might indicate an invalid API key or quota exceeded")
+                    raise
                 
                 # Si pas de parsing requis, retourner le contenu brut
                 if not response_model and not custom_parser:
@@ -98,17 +122,22 @@ class MistralClient:
                     return response_model(**data)
                 except json.JSONDecodeError as e:
                     last_error = f"Invalid JSON format: {str(e)}"
+                    logger.error(f"JSON parsing error: {last_error}")
                     raise ValueError(last_error)
                 except Exception as e:
                     last_error = str(e)
+                    logger.error(f"Pydantic parsing error: {last_error}")
                     raise ValueError(last_error)
                 
             except Exception as e:
-                print(f"Error on attempt {retry_count + 1}/{self.max_retries}: {str(e)}")
+                logger.error(f"Error on attempt {retry_count + 1}/{self.max_retries}: {str(e)}")
                 retry_count += 1
                 if retry_count < self.max_retries:
-                    await asyncio.sleep(2 * retry_count)
+                    wait_time = 2 * retry_count
+                    logger.info(f"Waiting {wait_time} seconds before retry...")
+                    await asyncio.sleep(wait_time)
                     continue
+                logger.error(f"Failed after {self.max_retries} attempts. Last error: {last_error or str(e)}")
                 raise Exception(f"Failed after {self.max_retries} attempts. Last error: {last_error or str(e)}")
     
     async def generate(self, messages: list[BaseMessage], response_model: Optional[Type[T]] = None, custom_parser: Optional[Callable[[str], T]] = None) -> T | str:

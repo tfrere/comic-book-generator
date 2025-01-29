@@ -26,8 +26,6 @@ import CreateIcon from "@mui/icons-material/Create";
 import { getNextLayoutType, LAYOUTS } from "../layouts/config";
 import { LoadingScreen } from "../components/LoadingScreen";
 
-import { TalkWithSarah } from "../components/TalkWithSarah";
-
 // Constants
 const SOUND_ENABLED_KEY = "sound_enabled";
 
@@ -431,23 +429,6 @@ export function Game() {
                   showScreenshot={storySegments.length > 0}
                   onScreenshot={handleCaptureStory}
                 />
-
-                {storySegments.length > 0 && currentChoices.length > 0 && (
-                  <TalkWithSarah
-                    isNarratorSpeaking={isNarratorSpeaking}
-                    stopNarration={stopNarration}
-                    playNarration={playNarration}
-                    onDecisionMade={handleChoice}
-                    currentContext={`Sarah this is the situation you're in : ${
-                      storySegments[storySegments.length - 1].text
-                    }. Those are your possible decisions : \n ${currentChoices
-                      .map(
-                        (choice, index) =>
-                          `decision ${index + 1} : ${choice.text}`
-                      )
-                      .join("\n ")}.`}
-                  />
-                )}
 
                 {showChoices && (
                   <StoryChoices

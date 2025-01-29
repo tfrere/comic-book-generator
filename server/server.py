@@ -6,7 +6,8 @@ import os
 from dotenv import load_dotenv
 
 # Import local modules
-from core.game_logic import StoryGenerator
+from core.story_generator import StoryGenerator
+from core.setup import setup_game, get_universe_generator
 from core.session_manager import SessionManager
 from services.flux_client import FluxClient
 from api.routes.chat import get_chat_router

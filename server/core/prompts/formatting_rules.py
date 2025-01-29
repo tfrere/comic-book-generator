@@ -1,0 +1,6 @@
+
+FORMATTING_RULES = """
+FORMATTING_RULES (MANDATORY)
+- The story must consist ONLY of sentences
+- NEVER USE BOLD FOR ANYTHING
+"""

@@ -6,12 +6,14 @@ import argparse
 from pathlib import Path
 from dotenv import load_dotenv
 import uuid
+import random
 
 # Add server directory to PYTHONPATH
 server_dir = Path(__file__).parent.parent
 sys.path.append(str(server_dir))
 
-from core.game_logic import GameState, StoryGenerator
+from core.game_state import GameState
+from core.story_generator import StoryGenerator
 from core.constants import GameConfig
 from core.generators.universe_generator import UniverseGenerator
 
@@ -21,6 +23,8 @@ load_dotenv()
 def parse_args():
     parser = argparse.ArgumentParser(description="Test the game's story generation")
     parser.add_argument('--show-context', action='store_true', help='Show the full context at each step')
+    parser.add_argument('--auto', action='store_true', help='Run in automatic mode with random choices')
+    parser.add_argument('--max-turns', type=int, default=15, help='Maximum number of turns before considering test failed (default: 15)')
     return parser.parse_args()
 
 def print_separator(char="=", length=50):
@@ -58,7 +62,7 @@ def print_story_step(step_number, story_text, image_prompts, generation_time: fl
         print(f"  {prompt}")
     print_separator("=")
 
-async def play_game(show_context: bool = False):
+async def play_game(show_context: bool = False, auto_mode: bool = False, max_turns: int = 15):
     # Initialize components
     model_name = "mistral-small"
     story_generator = StoryGenerator(
@@ -73,11 +77,14 @@ async def play_game(show_context: bool = False):
     print("🎮 Starting adventure...")
     if show_context:
         print("📚 Context display is enabled")
+    if auto_mode:
+        print("🤖 Running in automatic mode")
+        print(f"⏱️  Maximum turns: {max_turns}")
     print_separator()
     
     # Generate universe
     print("🌍 Generating universe...")
-    style, genre, epoch = universe_generator._get_random_elements()
+    style, genre, epoch, macguffin = universe_generator._get_random_elements()
     universe = await universe_generator.generate()
     
     # Create session and game state
@@ -91,12 +98,13 @@ async def play_game(show_context: bool = False):
     )
     
     # Create text generator for this session
-    story_generator.create_text_generator(
+    story_generator.create_segment_generator(
         session_id=session_id,
-        style=style["name"],
+        style=style,
         genre=genre,
         epoch=epoch,
-        base_story=universe
+        base_story=universe,
+        macguffin=macguffin
     )
     
     # Display universe information
@@ -105,6 +113,11 @@ async def play_game(show_context: bool = False):
     last_choice = None
     
     while True:
+        # Check for maximum turns in auto mode
+        if auto_mode and game_state.story_beat >= max_turns:
+            print(f"\n❌ TEST FAILED: Story did not end after {max_turns} turns")
+            return False
+            
         # Generate story segment
         previous_choice = "none" if game_state.story_beat == 0 else f"Choice {last_choice}"
         
@@ -146,29 +159,35 @@ async def play_game(show_context: bool = False):
         if response.is_death:
             print("\n☢️  GAME OVER - Death ☢️")
             print("Sarah has succumbed...")
-            break
+            return False
             
         # Check for victory
         if response.is_victory:
             print("\n🏆 VICTORY! 🏆")
             print("Sarah has survived and completed her mission!")
-            break
+            return True
             
         # Display choices
-        if response.choices:
+        if len(response.choices) == 2:  # On vérifie qu'on a exactement 2 choix
             print("\n🤔 AVAILABLE CHOICES:")
-            for i, choice in enumerate(response.choices, 1):
-                print(f"{i}. {choice.text}")
+            for choice in response.choices:
+                print(f"{choice.id}. {choice.text}")
                 
             # Get player choice
-            while True:
-                try:
-                    last_choice = int(input(f"\n👉 Your choice (1-{len(response.choices)}): "))
-                    if 1 <= last_choice <= len(response.choices):
-                        break
-                    print(f"❌ Invalid choice. Please choose between 1 and {len(response.choices)}.")
-                except ValueError:
-                    print("❌ Please enter a number.")
+            if auto_mode:
+                last_choice = random.randint(1, 2)
+                print(f"\n🤖 Auto-choosing: {last_choice}")
+                time.sleep(1)  # Small delay for readability
+            else:
+                while True:
+                    try:
+                        choice_input = int(input("\n👉 Your choice (1-2): "))
+                        if choice_input in [1, 2]:
+                            last_choice = choice_input
+                            break
+                        print("❌ Invalid choice. Please choose 1 or 2.")
+                    except ValueError:
+                        print("❌ Please enter a number.")
             
             # Update game state
             game_state.story_beat += 1
@@ -181,16 +200,25 @@ async def play_game(show_context: bool = False):
             )
             
         else:
-            break
+            print("\n❌ Error: Invalid number of choices received from server")
+            return False
 
 def main():
     try:
         args = parse_args()
-        asyncio.run(play_game(show_context=args.show_context))
+        success = asyncio.run(play_game(
+            show_context=args.show_context,
+            auto_mode=args.auto,
+            max_turns=args.max_turns
+        ))
+        if args.auto:
+            sys.exit(0 if success else 1)
     except KeyboardInterrupt:
         print("\n\n👋 Game interrupted. See you soon!")
+        sys.exit(1)
     except Exception as e:
         print(f"\n❌ An error occurred: {str(e)}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main() 

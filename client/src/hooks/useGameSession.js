@@ -11,7 +11,7 @@ export const useGameSession = () => {
     const initializeGame = async () => {
       try {
         setIsLoading(true);
-        const { session_id, base_story, style, genre, epoch } =
+        const { session_id, base_story, style, genre, epoch, macguffin } =
           await universeApi.generate();
 
         setSessionId(session_id);
@@ -20,6 +20,7 @@ export const useGameSession = () => {
           style,
           genre,
           epoch,
+          macguffin,
         });
       } catch (err) {
         setError(err.message || "Failed to initialize game session");

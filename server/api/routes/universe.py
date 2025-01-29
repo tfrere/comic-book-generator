@@ -2,9 +2,19 @@ from fastapi import APIRouter, HTTPException
 import uuid
 
 from core.generators.universe_generator import UniverseGenerator
-from core.game_logic import StoryGenerator
+from core.story_generator import StoryGenerator
 from core.session_manager import SessionManager
 from api.models import UniverseResponse
+from pydantic import BaseModel, Field
+
+class UniverseResponse(BaseModel):
+    status: str
+    session_id: str
+    style: str
+    genre: str
+    epoch: str
+    base_story: str = Field(description="The generated story for this universe")
+    macguffin: str = Field(description="The MacGuffin for this universe")
 
 def get_universe_router(session_manager: SessionManager, story_generator: StoryGenerator) -> APIRouter:
     router = APIRouter()
@@ -16,8 +26,8 @@ def get_universe_router(session_manager: SessionManager, story_generator: StoryG
             print("Starting universe generation...")
             
             # Get random elements before generation
-            style, genre, epoch = universe_generator._get_random_elements()
-            print(f"Generated random elements: style={style['name']}, genre={genre}, epoch={epoch}")
+            style, genre, epoch, macguffin = universe_generator._get_random_elements()
+            print(f"Generated random elements: style={style['name']}, genre={genre}, epoch={epoch}, macguffin={macguffin}")
             
             universe = await universe_generator.generate()
             print("Generated universe story")
@@ -39,12 +49,13 @@ def get_universe_router(session_manager: SessionManager, story_generator: StoryG
             print("Configured universe in game state")
             
             # Créer le TextGenerator pour cette session
-            story_generator.create_text_generator(
+            story_generator.create_segment_generator(
                 session_id=session_id,
-                style=style["name"],
+                style=style,
                 genre=genre,
                 epoch=epoch,
-                base_story=universe
+                base_story=universe,
+                macguffin=macguffin
             )
             print("Created text generator for session")
             
@@ -52,8 +63,8 @@ def get_universe_router(session_manager: SessionManager, story_generator: StoryG
             if not game_state.has_universe():
                 raise ValueError("Universe was not properly configured in game state")
                 
-            if session_id not in story_generator.text_generators:
-                raise ValueError("TextGenerator was not properly created")
+            if session_id not in story_generator.segment_generators:
+                raise ValueError("StorySegmentGenerator was not properly created")
             
             print("All components configured successfully")
             
@@ -63,7 +74,8 @@ def get_universe_router(session_manager: SessionManager, story_generator: StoryG
                 style=style["name"],
                 genre=genre,
                 epoch=epoch,
-                base_story=universe
+                base_story=universe,
+                macguffin=macguffin
             )
             
         except Exception as e:

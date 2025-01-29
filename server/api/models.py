@@ -6,15 +6,15 @@ class Choice(BaseModel):
     id: int
     text: str = Field(description="The text of the choice.")
 
-class StorySegmentBase(BaseModel):
-    """Base model for story segments with common validation logic"""
-    story_text: str = Field(description="The story text. No more than 15 words THIS IS MANDATORY.  Never mention story beat directly. ")
-    is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
-    is_death: bool = Field(description="Whether this segment ends in Sarah's death", default=False)
+class StorySegmentResponse(BaseModel):
+    story_text: str = Field(description="The story text. No more than 30 words.")
 
-# Existing response models for story generation steps - preserved for API compatibility
-class StoryTextResponse(StorySegmentBase):
-    pass
+    @validator('story_text')
+    def validate_story_text_length(cls, v):
+        words = v.split()
+        if len(words) > 30:
+            raise ValueError('Story text must not exceed 30 words')
+        return v
 
 class StoryPromptsResponse(BaseModel):
     image_prompts: List[str] = Field(
@@ -24,45 +24,16 @@ class StoryPromptsResponse(BaseModel):
     )
 
 class StoryMetadataResponse(BaseModel):
-    is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
+    choices: List[str] = Field(description="List of choices for story progression")
+    time: str = Field(description="Current in-game time in 24h format (HH:MM). Time passes realistically based on actions.")
+    location: str = Field(description="Current location.")
     is_death: bool = Field(description="Whether this segment ends in Sarah's death", default=False)
-    choices: List[str] = Field(description="Either empty list for victory/death, or exactly two choices for normal progression")
-    time: str = Field(description="Current in-game time in 24h format (HH:MM). Time passes realistically based on actions.")
-    location: str = Field(description="Current location.")
+    is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
 
     @validator('choices')
-    def validate_choices(cls, v, values):
-        is_ending = values.get('is_victory', False) or values.get('is_death', False)
-        if is_ending:
-            if len(v) != 0:
-                raise ValueError('For victory/death, choices must be empty')
-        else:
-            if len(v) != 2:
-                raise ValueError('For normal progression, must have exactly 2 choices')
-        return v
-
-# Complete story response combining all parts - preserved for API compatibility
-class StoryResponse(StorySegmentBase):
-    choices: List[Choice]
-    raw_choices: List[str] = Field(description="Raw choice texts from LLM before conversion to Choice objects")
-    time: str = Field(description="Current in-game time in 24h format (HH:MM). Time passes realistically based on actions.")
-    location: str = Field(description="Current location.")
-    is_first_step: bool = Field(description="Whether this is the first step of the story", default=False)
-    image_prompts: List[str] = Field(
-        description="List of comic panel descriptions that illustrate the key moments of the scene. Use the word 'Sarah' only when referring to her.",
-        min_items=GameConfig.MIN_PANELS,
-        max_items=GameConfig.MAX_PANELS
-    )
-
-    @validator('choices')
-    def validate_choices(cls, v, values):
-        is_ending = values.get('is_victory', False) or values.get('is_death', False)
-        if is_ending:
-            if len(v) != 0:
-                raise ValueError('For victory/death, choices must be empty')
-        else:
-            if len(v) != 2:
-                raise ValueError('For normal progression, must have exactly 2 choices')
+    def validate_choices(cls, v):
+        if len(v) != 2:
+            raise ValueError('Must have exactly 2 choices for story progression')
         return v
 
 # Keep existing models unchanged for compatibility
@@ -86,3 +57,27 @@ class UniverseResponse(BaseModel):
     genre: str
     epoch: str
     base_story: str = Field(description="The generated story for this universe")
+    macguffin: str = Field(description="The macguffin for this universe")
+
+
+# Complete story response combining all parts - preserved for API compatibility
+class StoryResponse(BaseModel):
+    story_text: str = Field(description="The story text. No more than 15 words THIS IS MANDATORY.  Never mention story beat directly. ")
+    choices: List[Choice]
+    raw_choices: List[str] = Field(description="Raw choice texts from LLM before conversion to Choice objects")
+    time: str = Field(description="Current in-game time in 24h format (HH:MM). Time passes realistically based on actions.")
+    location: str = Field(description="Current location.")
+    is_first_step: bool = Field(description="Whether this is the first step of the story", default=False)
+    is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
+    is_death: bool = Field(description="Whether this segment ends in Sarah's death", default=False)
+    image_prompts: List[str] = Field(
+        description="List of comic panel descriptions that illustrate the key moments of the scene. Use the word 'Sarah' only when referring to her.",
+        min_items=GameConfig.MIN_PANELS,
+        max_items=GameConfig.MAX_PANELS
+    )
+
+    @validator('choices')
+    def validate_choices(cls, v):
+        if len(v) != 2:
+            raise ValueError('Must have exactly 2 choices for story progression')
+        return v

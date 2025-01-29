@@ -62,12 +62,6 @@ def get_chat_router(session_manager: SessionManager, story_generator):
                 game_state=game_state,
                 previous_choice=previous_choice
             )
-            
-            if llm_response.is_death:
-                llm_response.choices = []
-                llm_response.story_text += "\You have succumbed to the harsh wastelands, and your journey concludes here. THE END."
-                if len(llm_response.image_prompts) > 1:
-                    llm_response.image_prompts = [llm_response.image_prompts[0]]
 
             # Add segment to history
             game_state.add_to_history(
@@ -89,15 +83,14 @@ def get_chat_router(session_manager: SessionManager, story_generator):
                 raw_choices=llm_response.raw_choices,
                 time=llm_response.time,
                 location=llm_response.location,
-                is_victory=llm_response.is_victory,
-                is_death=llm_response.is_death,
                 is_first_step=game_state.story_beat == 0,
-                image_prompts=llm_response.image_prompts
+                image_prompts=llm_response.image_prompts,
+                is_death=llm_response.is_death,
+                is_victory=llm_response.is_victory
             )
             
-            # Only increment story beat if not dead and not victory
-            if not llm_response.is_death and not llm_response.is_victory:
-                game_state.story_beat += 1
+            # Increment story beat
+            game_state.story_beat += 1
                 
             return response
 
