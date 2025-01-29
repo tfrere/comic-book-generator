@@ -1,7 +1,9 @@
 // Panel size constants
 export const PANEL_SIZES = {
   PORTRAIT: { width: 512, height: 768 },
+  COLUMN: { width: 512, height: 1024 },
   LANDSCAPE: { width: 768, height: 512 },
+  PANORAMIC: { width: 1024, height: 512 },
   COVER_SIZE: { width: 512, height: 768 },
 };
 
@@ -72,8 +74,8 @@ export const LAYOUTS = {
     gridCols: 3,
     gridRows: 3,
     panels: [
-      { ...PANEL_SIZES.LANDSCAPE, gridColumn: GRID.FULL_WIDTH, gridRow: "1" }, // Wide panoramic top
-      { ...PANEL_SIZES.PORTRAIT, gridColumn: "1", gridRow: "2 / span 2" }, // Tall portrait left
+      { ...PANEL_SIZES.PANORAMIC, gridColumn: GRID.FULL_WIDTH, gridRow: "1" }, // Wide panoramic top
+      { ...PANEL_SIZES.COLUMN, gridColumn: "1", gridRow: "2 / span 2" }, // Tall portrait left
       {
         ...PANEL_SIZES.LANDSCAPE,
         gridColumn: "2 / span 2",

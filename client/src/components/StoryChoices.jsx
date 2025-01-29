@@ -1,5 +1,7 @@
-import { Box, Button, Typography, Chip } from "@mui/material";
+import { Box, Button, Typography, Chip, Divider } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { TalkWithSarah } from "./TalkWithSarah";
+import { useState } from "react";
 
 // Function to convert text with ** to Chip elements
 const formatTextWithBold = (text) => {
@@ -34,8 +36,13 @@ export function StoryChoices({
   isDeath = false,
   isVictory = false,
   containerRef,
+  isNarratorSpeaking = false,
+  stopNarration = () => {},
+  playNarration = () => {},
+  storyText = "",
 }) {
   const navigate = useNavigate();
+  const [isSarahActive, setIsSarahActive] = useState(false);
 
   if (isGameOver) {
     return (
@@ -138,48 +145,83 @@ export function StoryChoices({
         overflowY: "auto",
       }}
     >
-      {choices.map((choice, index) => (
-        <Box
-          key={choice.id}
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 1,
-            width: "100%",
-            minHeight: "fit-content",
-          }}
-        >
-          <Typography variant="caption" sx={{ opacity: 0.7, color: "white" }}>
-            Choice {index + 1}
-          </Typography>
-          <Button
-            variant="outlined"
-            size="large"
-            onClick={() => onChoice(choice.id)}
-            disabled={disabled}
+      {!disabled &&
+        choices.map((choice, index) => (
+          <Box
+            key={choice.id}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1,
+              width: "100%",
+              minHeight: "fit-content",
+            }}
+          >
+            <Typography variant="caption" sx={{ opacity: 0.7, color: "white" }}>
+              Choice {index + 1}
+            </Typography>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={() => onChoice(choice.id)}
+              disabled={isSarahActive}
+              sx={{
+                width: "100%",
+                textTransform: "none",
+                cursor: "pointer",
+                fontSize: "1.1rem",
+                padding: "16px 24px",
+                lineHeight: 1.3,
+                borderColor: "primary.main",
+                "&:hover": {
+                  borderColor: "primary.light",
+                  backgroundColor: "rgba(255, 255, 255, 0.05)",
+                },
+                "& .MuiChip-root": {
+                  fontSize: "1.1rem",
+                },
+              }}
+            >
+              {formatTextWithBold(choice.text)}
+            </Button>
+          </Box>
+        ))}
+
+      {!disabled && storyText && (
+        <>
+          <Divider
             sx={{
               width: "100%",
-              textTransform: "none",
-              cursor: "pointer",
-              fontSize: "1.1rem",
-              padding: "16px 24px",
-              lineHeight: 1.3,
-              color: "white",
-              borderColor: "rgba(255, 255, 255, 0.23)",
-              "&:hover": {
-                borderColor: "white",
-                backgroundColor: "rgba(255, 255, 255, 0.05)",
-              },
-              "& .MuiChip-root": {
-                fontSize: "1.1rem",
+              my: 3,
+              "&::before, &::after": {
+                borderColor: "rgba(255, 255, 255, 0.1)",
               },
             }}
           >
-            {formatTextWithBold(choice.text)}
-          </Button>
-        </Box>
-      ))}
+            <Typography
+              variant="caption"
+              sx={{
+                color: "rgba(255, 255, 255, 0.5)",
+                px: 1,
+                fontSize: "0.8rem",
+              }}
+            >
+              OR
+            </Typography>
+          </Divider>
+          <TalkWithSarah
+            isNarratorSpeaking={isNarratorSpeaking}
+            stopNarration={stopNarration}
+            playNarration={playNarration}
+            onDecisionMade={onChoice}
+            onSarahActiveChange={setIsSarahActive}
+            currentContext={`You are Sarah and this is the situation you're in : ${storyText}. Those are your possible decisions : \n ${choices
+              .map((choice, index) => `decision ${index + 1} : ${choice.text}`)
+              .join("\n ")}.`}
+          />
+        </>
+      )}
     </Box>
   );
 }

@@ -12,8 +12,8 @@ class StorySegmentResponse(BaseModel):
     @validator('story_text')
     def validate_story_text_length(cls, v):
         words = v.split()
-        if len(words) > 30:
-            raise ValueError('Story text must not exceed 30 words')
+        if len(words) > 50:
+            raise ValueError('Story text must not exceed 50 words')
         return v
 
 class StoryPromptsResponse(BaseModel):

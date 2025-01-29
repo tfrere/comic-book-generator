@@ -1,21 +1,33 @@
-import { useConversation } from '@11labs/react';
-import CancelIcon from '@mui/icons-material/Cancel';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
-import { Box, IconButton, TextField, Tooltip } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useConversation } from "@11labs/react";
+import CancelIcon from "@mui/icons-material/Cancel";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import {
+  Box,
+  IconButton,
+  TextField,
+  Tooltip,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
+import { useEffect, useRef, useState } from "react";
+import { useSound } from "use-sound";
 
-import { getSarahPrompt, SARAH_FIRST_MESSAGE } from '../prompts/sarahPrompt';
+import { getSarahPrompt, SARAH_FIRST_MESSAGE } from "../prompts/sarahPrompt";
 
 const AGENT_ID = "2MF9st3s1mNFbX01Y106";
 const ELEVEN_LABS_KEY_STORAGE = "eleven_labs_api_key";
 
-export function TalkWithSarah({ 
+export function TalkWithSarah({
   isNarratorSpeaking,
   stopNarration,
   playNarration,
   onDecisionMade,
-  currentContext
+  currentContext,
+  onSarahActiveChange,
 }) {
   const [isRecording, setIsRecording] = useState(false);
   const [isConversationMode, setIsConversationMode] = useState(false);
@@ -27,10 +39,18 @@ export function TalkWithSarah({
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
+  // Sons de communication
+  const [playStartComm] = useSound("/sounds/talky-walky-on.mp3", {
+    volume: 0.5,
+  });
+  const [playEndComm] = useSound("/sounds/talky-walky-off.mp3", {
+    volume: 0.5,
+  });
+
   const conversation = useConversation({
     agentId: AGENT_ID,
     headers: {
-      'xi-api-key': apiKey
+      "xi-api-key": apiKey,
     },
     onResponse: async (response) => {
       if (response.type === "audio") {
@@ -47,9 +67,13 @@ export function TalkWithSarah({
     clientTools: {
       make_decision: async ({ decision }) => {
         console.log("AI made decision:", decision);
-        // Stop recording
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+        // Stop recording and play end communication sound
+        if (
+          mediaRecorderRef.current &&
+          mediaRecorderRef.current.state === "recording"
+        ) {
           mediaRecorderRef.current.stop();
+          playEndComm();
         }
         setIsConversationMode(false);
         await conversation?.endSession();
@@ -62,10 +86,10 @@ export function TalkWithSarah({
   // Valider la clé API
   const validateApiKey = async (key) => {
     try {
-      const response = await fetch('https://api.elevenlabs.io/v1/user', {
+      const response = await fetch("https://api.elevenlabs.io/v1/user", {
         headers: {
-          'xi-api-key': key
-        }
+          "xi-api-key": key,
+        },
       });
       return response.ok;
     } catch (e) {
@@ -97,19 +121,27 @@ export function TalkWithSarah({
     }
   }, [apiKey]);
 
+  useEffect(() => {
+    // Notify parent component when Sarah's state changes
+    onSarahActiveChange?.(isRecording || isConversationMode);
+  }, [isRecording, isConversationMode, onSarahActiveChange]);
+
   const startRecording = async () => {
-    if (!apiKey) {
+    if (!apiKey || !isApiKeyValid) {
       setShowApiKeyDialog(true);
       return;
     }
 
     try {
       setIsRecording(true);
+      // Play start communication sound
+      playStartComm();
+
       // Stop narration audio if it's playing
       if (isNarratorSpeaking) {
         stopNarration();
       }
-      
+
       // Safely stop any conversation audio if playing
       if (conversation?.audioRef?.current) {
         conversation.audioRef.current.pause();
@@ -125,17 +157,18 @@ export function TalkWithSarah({
           await conversation.startSession({
             agentId: AGENT_ID,
             overrides: {
-                agent: {
+              agent: {
                 firstMessage: SARAH_FIRST_MESSAGE,
                 prompt: {
-                    prompt: getSarahPrompt(currentContext),
+                  prompt: getSarahPrompt(currentContext),
                 },
-                },
+              },
             },
-                  });
+          });
           console.log("ElevenLabs WebSocket connected");
         } catch (error) {
           console.error("Error starting conversation:", error);
+          playEndComm(); // Play end sound if connection fails
           return;
         }
       }
@@ -170,6 +203,7 @@ export function TalkWithSarah({
               });
             } catch (error) {
               console.error("Error sending audio to ElevenLabs:", error);
+              playEndComm(); // Play end sound if sending fails
             }
           }
         };
@@ -178,87 +212,80 @@ export function TalkWithSarah({
       mediaRecorderRef.current.start();
     } catch (error) {
       console.error("Error starting recording:", error);
+      playEndComm(); // Play end sound if there's an error
+      setIsRecording(false);
     }
   };
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-        <TextField
-          size="small"
-          type="password"
-          placeholder="Enter your ElevenLabs API key"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          sx={{
-            width: '300px',
-            '& .MuiOutlinedInput-root': {
-              color: 'white',
-              '& fieldset': {
-                borderColor: 'rgba(255, 255, 255, 0.23)',
-              },
-              '&:hover fieldset': {
-                borderColor: 'white',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: 'white',
-              },
-              '& .MuiOutlinedInput-input': {
-                paddingRight: apiKey ? '40px' : '14px', // Padding dynamique
-              },
-            },
-            '& .MuiInputBase-input': {
-              color: 'white',
-              '&::placeholder': {
-                color: 'rgba(255, 255, 255, 0.5)',
-                opacity: 1,
-              },
-            },
-          }}
-        />
-        {apiKey && (
-          <Tooltip title={isApiKeyValid ? "API key is valid" : "Invalid API key"}>
-            <Box 
-              sx={{ 
-                position: 'absolute', 
-                right: 10,
-                pointerEvents: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                borderRadius: '50%',
-                padding: '2px'
-              }}
-            >
-              {isApiKeyValid ? (
-                <CheckCircleIcon sx={{ color: '#4caf50', fontSize: 20 }} />
-              ) : (
-                <CancelIcon sx={{ color: '#f44336', fontSize: 20 }} />
-              )}
-            </Box>
-          </Tooltip>
-        )}
-      </Box>
-      <IconButton
+    <>
+      <Dialog
+        open={showApiKeyDialog}
+        onClose={() => setShowApiKeyDialog(false)}
+      >
+        <DialogTitle>ElevenLabs API Key Required</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Enter your ElevenLabs API key"
+            type="password"
+            fullWidth
+            variant="outlined"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            error={apiKey !== "" && !isApiKeyValid}
+            helperText={
+              apiKey !== "" && !isApiKeyValid
+                ? "Invalid API key"
+                : "You can find your API key in your ElevenLabs account settings"
+            }
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowApiKeyDialog(false)}>Cancel</Button>
+          <Button
+            onClick={async () => {
+              const isValid = await validateApiKey(apiKey);
+              if (isValid) {
+                setShowApiKeyDialog(false);
+                startRecording();
+              }
+            }}
+            disabled={!apiKey}
+          >
+            Validate & Start
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Button
         onClick={startRecording}
-        disabled={isRecording || !isApiKeyValid}
+        disabled={isRecording}
+        variant="outlined"
+        size="large"
+        color="secondary"
         sx={{
-          color: "white",
-          backgroundColor: isRecording ? "primary.main" : "transparent",
+          width: "100%",
+          textTransform: "none",
+          cursor: "pointer",
+          fontSize: "1.1rem",
+          padding: "16px 24px",
+          lineHeight: 1.3,
+          borderColor: "secondary.main",
           "&:hover": {
-            backgroundColor: isRecording ? "primary.dark" : "rgba(0, 0, 0, 0.7)",
+            borderColor: "secondary.light",
+            backgroundColor: "rgba(255, 255, 255, 0.05)",
           },
-          px: 2,
-          borderRadius: 2,
-          border: "1px solid white",
-          opacity: !isApiKeyValid ? 0.5 : 1,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          {isRecording ? <FiberManualRecordIcon sx={{ color: "red" }} /> : null}
-          <span style={{ fontSize: "1rem" }}>Talk with Sarah</span>
+          {isRecording ? (
+            <FiberManualRecordIcon sx={{ color: "red", fontSize: "1.1rem" }} />
+          ) : null}
+          <span>Leave it to your consciousness</span>
         </Box>
-      </IconButton>
-    </Box>
+      </Button>
+    </>
   );
 }

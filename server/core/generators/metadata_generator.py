@@ -56,6 +56,8 @@ Current game state:
 - Current location: {current_location}
 
 {is_end}
+
+FOR CHOICES : NEVER propose to go back to the previous location or go back to the portal. NEVER.
 """
 
 
@@ -88,7 +90,7 @@ Current game state:
     async def generate(self, story_text: str, current_time: str, current_location: str, story_beat: int, error_feedback: str = "", turn_before_end: int = 0, is_winning_story: bool = False) -> StoryMetadataResponse:
         """Surcharge de generate pour inclure le error_feedback par défaut."""
 
-        is_end = "This should be close to the end of the story." if story_beat >= 5 else ""
+        is_end = "This IS the end of the story." if story_beat == turn_before_end else ""
         return await super().generate(
             story_text=story_text,
             current_time=current_time,

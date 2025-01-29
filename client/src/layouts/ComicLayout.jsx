@@ -16,6 +16,9 @@ function ComicPage({
   isLoading,
   showScreenshot,
   onScreenshot,
+  isNarratorSpeaking,
+  stopNarration,
+  playNarration,
 }) {
   // Calculer le nombre total d'images dans tous les segments de ce layout
   const totalImages = layout.segments.reduce((total, segment) => {
@@ -127,6 +130,12 @@ function ComicPage({
             }
             isDeath={layout.segments[layout.segments.length - 1]?.isDeath}
             isVictory={layout.segments[layout.segments.length - 1]?.isVictory}
+            isNarratorSpeaking={isNarratorSpeaking}
+            stopNarration={stopNarration}
+            playNarration={playNarration}
+            storyText={
+              layout.segments[layout.segments.length - 1]?.rawText || ""
+            }
           />
         </Box>
       )}
@@ -142,6 +151,9 @@ export function ComicLayout({
   isLoading,
   showScreenshot,
   onScreenshot,
+  isNarratorSpeaking,
+  stopNarration,
+  playNarration,
 }) {
   const scrollContainerRef = useRef(null);
 
@@ -221,6 +233,9 @@ export function ComicLayout({
           isLoading={isLoading}
           showScreenshot={showScreenshot}
           onScreenshot={onScreenshot}
+          isNarratorSpeaking={isNarratorSpeaking}
+          stopNarration={stopNarration}
+          playNarration={playNarration}
         />
       ))}
     </Box>

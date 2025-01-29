@@ -7,8 +7,8 @@ class GameConfig:
     MIN_PANELS = 1
     MAX_PANELS = 4
 
-    MIN_SEGMENTS_BEFORE_END = 2
-    MAX_SEGMENTS_BEFORE_END = 4
+    MIN_SEGMENTS_BEFORE_END = 6
+    MAX_SEGMENTS_BEFORE_END = 10
     WINNING_STORY_CHANCE = 0.2
     
     # Story progression

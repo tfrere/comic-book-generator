@@ -80,26 +80,57 @@ Current game state :
             ]
         )
 
+    def _clean_and_fix_response(self, response_content: str) -> str:
+        """Clean and attempt to fix malformed responses."""
+        # Remove any leading/trailing whitespace
+        cleaned = response_content.strip()
+        
+        # If it's already valid JSON, return as is
+        try:
+            json.loads(cleaned)
+            return cleaned
+        except json.JSONDecodeError:
+            pass
+
+        # Remove any markdown formatting
+        cleaned = cleaned.replace('```json', '').replace('```', '')
+        
+        # Extract content between curly braces if present
+        import re
+        json_match = re.search(r'\{[^}]+\}', cleaned)
+        if json_match:
+            return json_match.group(0)
+            
+        # If it's just a plain text, wrap it in proper JSON format
+        if '"story_text"' not in cleaned:
+            # Remove any quotes at the start/end
+            cleaned = cleaned.strip('"\'')
+            # Escape any quotes within the text
+            cleaned = cleaned.replace('"', '\\"')
+            return f'{{"story_text": "{cleaned}"}}'
+            
+        return cleaned
+
     def _custom_parser(self, response_content: str) -> StorySegmentResponse:
         """Parse response and handle errors."""
         
         try:
-            # Clean up escaped characters
-            cleaned_response = response_content.replace("\\_", "_").strip()
-            
-            # If the response is a plain string (with or without quotes), convert it to proper JSON
-            if cleaned_response.startswith('"') and cleaned_response.endswith('"'):
-                cleaned_response = cleaned_response[1:-1]  # Remove surrounding quotes
-            
-            if not cleaned_response.startswith('{'):
-                # Convert plain text to proper JSON format
-                cleaned_response = json.dumps({"story_text": cleaned_response})
+            # First try to clean and fix the response
+            cleaned_response = self._clean_and_fix_response(response_content)
             
             # Try to parse as JSON
             data = json.loads(cleaned_response)
+            
+            # Validate the required field is present
+            if "story_text" not in data:
+                raise ValueError("Missing 'story_text' field in response")
+                
             return StorySegmentResponse(**data)
+            
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Error parsing response: {str(e)}")
+            print(f"Original response: {response_content}")
+            print(f"Cleaned response: {cleaned_response if 'cleaned_response' in locals() else 'Not cleaned yet'}")
             raise ValueError(
                 "Response must be a valid JSON object with 'story_text' field. "
                 "Example: {'story_text': 'Your story segment here'}"
@@ -109,7 +140,7 @@ Current game state :
         """Generate the next story segment."""
 
         what_to_represent =" this is a victory !" if is_winning_story else "this is a death !"
-        is_end = f"Generate the END of the story. {what_to_represent} in 30 words. THIS IS MANDATORY." if story_beat == turn_before_end  else "Generate the next segment of the story in 15 words."
+        is_end = f"Generate the END of the story. {what_to_represent} in 35 words. THIS IS MANDATORY." if story_beat == turn_before_end  else "Generate the next segment of the story in 25 words."
         
         return await super().generate(
             HERO_DESCRIPTION=HERO_DESCRIPTION,
