@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { usePageSound } from "../hooks/usePageSound";
 import { BlinkingText } from "../components/BlinkingText";
 import { BookPages } from "../components/BookPages";
+import { InfiniteBackground } from "../components/InfiniteBackground";
 
 export function Home() {
   const navigate = useNavigate();
@@ -31,40 +32,9 @@ export function Home() {
           minHeight: "100vh",
           width: "100%",
           position: "relative",
-          "&::before": {
-            content: '""',
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: "url('/home.webp')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-            opacity: 0.3,
-            zIndex: 0,
-          },
         }}
       >
-        {/* <Typography
-          variant="h1"
-          component="h1"
-          sx={{
-            fontWeight: "bold",
-            marginBottom: 2,
-            color: "#f0e6d9",
-            textShadow: `
-                      0 -1px 1px rgba(0,0,0,0.3),
-                      0 1px 1px rgba(255,255,255,0.2)
-                    `,
-            letterSpacing: "0.5px",
-            filter: "brightness(0.95)",
-          }}
-        >
-          Sarah's
-          <br /> Chronicles
-        </Typography> */}
+        <InfiniteBackground />
         <Box
           sx={{
             position: "relative",

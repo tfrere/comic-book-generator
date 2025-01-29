@@ -271,31 +271,6 @@ export function Tutorial() {
           Start the game
         </Button>
       </Box>
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "100vh",
-          width: "100%",
-          position: "relative",
-          "&::before": {
-            content: '""',
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: "url('/home.webp')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-            opacity: 0.3,
-            zIndex: 0,
-          },
-        }}
-      ></Box>
     </motion.div>
   );
 }
