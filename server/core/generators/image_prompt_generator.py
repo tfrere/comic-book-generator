@@ -70,9 +70,6 @@ class ImagePromptGenerator(BaseGenerator):
         IMPORTANT RULES FOR IMAGE PROMPTS:
         - If you are prompting only one panel, it must be an important panel. Dont use only one panel often. It should be a key moment in the story.
         - If you are prompting more than one panel, they must be distinct and meaningful.
-        - For death scenes: Focus on the dramatic and emotional impact, not the gore or violence
-        - For victory scenes: Emphasize triumph, relief, and accomplishment
-        - For victory and death scenes, you MUST use 1 panel only
 
         RESPONSE FORMAT:
         You must return a valid JSON object that matches this Pydantic schema:
@@ -101,6 +98,13 @@ class ImagePromptGenerator(BaseGenerator):
 Story text: {story_text}
 
 Generate panel descriptions that capture the key moments of this scene.
+
+
+
+- For death scenes: Focus on the dramatic and emotional impact, not the gore or violence
+- For victory scenes: Emphasize triumph, relief, and accomplishment
+- For victory and death scenes, you MUST use 1 panel only
+
 
 Story state: {is_end}
 """
@@ -162,7 +166,7 @@ Story state: {is_end}
         metadata = f"[{time} - {location}] "
         return f"{self.artist_style} -- {metadata}{prompt}"
 
-    async def generate(self, story_text: str, time: str, location: str, is_death: bool = False, is_victory: bool = False) -> ImagePromptResponse:
+    async def generate(self, story_text: str, time: str, location: str, is_death: bool = False, is_victory: bool = False, turn_before_end: int = 0, is_winning_story: bool = False) -> ImagePromptResponse:
         """Generate image prompts based on story text.
         
         Args:
@@ -178,9 +182,10 @@ Story state: {is_end}
 
         is_end=""
         if is_death:
-            is_end = "this is a death to represent"
+            is_end = "this is a death. just one panel, MANDATORY."
         elif is_victory:
-            is_end = "this is a victory to represent"
+            is_end = "this is a victory. just one panel, MANDATORY."
+
 
         response = await super().generate(
             story_text=story_text,

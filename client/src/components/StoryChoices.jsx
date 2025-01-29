@@ -31,6 +31,8 @@ export function StoryChoices({
   disabled = false,
   isLastStep = false,
   isGameOver = false,
+  isDeath = false,
+  isVictory = false,
   containerRef,
 }) {
   const navigate = useNavigate();
@@ -53,13 +55,13 @@ export function StoryChoices({
         <Typography
           variant="h3"
           sx={{
-            color: "white",
+            color: isVictory ? "#4CAF50" : "#f44336",
             textAlign: "center",
             mb: 2,
             textTransform: "uppercase",
           }}
         >
-          The End
+          {isVictory ? "VICTORY" : "DEFEAT"}
         </Typography>
         <Button
           variant="outlined"

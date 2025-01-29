@@ -125,6 +125,8 @@ function ComicPage({
               layout.segments[layout.segments.length - 1]?.isDeath ||
               layout.segments[layout.segments.length - 1]?.isVictory
             }
+            isDeath={layout.segments[layout.segments.length - 1]?.isDeath}
+            isVictory={layout.segments[layout.segments.length - 1]?.isVictory}
           />
         </Box>
       )}

@@ -6,6 +6,8 @@ from core.generators.story_segment_generator import StorySegmentGenerator
 from core.generators.image_prompt_generator import ImagePromptGenerator
 from core.generators.metadata_generator import MetadataGenerator
 from core.game_state import GameState
+import random
+from core.constants import GameConfig
 
 class StoryGenerator:
     _instance = None
@@ -22,6 +24,8 @@ class StoryGenerator:
             print("Initializing StoryGenerator singleton")
             self.api_key = api_key
             self.model_name = model_name
+            self.turn_before_end = random.randint(GameConfig.MIN_SEGMENTS_BEFORE_END, GameConfig.MAX_SEGMENTS_BEFORE_END)
+            self.is_winning_story = random.random() < GameConfig.WINNING_STORY_CHANCE
             self.mistral_client = MistralClient(api_key=api_key, model_name=model_name)
             self.image_prompt_generator = None  # Will be initialized with the first universe style
             self.metadata_generator = MetadataGenerator(self.mistral_client)
@@ -76,7 +80,9 @@ class StoryGenerator:
             current_time=game_state.current_time,
             current_location=game_state.current_location,
             previous_choice=previous_choice,
-            story_history=story_history
+            story_history=story_history,
+            turn_before_end=self.turn_before_end,
+            is_winning_story=self.is_winning_story
         )
 
         # print(f"Generated story text: {segment_response}")
@@ -86,7 +92,9 @@ class StoryGenerator:
             story_text=segment_response.story_text,
             current_time=game_state.current_time,
             current_location=game_state.current_location,
-            story_beat=game_state.story_beat
+            story_beat=game_state.story_beat,
+            turn_before_end=self.turn_before_end,
+            is_winning_story=self.is_winning_story
         )
         # print(f"Generated metadata_response: {metadata_response}")
         
@@ -96,7 +104,9 @@ class StoryGenerator:
             time=metadata_response.time,
             location=metadata_response.location,
             is_death=metadata_response.is_death,
-            is_victory=metadata_response.is_victory
+            is_victory=metadata_response.is_victory,
+            turn_before_end=self.turn_before_end,
+            is_winning_story=self.is_winning_story
         )
         # print(f"Generated image prompts: {prompts_response}")
         

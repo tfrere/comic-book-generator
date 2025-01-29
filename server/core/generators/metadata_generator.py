@@ -85,7 +85,7 @@ Current game state:
         except ValueError as e:
             raise ValueError(str(e))
 
-    async def generate(self, story_text: str, current_time: str, current_location: str, story_beat: int, error_feedback: str = "") -> StoryMetadataResponse:
+    async def generate(self, story_text: str, current_time: str, current_location: str, story_beat: int, error_feedback: str = "", turn_before_end: int = 0, is_winning_story: bool = False) -> StoryMetadataResponse:
         """Surcharge de generate pour inclure le error_feedback par défaut."""
 
         is_end = "This should be close to the end of the story." if story_beat >= 5 else ""
@@ -95,5 +95,7 @@ Current game state:
             current_location=current_location,
             story_beat=story_beat,
             error_feedback=error_feedback,
-            is_end=is_end
+            is_end=is_end,
+            turn_before_end=turn_before_end,
+            is_winning_story=is_winning_story
         ) 

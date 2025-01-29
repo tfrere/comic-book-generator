@@ -57,7 +57,7 @@ Rules: {FORMATTING_RULES}
 
 You must return a JSON object with the following format:
 {{
-    "story_text": "Your story segment here (15 words)"
+    "story_text": "Your story segment here"
 }}
 """
 
@@ -72,10 +72,6 @@ Current game state :
 - Story beat: {story_beat}
 
 {is_end}
-You must return a JSON object with the following format:
-{{
-    "story_text": "Your story segment here (15 words)"
-}}
 """
         return ChatPromptTemplate(
             messages=[
@@ -109,10 +105,11 @@ You must return a JSON object with the following format:
                 "Example: {'story_text': 'Your story segment here'}"
             )
 
-    async def generate(self, story_beat: int, current_time: str, current_location: str, previous_choice: str, story_history: str = "") -> StorySegmentResponse:
+    async def generate(self, story_beat: int, current_time: str, current_location: str, previous_choice: str, story_history: str = "", turn_before_end: int = 0, is_winning_story: bool = False) -> StorySegmentResponse:
         """Generate the next story segment."""
 
-        is_end = "Generate the END of the story. Reminder: 30 words." if story_beat >= random.randint(5, 10) else "Generate the next segment of the story. REMINDER: 15 words."
+        what_to_represent =" this is a victory !" if is_winning_story else "this is a death !"
+        is_end = f"Generate the END of the story. {what_to_represent} in 30 words. THIS IS MANDATORY." if story_beat == turn_before_end  else "Generate the next segment of the story in 15 words."
         
         return await super().generate(
             HERO_DESCRIPTION=HERO_DESCRIPTION,
