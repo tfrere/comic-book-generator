@@ -137,6 +137,8 @@ export function InfiniteBackground() {
         bottom: 0,
         overflow: "hidden",
         zIndex: 0,
+        transform: "rotate(-2deg) scale(1.1)",
+        transformOrigin: "center center",
         "&::after": {
           content: '""',
           position: "absolute",
