@@ -18,7 +18,7 @@ export const BookPages = () => {
               bottom: `${verticalOffset}px`,
               left: `${20 + offset}px`, // Ajout d'une marge de base de 20px
               right: `${-offset}px`,
-              background: "#888",
+              background: "#444",
               borderRadius: "4px",
               boxShadow: "2px 4px 12px rgba(0,0,0,0.15)",
               border: "1px solid rgba(0,0,0,0.1)",
