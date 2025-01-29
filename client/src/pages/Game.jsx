@@ -1,30 +1,25 @@
-import { useState, useEffect, useRef } from "react";
-import {
-  Box,
-  LinearProgress,
-  IconButton,
-  Tooltip,
-  Typography,
-} from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ComicLayout } from "../layouts/ComicLayout";
-import { storyApi } from "../utils/api";
-import { useNarrator } from "../hooks/useNarrator";
-import { useStoryCapture } from "../hooks/useStoryCapture";
-import { usePageSound } from "../hooks/usePageSound";
-import { useWritingSound } from "../hooks/useWritingSound";
-import { useTransitionSound } from "../hooks/useTransitionSound";
-import { useGameSession } from "../hooks/useGameSession";
-import { StoryChoices } from "../components/StoryChoices";
-import { ErrorDisplay } from "../components/ErrorDisplay";
-import VolumeUpIcon from "@mui/icons-material/VolumeUp";
-import VolumeOffIcon from "@mui/icons-material/VolumeOff";
-import PhotoCameraOutlinedIcon from "@mui/icons-material/PhotoCameraOutlined";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import CreateIcon from "@mui/icons-material/Create";
-import { getNextLayoutType, LAYOUTS } from "../layouts/config";
-import { LoadingScreen } from "../components/LoadingScreen";
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import { Box, IconButton, LinearProgress, Tooltip } from '@mui/material';
+import { motion } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { ErrorDisplay } from '../components/ErrorDisplay';
+import { LoadingScreen } from '../components/LoadingScreen';
+import { StoryChoices } from '../components/StoryChoices';
+import { TalkWithSarah } from '../components/TalkWithSarah';
+import { useGameSession } from '../hooks/useGameSession';
+import { useNarrator } from '../hooks/useNarrator';
+import { usePageSound } from '../hooks/usePageSound';
+import { useStoryCapture } from '../hooks/useStoryCapture';
+import { useTransitionSound } from '../hooks/useTransitionSound';
+import { useWritingSound } from '../hooks/useWritingSound';
+import { ComicLayout } from '../layouts/ComicLayout';
+import { getNextLayoutType, LAYOUTS } from '../layouts/config';
+import { storyApi } from '../utils/api';
 
 // Constants
 const SOUND_ENABLED_KEY = "sound_enabled";
@@ -459,6 +454,21 @@ export function Game() {
                 borderRadius: 1,
               }}
             >
+                            {storySegments.length > 0 && currentChoices.length > 0 && (
+                <TalkWithSarah
+                  isNarratorSpeaking={isNarratorSpeaking}
+                  stopNarration={stopNarration}
+                  playNarration={playNarration}
+                  onDecisionMade={handleChoice}
+                  currentContext={`You are Sarah and this is the situation you're in : ${
+                    storySegments[storySegments.length - 1].text
+                  }. Those are your possible decisions : \n ${currentChoices
+                    .map((choice, index) => `decision ${index + 1} : ${choice.text}`)
+                    .join("\n ")}.`}
+                />
+              )}
+
+
               <Tooltip title="Save your story">
                 <IconButton
                   id="screenshot-button"
