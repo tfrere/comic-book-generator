@@ -102,8 +102,8 @@ export const nonRandomLayouts = Object.keys(LAYOUTS).filter(
 export const LAYOUTS_BY_PANEL_COUNT = {
   1: ["COVER"],
   2: ["LAYOUT_7"],
-  3: ["LAYOUT_2", "LAYOUT_5"],
-  4: ["LAYOUT_1", "LAYOUT_3", "LAYOUT_4"],
+  3: ["LAYOUT_2", "LAYOUT_5"], //"LAYOUT_1",
+  4: ["LAYOUT_3", "LAYOUT_4"],
 };
 
 // Helper functions for layout configuration
