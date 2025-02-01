@@ -8,6 +8,7 @@ import { Home } from "./pages/Home";
 import { Game } from "./pages/Game";
 import { Tutorial } from "./pages/Tutorial";
 import Debug from "./pages/Debug";
+import { Universe } from "./pages/Universe";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -19,6 +20,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="/game" element={<Game />} />
         <Route path="/tutorial" element={<Tutorial />} />
         <Route path="/debug" element={<Debug />} />
+        <Route path="/universe" element={<Universe />} />
       </Routes>
     </BrowserRouter>
   </ThemeProvider>

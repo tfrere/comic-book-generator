@@ -51,8 +51,8 @@ export const LAYOUTS = {
     gridRows: 2,
     panels: [
       { ...PANEL_SIZES.LANDSCAPE, gridColumn: GRID.TWO_THIRDS, gridRow: "1" }, // Wide landscape top left
-      { ...PANEL_SIZES.PORTRAIT, gridColumn: "3", gridRow: "1" }, // Portrait top right
-      { ...PANEL_SIZES.PORTRAIT, gridColumn: "1", gridRow: "2" }, // Portrait bottom left
+      { ...PANEL_SIZES.COLUMN, gridColumn: "3", gridRow: "1" }, // COLUMN top right
+      { ...PANEL_SIZES.COLUMN, gridColumn: "1", gridRow: "2" }, // COLUMN bottom left
       { ...PANEL_SIZES.LANDSCAPE, gridColumn: "2 / span 2", gridRow: "2" }, // Wide landscape bottom right
     ],
   },
@@ -77,7 +77,7 @@ export const LAYOUTS = {
       { ...PANEL_SIZES.PANORAMIC, gridColumn: GRID.FULL_WIDTH, gridRow: "1" }, // Wide panoramic top
       { ...PANEL_SIZES.COLUMN, gridColumn: "1", gridRow: "2 / span 2" }, // Tall portrait left
       {
-        ...PANEL_SIZES.LANDSCAPE,
+        ...PANEL_SIZES.POTRAIT,
         gridColumn: "2 / span 2",
         gridRow: "2 / span 2",
       }, // Large square right
@@ -101,34 +101,45 @@ export const nonRandomLayouts = Object.keys(LAYOUTS).filter(
 // Grouper les layouts par nombre de panneaux
 export const LAYOUTS_BY_PANEL_COUNT = {
   1: ["COVER"],
-  2: ["LAYOUT_7"], // Layouts avec exactement 2 panneaux
-  3: ["LAYOUT_5"], // Layouts avec exactement 3 panneaux
-  4: ["LAYOUT_3"], // Layouts avec exactement 4 panneaux
+  2: ["LAYOUT_7"],
+  3: ["LAYOUT_2", "LAYOUT_5"],
+  4: ["LAYOUT_1", "LAYOUT_3", "LAYOUT_4"],
 };
 
 // Helper functions for layout configuration
-export const getNextLayoutType = (currentLayoutCount, imageCount) => {
+export const getNextLayoutType = (layoutCounter, imageCount) => {
+  console.log("Getting layout for", { layoutCounter, imageCount });
+
+  // Si pas d'images ou nombre invalide, utiliser COVER
+  if (!imageCount || imageCount <= 0) {
+    console.log("No images or invalid count, using COVER layout");
+    return "COVER";
+  }
+
+  // Si on n'a qu'une seule image, toujours utiliser COVER
+  if (imageCount === 1) {
+    console.log("Single image, using COVER layout");
+    return "COVER";
+  }
+
   // Obtenir les layouts disponibles pour ce nombre d'images
-  const availableLayouts = LAYOUTS_BY_PANEL_COUNT[imageCount] || [];
+  const availableLayouts = LAYOUTS_BY_PANEL_COUNT[imageCount];
 
-  if (!availableLayouts.length) {
-    // Si aucun layout n'est disponible pour ce nombre d'images exact,
-    // utiliser le premier layout qui peut contenir au moins ce nombre d'images
-    for (let i = imageCount + 1; i <= 4; i++) {
-      if (LAYOUTS_BY_PANEL_COUNT[i]?.length) {
-        availableLayouts.push(...LAYOUTS_BY_PANEL_COUNT[i]);
-        break;
-      }
-    }
+  // Si on n'a pas de layout pour ce nombre d'images, utiliser COVER par défaut
+  if (!availableLayouts) {
+    console.warn(
+      `No layout available for ${imageCount} images, falling back to COVER`
+    );
+    return "COVER";
   }
 
-  if (!availableLayouts.length) {
-    return "LAYOUT_1"; // Layout par défaut si rien ne correspond
-  }
-
-  // Sélectionner un layout aléatoire parmi ceux disponibles
-  const randomIndex = Math.floor(Math.random() * availableLayouts.length);
-  return availableLayouts[randomIndex];
+  // Sélectionner un layout de manière cyclique
+  const layoutIndex = layoutCounter % availableLayouts.length;
+  const selectedLayout = availableLayouts[layoutIndex];
+  console.log(
+    `Selected ${selectedLayout} for ${imageCount} images (layout counter: ${layoutCounter})`
+  );
+  return selectedLayout;
 };
 
 export const getLayoutDimensions = (layoutType, panelIndex) =>

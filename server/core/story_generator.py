@@ -28,29 +28,48 @@ class StoryGenerator:
             self.is_winning_story = random.random() < GameConfig.WINNING_STORY_CHANCE
             self.mistral_client = MistralClient(api_key=api_key, model_name=model_name)
             self.image_prompt_generator = None  # Will be initialized with the first universe style
-            self.metadata_generator = MetadataGenerator(self.mistral_client)
+            self.metadata_generator = None  # Will be initialized with hero description
             self.segment_generators: Dict[str, StorySegmentGenerator] = {}
             self._initialized = True
 
-    def create_segment_generator(self, session_id: str, style: dict, genre: str, epoch: str, base_story: str, macguffin: str):
+    def create_segment_generator(self, session_id: str, style: dict, genre: str, epoch: str, base_story: str, macguffin: str, hero_name: str, hero_desc: str):
         """Create a new StorySegmentGenerator adapted to the specified universe for a given session."""
-        # print(f"Creating StorySegmentGenerator for session {session_id} in StoryGenerator singleton")
         
         try:
-            # Get the first artist from the style references
-            artist_style = f"{style['references'][0]['artist']} comic panel"
+            # Use selected_artist if available, otherwise get the first artist from references
+            if "selected_artist" in style:
+                artist = style["selected_artist"]
+            else:
+                artist = style["references"][0]["artist"]
+                
+            # Create a detailed artist style string
+            artist_style = f"{artist}, {style['name']} style, {genre} in {epoch}"
             
-            # Initialize image prompt generator if not already done
-            if self.image_prompt_generator is None:
-                self.image_prompt_generator = ImagePromptGenerator(self.mistral_client, artist_style=artist_style)
+            # Always create a new ImagePromptGenerator for each session with the correct artist and hero
+            self.image_prompt_generator = ImagePromptGenerator(
+                self.mistral_client, 
+                artist_style=artist_style,
+                hero_name=hero_name,
+                hero_desc=hero_desc
+            )
+
+            # Create a new MetadataGenerator with hero description
+            self.metadata_generator = MetadataGenerator(
+                self.mistral_client,
+                hero_name=hero_name,
+                hero_desc=hero_desc
+            )
             
+            # Create a new StorySegmentGenerator with all universe parameters
             self.segment_generators[session_id] = StorySegmentGenerator(
                 self.mistral_client,
                 universe_style=style["name"],
                 universe_genre=genre,
                 universe_epoch=epoch,
                 universe_story=base_story,
-                universe_macguffin=macguffin
+                universe_macguffin=macguffin,
+                hero_name=hero_name,
+                hero_desc=hero_desc
             )
             # print(f"Current StorySegmentGenerators in StoryGenerator: {list(self.segment_generators.keys())}")
         except KeyError as e:
@@ -94,7 +113,8 @@ class StoryGenerator:
             current_location=game_state.current_location,
             story_beat=game_state.story_beat,
             turn_before_end=self.turn_before_end,
-            is_winning_story=self.is_winning_story
+            is_winning_story=self.is_winning_story,
+            story_history=story_history
         )
         # print(f"Generated metadata_response: {metadata_response}")
         

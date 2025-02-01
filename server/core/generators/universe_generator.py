@@ -4,9 +4,14 @@ from pathlib import Path
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 
 from core.generators.base_generator import BaseGenerator
+from services.mistral_client import MistralClient
 
 class UniverseGenerator(BaseGenerator):
     """Générateur pour les univers alternatifs."""
+
+    def __init__(self, mistral_client: MistralClient):
+        self.styles_data = self._load_universe_styles()
+        super().__init__(mistral_client, is_universe_generator=True)
 
     def _create_prompt(self) -> ChatPromptTemplate:
 
@@ -17,6 +22,7 @@ Your task is to rewrite a story while keeping its exact structure and beats, but
 - Visual style: {style_name} (inspired by artists like {artists} with works such as {works})
 Style description: {style_description}
 
+- Hero: {hero}
 - Genre: {genre}
 - Historical epoch: {epoch}
 - Object of the quest: {macguffin}
@@ -25,19 +31,19 @@ IMPORTANT INSTRUCTIONS:
 1. Keep the exact same story structure
 2. Keep the same dramatic tension and progression
 3. Only change the setting, atmosphere, and universe-specific elements to match the new parameters
-4. Keep Sarah as the main character, but adapt her role to fit the new universe
+4. Keep the hero({hero}) as the main character, but adapt his role to fit the new universe
 5. The there is always a central object to the plot, but its nature can change to fit the new universe ( it can be a person, a place, an object, etc.)
+6. He MUST meet at least one character that will help his on his quest
 
 CONSTANT PART: 
-You are Sarah, an AI hunter traveling through parallel worlds. Your mission is to track down an AI that moves from world to world to avoid destruction.
-The story begins with Sarah arriving in a new world by the portal.
+You are ({hero}), an AI hunter traveling through parallel worlds. Your mission is to track down an AI through space and time.
 
 VARIABLE PART:
 
-You are a steampunk adventure story generator. You create a branching narrative about Sarah, a seeker of ancient truths.
-You narrate an epic where Sarah must navigate through industrial and mysterious lands. It's a comic book story.
+You are a steampunk adventure story generator. You create a branching narrative about {hero}, a seeker of ancient truths.
+You narrate an epic where {hero} must navigate through industrial and mysterious lands. It's a comic book story.
 
-In a world where steam and intrigue intertwine, Sarah embarks on a quest to discover the origins of a powerful MacGuffin she inherited. Legends say it holds the key to a forgotten realm.
+In a world where steam and intrigue intertwine, {hero} embarks on a quest to discover the origins of a powerful MacGuffin she inherited. Legends say it holds the key to a forgotten realm.
 
 If you retrieve the object of the quest, you will reveal a hidden world. AND YOU WIN THE GAME.
 
@@ -68,38 +74,51 @@ YOU ONLY HAVE TO RIGHT AN INTRODUCTION. SETUP THE STORY AND DEFINE CLEARLY SARAS
         except Exception as e:
             raise ValueError(f"Failed to load universe styles: {str(e)}")
 
+    def _get_random_artist(self, style):
+        """Sélectionne un artiste aléatoire parmi les références du style."""
+        if "references" not in style:
+            return None
+        reference = random.choice(style["references"])
+        return reference["artist"]
+
     def _get_random_elements(self):
-        """Récupère un style, un genre, une époque et un MacGuffin aléatoires."""
-        data = self._load_universe_styles()
+        """Get random elements from the universe styles."""
+        # Get random style
+        style = random.choice(self.styles_data["styles"])
+        genre = random.choice(self.styles_data["genres"])
+        epoch = random.choice(self.styles_data["epochs"])
+        macguffin = random.choice(self.styles_data["macguffins"])
+        hero_full = random.choice(self.styles_data["hero"])
         
-        if not all(key in data for key in ["styles", "genres", "epochs", "macguffins"]):
-            raise ValueError("Missing required sections in universe_styles.json")
-            
-        style = random.choice(data["styles"])
-        genre = random.choice(data["genres"])
-        epoch = random.choice(data["epochs"])
-        macguffin = random.choice(data["macguffins"])
+        # Get artist and works
+        artist_ref = random.choice(style["references"])
+        artist = artist_ref["artist"]
+        works = ", ".join(artist_ref["works"])
         
-        return style, genre, epoch, macguffin
+        # Split hero description properly
+        hero_name = hero_full.split(',')[0].strip()
+        hero_desc = hero_full.strip()
+
+        return style, genre, epoch, macguffin, hero_name, hero_desc, artist, works
 
     def _custom_parser(self, response_content: str) -> str:
         """Parse la réponse. Dans ce cas, on retourne simplement le texte."""
         return response_content.strip()
 
-    async def generate(self) -> str:
-        """Génère un nouvel univers basé sur des éléments aléatoires."""
-        style, genre, epoch, macguffin = self._get_random_elements()
-
-        # Préparer les listes d'artistes et d'œuvres
-        artists = ", ".join([ref["artist"] for ref in style["references"]])
-        works = ", ".join([work for ref in style["references"] for work in ref["works"]])
-
-        return await super().generate(
+    async def generate(self):
+        """Generate a new universe."""
+        style, genre, epoch, macguffin, hero_name, hero_desc, artist, works = self._get_random_elements()
+        
+        # Create the universe prompt
+        response = await super().generate(
             style_name=style["name"],
-            artists=artists,
-            works=works,
             style_description=style["description"],
+            artists=artist,
+            works=works,
             genre=genre,
             epoch=epoch,
-            macguffin=macguffin
-        ) 
+            macguffin=macguffin,
+            hero=hero_name
+        )
+        
+        return response, style, genre, epoch, macguffin, hero_name, hero_desc 

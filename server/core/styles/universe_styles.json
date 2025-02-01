@@ -1,124 +1,147 @@
 {
   "styles": [
     {
-      "name": "Franco-Belge Ligne Claire",
-      "description": "Style épuré avec des lignes nettes et des couleurs plates",
+      "name": "American Comics (Modern)",
+      "description": "Style contemporain des comics américains avec des rendus dynamiques et des couleurs vives",
       "references": [
         {
-          "artist": "Hergé",
-          "works": ["Tintin", "Les Aventures de Jo, Zette et Jocko"]
+          "artist": "Jim Lee",
+          "works": ["X-Men", "Batman", "Superman Unchained"]
         },
         {
-          "artist": "Edgar P. Jacobs",
-          "works": ["Blake et Mortimer"]
+          "artist": "Alex Ross",
+          "works": ["Kingdom Come", "Marvels", "Justice"]
         },
         {
-          "artist": "Yves Chaland",
-          "works": ["Freddy Lombard", "Bob Fish"]
-        },
-        {
-          "artist": "Joost Swarte",
-          "works": ["Modern Art", "L'Art Moderne"]
+          "artist": "Stuart Immonen",
+          "works": ["Ultimate Spider-Man", "New Avengers", "Star Wars"]
         }
       ]
     },
     {
-      "name": "Science-Fiction Européenne",
-      "description": "Style visionnaire mêlant précision technique et onirisme",
-      "references": [
-        {
-          "artist": "Moebius (Jean Giraud)",
-          "works": ["L'Incal", "Arzak", "Le Garage Hermétique", "Aedena"]
-        },
-        {
-          "artist": "Philippe Druillet",
-          "works": ["Lone Sloane", "Salammbô", "Delirius"]
-        },
-        {
-          "artist": "François Schuiten",
-          "works": ["Les Cités Obscures", "La Fièvre d'Urbicande"]
-        }
-      ]
-    },
-    {
-      "name": "Comics Américain Classique",
-      "description": "Style dynamique avec des couleurs vives et des ombrages marqués",
+      "name": "American Comics (1950s)",
+      "description": "Style rétro des comics de l'âge d'or avec des couleurs primaires et des compositions classiques",
       "references": [
         {
           "artist": "Jack Kirby",
-          "works": ["Fantastic Four", "New Gods", "Captain America"]
+          "works": ["Captain America", "Fantastic Four", "The Avengers"]
         },
         {
           "artist": "Steve Ditko",
-          "works": ["Spider-Man", "Doctor Strange", "Mr. A"]
+          "works": ["Spider-Man", "Doctor Strange", "The Question"]
         },
         {
-          "artist": "Neal Adams",
-          "works": ["Batman", "Green Lantern/Green Arrow", "X-Men"]
+          "artist": "Curt Swan",
+          "works": ["Superman", "Action Comics", "Adventure Comics"]
+        }
+      ]
+    },
+    {
+      "name": "Japanese Manga",
+      "description": "Style manga japonais avec des expressions dynamiques et des effets dramatiques",
+      "references": [
+        {
+          "artist": "Katsuhiro Otomo",
+          "works": ["Akira", "Domu", "Steamboy"]
+        },
+        {
+          "artist": "Naoki Urasawa",
+          "works": ["Monster", "20th Century Boys", "Pluto"]
+        },
+        {
+          "artist": "Takehiko Inoue",
+          "works": ["Vagabond", "Slam Dunk", "Real"]
+        }
+      ]
+    },
+    {
+      "name": "Franco-Belge",
+      "description": "Style de la bande dessinée franco-belge avec des lignes claires et une attention aux détails",
+      "references": [
+        {
+          "artist": "Hergé",
+          "works": ["Tintin", "Quick et Flupke", "Jo, Zette et Jocko"]
+        },
+        {
+          "artist": "Moebius",
+          "works": ["L'Incal", "Arzak", "Le Garage Hermétique"]
+        },
+        {
+          "artist": "François Schuiten",
+          "works": ["Les Cités Obscures", "La Fièvre d'Urbicande", "La Tour"]
         }
       ]
     }
   ],
   "genres": [
-    "Steampunk",
-    "Cyberpunk",
-    "Post-apocalyptic",
+    "Superhero",
+    "Science Fiction",
     "Fantasy",
-    "Space Opera",
-    "Western",
-    "Film Noir",
+    "Adventure",
+    "Mystery",
+    "Romance",
     "Horror",
-    "Mythology",
-    "Dystopia",
-    "Alternate History",
-    "Heroic Fantasy",
-    "Urban Fantasy"
+    "Comedy",
+    "Drama",
+    "Historical"
   ],
   "epochs": [
-    "Prehistory",
-    "Antiquity",
-    "Middle Ages",
+    "Ancient Times",
+    "Medieval",
     "Renaissance",
     "Industrial Revolution",
-    "1920s",
-    "1950s",
-    "Contemporary Era",
+    "Modern Day",
     "Near Future",
-    "Distant Future",
+    "Far Future",
     "Post-Apocalyptic",
-    "Golden Age",
-    "Space Age"
+    "Alternative History",
+    "Timeless"
   ],
   "macguffins": [
-    "The Key",
-    "The Map",
-    "The Stone",
-    "The Book",
-    "The Amulet",
-    "The Sword",
-    "The Crown",
-    "The Ring",
-    "The Scroll",
-    "The Chalice",
-    "The Crystal",
-    "The Orb",
-    "The Mask",
-    "The Scepter",
-    "The Shield",
-    "The Lantern",
-    "The Mirror",
-    "The Coin",
-    "The Necklace",
-    "The Dagger",
-    "The Compass",
-    "The Horn",
-    "The Bell",
-    "The Feather",
-    "The Gem",
-    "The Helm",
-    "The Cloak",
-    "The Gauntlet",
-    "The Flute",
-    "The Harp"
+    "The Cosmic Artifact",
+    "The Ancient Scroll",
+    "The Power Crystal",
+    "The Lost Technology",
+    "The Sacred Relic",
+    "The Mysterious Device",
+    "The Enchanted Object",
+    "The Secret Formula",
+    "The Hidden Map",
+    "The Legendary Weapon"
+  ],
+  "hero": [
+    "Sarah, 28, short dark hair, blue eyes, a bit rude, wearing a simple t-shirt and jeans.",
+    "Akira, 16, long black hair, brown eyes, calm, wearing a school uniform with a blazer.",
+    "Aisha, 32, curly brown hair, green eyes, creative, dressed in a colorful blouse and tailored pants.",
+    "Diego, 35, wavy black hair, brown eyes, passionate, wearing a casual shirt and cargo shorts.",
+    "Mei, 25, straight black hair, black eyes, determined, in sportswear with a hoodie.",
+    "Raj, 29, short black hair, brown eyes, innovative, in a modern shirt and chinos.",
+    "Fatima, 31, long black hair, brown eyes, courageous, wearing a light coat and scarf.",
+    "Yuki, 27, long black hair, black eyes, mysterious, in a traditional robe with intricate patterns.",
+    "Liam, 33, curly red hair, green eyes, charismatic, in a cozy sweater and jeans.",
+    "Zara, 28, short black hair, brown eyes, fearless, wearing an explorer's jacket and cargo pants.",
+    "Hiroshi, 70, shaved head, brown eyes, wise, in monk robes with simple sandals.",
+    "Amara, 26, long black hair, brown eyes, expressive, in a dance dress with flowing fabric.",
+    "Kofi, 34, short black hair, brown eyes, resourceful, in a patterned shirt and khakis.",
+    "Elena, 30, long brown hair, green eyes, passionate, in a kitchen apron over a casual dress.",
+    "Santiago, 32, short black hair, brown eyes, daring, in a pilot's jacket and aviator sunglasses.",
+    "Leila, 29, long brown hair, brown eyes, talented, in an elegant suit with a silk scarf.",
+    "Nikolai, 36, short blond hair, blue eyes, brilliant, in a lab coat and formal trousers.",
+    "Jamal, 35, short black hair, brown eyes, perceptive, in a detective coat and fedora.",
+    "Anika, 30, long black hair, brown eyes, gentle, in a medical blouse and comfortable shoes.",
+    "Mateo, 31, short brown hair, brown eyes, skilled, in work overalls and sturdy boots.",
+    "Sofia, 29, long brown hair, green eyes, visionary, in a director's t-shirt and jeans.",
+    "Hassan, 60, short gray hair, brown eyes, wise, in a traditional djellaba and leather sandals.",
+    "Isabella, 27, long black hair, brown eyes, brave, in light armor with a leather belt.",
+    "Yara, 32, long brown hair, brown eyes, talented, in a cozy sweater and leggings.",
+    "Kai, 26, short blond hair, blue eyes, daring, in a surf suit and flip-flops.",
+    "Lina, 30, short blond hair, blue eyes, dedicated, in professional attire with a blazer.",
+    "Omar, 34, short black hair, brown eyes, skilled, in a sailor's jacket and waterproof boots.",
+    "Priya, 31, long black hair, brown eyes, brilliant, in a scientific blouse and pencil skirt.",
+    "Rafael, 33, short brown hair, brown eyes, passionate, in an activist t-shirt and cargo pants.",
+    "Emma, 18, long blond hair, blue eyes, adventurous, in a denim jacket and sneakers.",
+    "Hans, 65, short gray hair, blue eyes, thoughtful, in a wool sweater and corduroy pants.",
+    "Sophie, 22, short brown hair, green eyes, cheerful, in a floral dress and sandals.",
+    "Lars, 40, short blond hair, blue eyes, practical, in a plaid shirt and jeans."
   ]
 }

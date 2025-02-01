@@ -12,13 +12,13 @@ class StorySegmentResponse(BaseModel):
     @validator('story_text')
     def validate_story_text_length(cls, v):
         words = v.split()
-        if len(words) > 50:
+        if len(words) > 75:
             raise ValueError('Story text must not exceed 50 words')
         return v
 
 class StoryPromptsResponse(BaseModel):
     image_prompts: List[str] = Field(
-        description="List of comic panel descriptions that illustrate the key moments of the scene. Use the word 'Sarah' only when referring to her.",
+        description="List of comic panel descriptions that illustrate the key moments of the scene. Use the word 'hero' only when referring to her.",
         min_items=GameConfig.MIN_PANELS,
         max_items=GameConfig.MAX_PANELS
     )
@@ -27,8 +27,8 @@ class StoryMetadataResponse(BaseModel):
     choices: List[str] = Field(description="List of choices for story progression")
     time: str = Field(description="Current in-game time in 24h format (HH:MM). Time passes realistically based on actions.")
     location: str = Field(description="Current location.")
-    is_death: bool = Field(description="Whether this segment ends in Sarah's death", default=False)
-    is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
+    is_death: bool = Field(description="Whether this segment ends in hero's death", default=False)
+    is_victory: bool = Field(description="Whether this segment ends in hero's victory", default=False)
 
     @validator('choices')
     def validate_choices(cls, v):
@@ -68,10 +68,10 @@ class StoryResponse(BaseModel):
     time: str = Field(description="Current in-game time in 24h format (HH:MM). Time passes realistically based on actions.")
     location: str = Field(description="Current location.")
     is_first_step: bool = Field(description="Whether this is the first step of the story", default=False)
-    is_victory: bool = Field(description="Whether this segment ends in Sarah's victory", default=False)
-    is_death: bool = Field(description="Whether this segment ends in Sarah's death", default=False)
+    is_victory: bool = Field(description="Whether this segment ends in hero's victory", default=False)
+    is_death: bool = Field(description="Whether this segment ends in hero's death", default=False)
     image_prompts: List[str] = Field(
-        description="List of comic panel descriptions that illustrate the key moments of the scene. Use the word 'Sarah' only when referring to her.",
+        description="List of comic panel descriptions that illustrate the key moments of the scene.",
         min_items=GameConfig.MIN_PANELS,
         max_items=GameConfig.MAX_PANELS
     )

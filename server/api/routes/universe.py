@@ -1,35 +1,65 @@
 from fastapi import APIRouter, HTTPException
 import uuid
+from typing import Dict, Any, List
+from pydantic import BaseModel, Field
 
 from core.generators.universe_generator import UniverseGenerator
 from core.story_generator import StoryGenerator
 from core.session_manager import SessionManager
 from api.models import UniverseResponse
-from pydantic import BaseModel, Field
+
+class StyleReference(BaseModel):
+    artist: str
+    works: List[str]
+
+class UniverseStyle(BaseModel):
+    name: str
+    description: str
+    references: List[StyleReference]
+
+class UniverseStylesResponse(BaseModel):
+    styles: List[UniverseStyle]
+    genres: List[str]
+    epochs: List[str]
+    macguffins: List[str]
+    hero: List[str]
 
 class UniverseResponse(BaseModel):
     status: str
     session_id: str
-    style: str
+    style: Dict[str, Any]  # Changed from str to Dict to include the full style object
     genre: str
     epoch: str
     base_story: str = Field(description="The generated story for this universe")
     macguffin: str = Field(description="The MacGuffin for this universe")
+    hero_name: str = Field(description="The name of the hero")
+    hero_description: str = Field(description="The full description of the hero")
 
 def get_universe_router(session_manager: SessionManager, story_generator: StoryGenerator) -> APIRouter:
     router = APIRouter()
     universe_generator = UniverseGenerator(story_generator.mistral_client)
     
+    @router.get("/universe/styles", response_model=UniverseStylesResponse)
+    async def get_universe_styles() -> UniverseStylesResponse:
+        """Get all available universe styles and options."""
+        try:
+            styles_data = universe_generator.styles_data
+            return UniverseStylesResponse(**styles_data)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=str(e)
+            )
+
     @router.post("/universe/generate", response_model=UniverseResponse)
     async def generate_universe() -> UniverseResponse:
         try:
             print("Starting universe generation...")
             
-            # Get random elements before generation
-            style, genre, epoch, macguffin = universe_generator._get_random_elements()
-            print(f"Generated random elements: style={style['name']}, genre={genre}, epoch={epoch}, macguffin={macguffin}")
+            # Get random elements and generate universe
+            universe, style, genre, epoch, macguffin, hero_name, hero_desc = await universe_generator.generate()
+            print(f"Generated random elements: style={style['name']}, genre={genre}, epoch={epoch}, macguffin={macguffin}, hero={hero_name}")
             
-            universe = await universe_generator.generate()
             print("Generated universe story")
             
             # Générer un ID de session unique
@@ -55,7 +85,9 @@ def get_universe_router(session_manager: SessionManager, story_generator: StoryG
                 genre=genre,
                 epoch=epoch,
                 base_story=universe,
-                macguffin=macguffin
+                macguffin=macguffin,
+                hero_name=hero_name,
+                hero_desc=hero_desc
             )
             print("Created text generator for session")
             
@@ -71,11 +103,13 @@ def get_universe_router(session_manager: SessionManager, story_generator: StoryG
             return UniverseResponse(
                 status="ok",
                 session_id=session_id,
-                style=style["name"],
+                style=style,
                 genre=genre,
                 epoch=epoch,
                 base_story=universe,
-                macguffin=macguffin
+                macguffin=macguffin,
+                hero_name=hero_name,
+                hero_description=hero_desc
             )
             
         except Exception as e:

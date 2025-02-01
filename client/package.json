@@ -21,6 +21,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.3",
+    "react-slot-counter": "^3.1.0",
+    "react-use-slot": "^0.3.1",
     "use-react-screenshot": "^4.0.0",
     "use-sound": "^4.0.3"
   },

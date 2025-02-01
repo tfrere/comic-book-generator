@@ -86,6 +86,7 @@ const Debug = () => {
         universe_genre: universe?.genre,
         universe_epoch: universe?.epoch,
         universe_macguffin: universe?.macguffin,
+        universe_selected_artist: universe?.style?.selected_artist,
         story_beat: 0,
         story_history: [initialHistoryEntry],
       });

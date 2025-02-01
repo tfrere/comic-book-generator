@@ -4,7 +4,6 @@ from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, H
 import json
 
 from core.generators.base_generator import BaseGenerator
-from core.prompts.hero import HERO_VISUAL_DESCRIPTION
 
 class ImagePromptResponse(BaseModel):
     """Response format for image prompt generation."""
@@ -13,9 +12,11 @@ class ImagePromptResponse(BaseModel):
 class ImagePromptGenerator(BaseGenerator):
     """Generator for image prompts based on story text."""
 
-    def __init__(self, mistral_client, artist_style: str = None):
-        super().__init__(mistral_client)
-        self.artist_style = artist_style or "François Schuiten comic panel"
+    def __init__(self, mistral_client, artist_style: str, hero_name: str = None, hero_desc: str = None):
+        super().__init__(mistral_client, hero_name=hero_name, hero_desc=hero_desc)
+        if not artist_style:
+            raise ValueError("artist_style must be provided")
+        self.artist_style = artist_style
 
     def _create_prompt(self) -> ChatPromptTemplate:
         """Create the prompt template for image prompt generation."""
@@ -28,7 +29,7 @@ class ImagePromptGenerator(BaseGenerator):
         You are a comic book panel description generator.
         Your role is to create vivid, cinematic descriptions for comic panels that will be turned into images.
 
-        {HERO_VISUAL_DESCRIPTION}
+        Hero description: {self.hero_desc}
 
         Each panel description should:
         1. Be clear and specific about what to show
@@ -61,11 +62,27 @@ class ImagePromptGenerator(BaseGenerator):
         "[shot type] [scene description]"
 
         EXAMPLES:
-        - "low angle shot of Sarah checking an object in a dark corridor"
-        - "wide shot of a ruined cityscape at sunset, silhouette of Sarah in the foreground"
-        - "Dutch angle close-up of Sarah's determined face illuminated by the glow of her object"
+        - "low angle shot of a mysterious figure checking an object in a dark corridor"
+        - "wide shot of a ruined cityscape at sunset, silhouette of a lone traveler in the foreground"
+        - "Dutch angle close-up of a determined face illuminated by the glow of an object"
+        - "over shoulder shot of a character looking at an ancient map spread out on a table"
+        - "close-up of eyes reflecting the flames of a nearby fire"
+        - "wide shot of a dense forest with a figure barely visible among the trees"
+        - "high angle shot of a character standing at the edge of a cliff, looking down at a vast ocean"
+        - "medium shot of a person walking through a bustling marketplace, with various vendors and colorful stalls"
+        - "low angle shot of a character standing in front of a towering ancient statue, looking up in awe"
+        - "close-up of fingers tracing the carvings on an ancient artifact"
+        - "wide shot of a stormy sky with lightning illuminating a determined silhouette"
+        - "close-up of an ancient compass, its needle spinning wildly"
+        - "over shoulder shot of a mysterious figure watching from the shadows"
+        - "medium shot of a group of travelers gathered around a campfire, sharing stories"
+        - "Dutch angle shot of a clock tower striking midnight, casting long shadows"
+        - "close-up of a hand gripping a sword hilt, ready for battle"
+        - "wide shot of a bustling port with ships coming and going, seagulls circling above"
+        - "high angle shot of a chessboard mid-game, pieces scattered in strategic positions"
+        - "medium shot of two characters in a heated argument, tension visible in their expressions"
 
-        Always maintain consistency with Sarah's appearance and the comic book style.
+        Always maintain consistency with {self.hero_name}'s appearance and the style.
 
         IMPORTANT RULES FOR IMAGE PROMPTS:
         - If you are prompting only one panel, it must be an important panel. Dont use only one panel often. It should be a key moment in the story.
@@ -85,9 +102,9 @@ class ImagePromptGenerator(BaseGenerator):
         Example of valid response:
         {{{{
             "image_prompts": [
-                "low angle shot of Sarah examining a mysterious artifact in a dimly lit chamber",
+                "low angle shot of {self.hero_name} examining a mysterious artifact in a dimly lit chamber",
                 "medium shot of ancient symbols glowing on the chamber walls, casting eerie shadows",
-                "close-up of Sarah's determined expression as she deciphers the meaning"
+                "close-up of {self.hero_name}'s determined expression as they decipher the meaning"
             ]
         }}}}
 
@@ -98,15 +115,12 @@ class ImagePromptGenerator(BaseGenerator):
 Story text: {story_text}
 
 Generate panel descriptions that capture the key moments of this scene.
+do not have panels that look alike, each successive panel must be different,
+and explain the story like a storyboard.
 
+Dont put the hero name every time.
 
-
-- For death scenes: Focus on the dramatic and emotional impact, not the gore or violence
-- For victory scenes: Emphasize triumph, relief, and accomplishment
-- For victory and death scenes, you MUST use 1 panel only
-
-
-Story state: {is_end}
+{is_end}
 """
 
         return ChatPromptTemplate(
@@ -116,36 +130,61 @@ Story state: {is_end}
             ]
         )
 
+    def _clean_and_fix_response(self, response_content: str) -> str:
+        """Clean and attempt to fix malformed responses."""
+        # Remove any leading/trailing whitespace
+        cleaned = response_content.strip()
+        
+        # If it's already valid JSON, return as is
+        try:
+            json.loads(cleaned)
+            return cleaned
+        except json.JSONDecodeError:
+            pass
+
+        # Remove any markdown formatting
+        cleaned = cleaned.replace('```json', '').replace('```', '')
+        
+        # Extract content between curly braces if present
+        import re
+        json_match = re.search(r'\{[^}]+\}', cleaned)
+        if json_match:
+            return json_match.group(0)
+            
+        # If we can find an array of prompts, wrap it in proper JSON format
+        prompts_match = re.findall(r'"[^"]+"|\'[^\']+\'', cleaned)
+        if prompts_match:
+            prompts = [p.strip('"\'') for p in prompts_match]
+            return json.dumps({"image_prompts": prompts})
+            
+        return cleaned
+
     def _custom_parser(self, response_content: str) -> ImagePromptResponse:
         """Parse the response into a list of image prompts."""
         try:
+            # First try to clean and fix the response
+            cleaned_response = self._clean_and_fix_response(response_content)
+            
             # Parse JSON
             try:
-                data = json.loads(response_content)
+                data = json.loads(cleaned_response)
             except json.JSONDecodeError:
                 raise ValueError(
                     "Invalid JSON format. Response must be a valid JSON object. "
                     "Example: {'image_prompts': ['panel description 1', 'panel description 2']}"
                 )
 
-            # Verify image_prompts exists
-            if "image_prompts" not in data:
-                raise ValueError(
-                    "Missing 'image_prompts' field in JSON. "
-                    "Response must contain an 'image_prompts' array."
-                )
-
-            # Verify image_prompts is a list
-            if not isinstance(data["image_prompts"], list):
+            # Verify image_prompts exists and is a list
+            if "image_prompts" not in data or not isinstance(data["image_prompts"], list):
                 raise ValueError(
                     "'image_prompts' must be an array of strings. "
                     "Example: {'image_prompts': ['panel description 1', 'panel description 2']}"
                 )
 
-            # Add Sarah's visual description if she's mentioned
+            # Add hero description if hero name is mentioned
             prompts = data["image_prompts"]
             prompts = [
-                f"{prompt} {HERO_VISUAL_DESCRIPTION}" if "sarah" in prompt.lower() else prompt
+                f"{prompt} {self.hero_desc}" if self.hero_name.lower() in prompt.lower() else prompt
                 for prompt in prompts
             ]
             
@@ -162,11 +201,15 @@ Story state: {is_end}
             raise ValueError("Response must be a valid JSON object with 'image_prompts' array")
 
     def _format_prompt(self, prompt: str, time: str, location: str) -> str:
-        """Format a prompt with time and location metadata."""
+        """Format a prompt with time and location metadata and universe style."""
         metadata = f"[{time} - {location}] "
-        return f"{self.artist_style} -- {metadata}{prompt}"
+        
+        # Construct a detailed style prefix with the full artist_style
+        style_prefix = f"{self.artist_style}"
+        
+        return f"{style_prefix} comic book style -- {metadata}{prompt}"
 
-    async def generate(self, story_text: str, time: str, location: str, is_death: bool = False, is_victory: bool = False, turn_before_end: int = 0, is_winning_story: bool = False) -> ImagePromptResponse:
+    async def generate(self, story_text: str, time: str, location: str, is_death: bool = False, is_victory: bool = False, turn_before_end: int = 0, is_winning_story: bool = False, story_beat: int = 0) -> ImagePromptResponse:
         """Generate image prompts based on story text.
         
         Args:
@@ -175,23 +218,25 @@ Story state: {is_end}
             location: Current location in the story
             is_death: Whether this is a death scene
             is_victory: Whether this is a victory scene
+            story_beat: Current story beat (0-6+)
             
         Returns:
             ImagePromptResponse containing the generated and formatted image prompts
         """
 
-        is_end=""
+        is_end="Must have between 2 and 4 prompts, MANDATORY."
         if is_death:
-            is_end = "this is a death. just one panel, MANDATORY."
+            is_end = f"This is the death of {self.hero_name}. just one panel, MANDATORY."
         elif is_victory:
-            is_end = "this is a victory. just one panel, MANDATORY."
+            is_end = f"this is a victory. just one panel, MANDATORY."
 
+        
 
         response = await super().generate(
             story_text=story_text,
             is_death=is_death,
             is_victory=is_victory,
-            is_end=is_end
+            is_end=is_end,
         )
         
         # Format each prompt with metadata

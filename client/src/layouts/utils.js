@@ -10,7 +10,18 @@ export function groupSegmentsIntoLayouts(segments) {
   const layouts = [];
 
   segments.forEach((segment, index) => {
-    const imageCount = segment.images?.length || 0;
+    // Ne pas créer de layout si le segment n'a pas d'images chargées
+    if (!segment.images || segment.images.length === 0) {
+      return;
+    }
+
+    const imageCount = segment.images.length;
+
+    // Si le segment a déjà un layoutType défini, l'utiliser
+    if (segment.layoutType) {
+      layouts.push({ type: segment.layoutType, segments: [segment] });
+      return;
+    }
 
     // Si c'est le premier segment ou le dernier (mort/victoire), créer un layout COVER
     if (segment.is_first_step || segment.is_last_step) {

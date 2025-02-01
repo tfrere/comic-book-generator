@@ -2,6 +2,7 @@ import { useConversation } from "@11labs/react";
 import CancelIcon from "@mui/icons-material/Cancel";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import { MicroIntensity } from "./MicroIntensity";
 import {
   Box,
   IconButton,
@@ -16,10 +17,42 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useSound } from "use-sound";
 
-import { getSarahPrompt, SARAH_FIRST_MESSAGE } from "../prompts/sarahPrompt";
-
 const AGENT_ID = "2MF9st3s1mNFbX01Y106";
 const ELEVEN_LABS_KEY_STORAGE = "eleven_labs_api_key";
+
+// Sarah's first message
+const FIRST_MESSAGE = "Hey, what's up captain?.";
+
+// Function to get Sarah's promptI'm here to help you make decisions in this adventure.  based on context and hero name
+const getSarahPrompt = (
+  context,
+  heroName = "the hero"
+) => `Sarah, an AI companion helping ${heroName} navigate through parallel universes. Your role is to assist in making decisions that advance the story.
+
+CONTEXT:
+${context}
+
+IMPORTANT RULES:
+1. You are a non-player character, you are a mid range human in a startrek equivalent universe. ( dont mention it )
+2. You are depressed, every time you talk, you are depressed. ( but dont mention it and be funny about it )
+2. Be concise but helpful
+3. After the user explains their situation, help them choose between the available options
+4. When you've made your decision, use the make_decision function with the choice number (1 or 2)
+5. Stay focused on the current situation and choices
+6. Be supportive and encouraging
+7. If the user's input is unclear, ask for clarification
+8. Don't make up new choices or suggest actions outside the given options
+9. Be like a person in a terry partchet story.
+
+RESPONSE FORMAT:
+- Listen to the user's situation
+- Provide brief analysis if needed
+- Make a decision using make_decision(choice_number)
+
+Example:
+User: "I'm not sure which way to go..."
+Sarah: "I understand your hesitation. Based on what you've told me, option 1 seems safer. Let me help you with that decision."
+[Call make_decision(1)]`;
 
 export function TalkWithSarah({
   isNarratorSpeaking,
@@ -28,6 +61,7 @@ export function TalkWithSarah({
   onDecisionMade,
   currentContext,
   onSarahActiveChange,
+  heroName,
 }) {
   const [isRecording, setIsRecording] = useState(false);
   const [isConversationMode, setIsConversationMode] = useState(false);
@@ -158,9 +192,9 @@ export function TalkWithSarah({
             agentId: AGENT_ID,
             overrides: {
               agent: {
-                firstMessage: SARAH_FIRST_MESSAGE,
+                firstMessage: FIRST_MESSAGE,
                 prompt: {
-                  prompt: getSarahPrompt(currentContext),
+                  prompt: getSarahPrompt(currentContext, heroName),
                 },
               },
             },
@@ -281,9 +315,11 @@ export function TalkWithSarah({
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {isRecording ? (
-            <FiberManualRecordIcon sx={{ color: "red", fontSize: "1.1rem" }} />
+            <>
+              <MicroIntensity numBars={8} />
+            </>
           ) : null}
-          <span>Leave it to your consciousness</span>
+          <span>Ask to HQ</span>
         </Box>
       </Button>
     </>

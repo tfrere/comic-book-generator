@@ -1,38 +1,130 @@
-import { Box, IconButton, Tooltip } from "@mui/material";
+import { Box, IconButton, Tooltip, CircularProgress } from "@mui/material";
 import { LAYOUTS } from "./config";
 import { groupSegmentsIntoLayouts } from "./utils";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Panel } from "./Panel";
 import { StoryChoices } from "../components/StoryChoices";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import { useGame } from "../contexts/GameContext";
+import { useSoundEffect } from "../hooks/useSoundEffect";
+
+// Composant pour afficher le spinner de chargement
+function LoadingPage() {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100%",
+        aspectRatio: "0.7",
+        flexShrink: 0,
+      }}
+    >
+      <CircularProgress
+        size={60}
+        sx={{
+          color: "white",
+          opacity: 0.1,
+        }}
+      />
+    </Box>
+  );
+}
 
 // Component for displaying a page of panels
-function ComicPage({
-  layout,
-  layoutIndex,
-  isLastPage,
-  choices,
-  onChoice,
-  isLoading,
-  showScreenshot,
-  onScreenshot,
-  isNarratorSpeaking,
-  stopNarration,
-  playNarration,
-}) {
-  // Calculer le nombre total d'images dans tous les segments de ce layout
+function ComicPage({ layout, layoutIndex, isLastPage, preloadedImages }) {
+  const {
+    handlePageLoaded,
+    choices,
+    onChoice,
+    isLoading,
+    isNarratorSpeaking,
+    stopNarration,
+    playNarration,
+    heroName,
+  } = useGame();
+  const [loadedImages, setLoadedImages] = useState(new Set());
+  const pageLoadedRef = useRef(false);
+  const loadingTimeoutRef = useRef(null);
   const totalImages = layout.segments.reduce((total, segment) => {
     return total + (segment.images?.length || 0);
   }, 0);
 
-  console.log("ComicPage layout:", {
-    type: layout.type,
-    totalImages,
-    segments: layout.segments,
-    isLastPage,
-    hasChoices: choices?.length > 0,
-    showScreenshot,
+  // Son d'écriture
+  const playWritingSound = useSoundEffect({
+    basePath: "/sounds/drawing-",
+    numSounds: 5,
+    volume: 0.3,
   });
+
+  const handleImageLoad = useCallback((imageId) => {
+    setLoadedImages((prev) => {
+      // Si l'image est déjà chargée, ne rien faire
+      if (prev.has(imageId)) {
+        return prev;
+      }
+
+      const newSet = new Set(prev);
+      newSet.add(imageId);
+      return newSet;
+    });
+  }, []);
+
+  useEffect(() => {
+    // Si la page a déjà été marquée comme chargée, ne rien faire
+    if (pageLoadedRef.current) return;
+
+    // Nettoyer le timeout précédent si existant
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+
+    // Générer les IDs attendus pour cette page
+    const expectedImageIds = Array.from(
+      { length: totalImages },
+      (_, i) => `page-${layoutIndex}-image-${i}`
+    );
+
+    // Vérifier si toutes les images de la page sont chargées
+    const allImagesLoaded = expectedImageIds.every((id) =>
+      loadedImages.has(id)
+    );
+
+    if (allImagesLoaded && totalImages > 0) {
+      // Utiliser un timeout pour éviter les appels trop fréquents
+      loadingTimeoutRef.current = setTimeout(() => {
+        if (!pageLoadedRef.current) {
+          console.log(`Page ${layoutIndex} entièrement chargée`);
+          pageLoadedRef.current = true;
+          handlePageLoaded(layoutIndex);
+          playWritingSound();
+        }
+      }, 100);
+    }
+
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, [
+    loadedImages,
+    totalImages,
+    layoutIndex,
+    handlePageLoaded,
+    playWritingSound,
+  ]);
+
+  // console.log("ComicPage layout:", {
+  //   type: layout.type,
+  //   totalImages,
+  //   loadedImages: loadedImages.size,
+  //   segments: layout.segments,
+  //   isLastPage,
+  //   hasChoices: choices?.length > 0,
+  //   showScreenshot,
+  // });
 
   return (
     <Box
@@ -74,6 +166,14 @@ function ComicPage({
               if (currentImageIndex + segmentImageCount > panelIndex) {
                 targetSegment = segment;
                 targetImageIndex = panelIndex - currentImageIndex;
+                // console.log("Found image for panel:", {
+                //   panelIndex,
+                //   targetImageIndex,
+                //   hasImages: !!segment.images,
+                //   imageCount: segment.images?.length,
+                //   imageDataSample:
+                //     segment.images?.[targetImageIndex]?.slice(0, 50) + "...",
+                // });
                 break;
               }
               currentImageIndex += segmentImageCount;
@@ -85,6 +185,11 @@ function ComicPage({
                 panel={panel}
                 segment={targetSegment}
                 panelIndex={targetImageIndex}
+                totalImagesInPage={totalImages}
+                onImageLoad={() =>
+                  handleImageLoad(`page-${layoutIndex}-image-${panelIndex}`)
+                }
+                imageId={`page-${layoutIndex}-image-${panelIndex}`}
               />
             );
           })}
@@ -108,66 +213,171 @@ function ComicPage({
           sx={{
             position: "absolute",
             left: "100%",
-            top: "50%",
+            top: "75%",
             transform: "translateY(-50%)",
             display: "flex",
             flexDirection: "column",
             gap: 2,
             width: "350px",
             ml: 4,
+            backgroundColor: "transparent",
           }}
         >
-          <StoryChoices
-            choices={choices}
-            onChoice={onChoice}
-            disabled={isLoading}
-            isLastStep={
-              layout.segments[layout.segments.length - 1]?.is_last_step
-            }
-            isGameOver={
-              layout.segments[layout.segments.length - 1]?.isDeath ||
-              layout.segments[layout.segments.length - 1]?.isVictory
-            }
-            isDeath={layout.segments[layout.segments.length - 1]?.isDeath}
-            isVictory={layout.segments[layout.segments.length - 1]?.isVictory}
-            isNarratorSpeaking={isNarratorSpeaking}
-            stopNarration={stopNarration}
-            playNarration={playNarration}
-            storyText={
-              layout.segments[layout.segments.length - 1]?.rawText || ""
-            }
-          />
+          <StoryChoices />
         </Box>
       )}
     </Box>
   );
 }
 
+// Cache global pour stocker les images préchargées
+const imageCache = new Map();
+
 // Main comic layout component
-export function ComicLayout({
-  segments,
-  choices,
-  onChoice,
-  isLoading,
-  showScreenshot,
-  onScreenshot,
-  isNarratorSpeaking,
-  stopNarration,
-  playNarration,
-}) {
+export function ComicLayout() {
+  const {
+    segments,
+    isLoading,
+    playNarration,
+    stopNarration,
+    isNarratorSpeaking,
+  } = useGame();
   const scrollContainerRef = useRef(null);
+  const [preloadedImages, setPreloadedImages] = useState(new Map());
+  const preloadingRef = useRef(false);
+
+  const loadImage = async (imageData, imageId) => {
+    // Vérifier si l'image est valide
+    if (!imageData || typeof imageData !== "string" || imageData.length === 0) {
+      console.warn(
+        `Image invalide pour ${imageId}: données manquantes ou invalides`
+      );
+      return Promise.reject(new Error("Données d'image invalides"));
+    }
+
+    // Si l'image est déjà dans le cache, ne pas la recharger
+    if (imageCache.has(imageId)) {
+      return imageCache.get(imageId);
+    }
+
+    // Si l'image est déjà en cours de chargement, ne pas la recharger
+    if (preloadingRef.current.has(imageId)) {
+      return;
+    }
+
+    preloadingRef.current.add(imageId);
+
+    try {
+      const img = new Image();
+      const imagePromise = new Promise((resolve, reject) => {
+        img.onload = () => {
+          imageCache.set(imageId, imageData);
+          preloadingRef.current.delete(imageId);
+          resolve(imageData);
+        };
+        img.onerror = (error) => {
+          preloadingRef.current.delete(imageId);
+          console.warn(`Échec du chargement de l'image ${imageId}`, error);
+          reject(new Error(`Échec du chargement de l'image ${imageId}`));
+        };
+      });
+
+      img.src = `data:image/jpeg;base64,${imageData}`;
+      return await imagePromise;
+    } catch (error) {
+      preloadingRef.current.delete(imageId);
+      throw error;
+    }
+  };
+
+  // Précharger les images pour tous les segments
+  useEffect(() => {
+    if (!segments?.length) return;
+
+    preloadingRef.current = new Set();
+    const newPreloadedImages = new Map();
+
+    const loadAllImages = async () => {
+      for (
+        let segmentIndex = 0;
+        segmentIndex < segments.length;
+        segmentIndex++
+      ) {
+        const segment = segments[segmentIndex];
+
+        // Vérifier si le segment et ses images sont valides
+        if (!segment?.images?.length) {
+          console.warn(`Segment ${segmentIndex} invalide ou sans images`);
+          continue;
+        }
+
+        for (
+          let imageIndex = 0;
+          imageIndex < segment.images.length;
+          imageIndex++
+        ) {
+          const imageData = segment.images[imageIndex];
+          const imageId = `segment-${segmentIndex}-image-${imageIndex}`;
+
+          try {
+            if (!imageData) {
+              console.warn(`Image manquante: ${imageId}`);
+              newPreloadedImages.set(imageId, false);
+              continue;
+            }
+
+            await loadImage(imageData, imageId);
+            newPreloadedImages.set(imageId, true);
+          } catch (error) {
+            console.warn(
+              `Erreur lors du chargement de ${imageId}:`,
+              error.message
+            );
+            newPreloadedImages.set(imageId, false);
+          }
+        }
+      }
+      setPreloadedImages(new Map(newPreloadedImages));
+    };
+
+    loadAllImages();
+
+    return () => {
+      preloadingRef.current = new Set();
+    };
+  }, [segments]);
 
   // Effect to scroll to the right when segments are loaded
   useEffect(() => {
     const loadedSegments = segments.filter((segment) => !segment.isLoading);
-    // Scroll à droite seulement si on a au moins un segment chargé
-    if (scrollContainerRef.current && loadedSegments.length > 0) {
+    const lastSegment = loadedSegments[loadedSegments.length - 1];
+    const hasNewSegment = lastSegment && !lastSegment.hasBeenRead;
+
+    if (scrollContainerRef.current && hasNewSegment) {
+      // Arrêter la narration en cours
+      stopNarration();
+
+      // Scroll to the right
       scrollContainerRef.current.scrollTo({
         left: scrollContainerRef.current.scrollWidth,
         behavior: "smooth",
       });
+
+      // Attendre que le scroll soit terminé avant de démarrer la narration
+      const timeoutId = setTimeout(() => {
+        if (lastSegment && lastSegment.text) {
+          playNarration(lastSegment.text);
+          // Marquer le segment comme lu
+          lastSegment.hasBeenRead = true;
+        }
+      }, 500);
+
+      return () => {
+        clearTimeout(timeoutId);
+        stopNarration();
+      };
     }
-  }, [segments]); // Se déclenche à chaque modification des segments
+  }, [segments, playNarration, stopNarration]);
 
   // Prevent back/forward navigation on trackpad horizontal scroll
   useEffect(() => {
@@ -192,8 +402,7 @@ export function ComicLayout({
     return () => container.removeEventListener("wheel", handleWheel);
   }, []);
 
-  // Filtrer les segments qui sont en cours de chargement
-  const loadedSegments = segments.filter((segment) => !segment.isLoading);
+  const loadedSegments = segments.filter((segment) => segment.text);
   const layouts = groupSegmentsIntoLayouts(loadedSegments);
 
   return (
@@ -207,17 +416,17 @@ export function ComicLayout({
         height: "100%",
         width: "100%",
         px: layouts[0]?.type === "COVER" ? "calc(50% - (90vh * 0.5 * 0.5))" : 0,
-        py: 8, // 24px de padding vertical
+        py: 8,
         overflowX: "auto",
         overflowY: "hidden",
         "&::-webkit-scrollbar": {
           height: "0px",
         },
         "&::-webkit-scrollbar-track": {
-          backgroundColor: "grey.200",
+          backgroundColor: "grey.800",
         },
         "&::-webkit-scrollbar-thumb": {
-          backgroundColor: "grey.400",
+          backgroundColor: "grey.700",
           borderRadius: "4px",
         },
       }}
@@ -228,16 +437,12 @@ export function ComicLayout({
           layout={layout}
           layoutIndex={layoutIndex}
           isLastPage={layoutIndex === layouts.length - 1}
-          choices={choices}
-          onChoice={onChoice}
-          isLoading={isLoading}
-          showScreenshot={showScreenshot}
-          onScreenshot={onScreenshot}
-          isNarratorSpeaking={isNarratorSpeaking}
-          stopNarration={stopNarration}
-          playNarration={playNarration}
+          preloadedImages={preloadedImages}
         />
       ))}
+      {isLoading && !layouts[layouts.length - 1]?.segments[0]?.is_last_step && (
+        <LoadingPage />
+      )}
     </Box>
   );
 }

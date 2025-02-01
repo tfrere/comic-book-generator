@@ -5,6 +5,7 @@ import {
   Category as CategoryIcon,
   AccessTime as AccessTimeIcon,
   AutoFixHigh as MacGuffinIcon,
+  Person as PersonIcon,
 } from "@mui/icons-material";
 import { Metric } from "./Metric";
 
@@ -27,9 +28,17 @@ export const UniverseMetrics = ({
         <Metric
           icon={<PaletteIcon fontSize="small" />}
           label="Style"
-          value={style}
+          value={style?.name || style}
           color={color}
         />
+        {style?.selected_artist && (
+          <Metric
+            icon={<PersonIcon fontSize="small" />}
+            label="Artist"
+            value={style.selected_artist}
+            color={color}
+          />
+        )}
         <Metric
           icon={<CategoryIcon fontSize="small" />}
           label="Genre"

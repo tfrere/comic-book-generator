@@ -188,7 +188,7 @@ export function Tutorial() {
                   lineHeight: 1.6,
                   marginBottom: 1.5,
                 }}
-                text={`You are <strong>Sarah</strong>, an <strong>AI</strong> hunter traveling through <strong>parallel worlds</strong>. Your mission is to track down an <strong>AI</strong> that moves from world to world to avoid destruction.`}
+                text={`You are a <strong>AI</strong> hunter traveling through <strong>parallel worlds</strong>. Each time you land in a new world, you are a <strong>new character</strong>. Your mission is to track down an <strong>AI</strong> that moves from world to world to avoid destruction.`}
               />
               <StyledText
                 variant="body1"

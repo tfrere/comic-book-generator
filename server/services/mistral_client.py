@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # Pricing: https://docs.mistral.ai/platform/pricing/
 
 class MistralClient:
-    def __init__(self, api_key: str, model_name: str = "mistral-small"):
+    def __init__(self, api_key: str, model_name: str = "mistral-small-latest"):
         logger.info(f"Initializing MistralClient with model: {model_name}")
         self.model = ChatMistralAI(
             mistral_api_key=api_key,
@@ -158,3 +158,37 @@ class MistralClient:
         except Exception as e:
             print(f"Error transforming prompt: {str(e)}")
             return story_text 
+
+    async def generate_text(self, messages: list[BaseMessage]) -> str:
+        """
+        Génère une réponse textuelle simple sans structure JSON.
+        Utile pour la génération de texte narratif ou descriptif.
+        
+        Args:
+            messages: Liste des messages pour le modèle
+            
+        Returns:
+            str: Le texte généré
+        """
+        retry_count = 0
+        last_error = None
+        
+        while retry_count < self.max_retries:
+            try:
+                logger.info(f"Attempt {retry_count + 1}/{self.max_retries}")
+                
+                await self._wait_for_rate_limit()
+                response = await self.model.ainvoke(messages)
+                return response.content.strip()
+                
+            except Exception as e:
+                logger.error(f"Error on attempt {retry_count + 1}/{self.max_retries}: {str(e)}")
+                retry_count += 1
+                if retry_count < self.max_retries:
+                    wait_time = 2 * retry_count
+                    logger.info(f"Waiting {wait_time} seconds before retry...")
+                    await asyncio.sleep(wait_time)
+                    continue
+                
+                logger.error(f"Failed after {self.max_retries} attempts. Last error: {last_error or str(e)}")
+                raise Exception(f"Failed after {self.max_retries} attempts. Last error: {last_error or str(e)}") 

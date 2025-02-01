@@ -66,6 +66,22 @@ const handleApiError = (error) => {
   }
 };
 
+// Audio context for narration
+let audioContext = null;
+let audioSource = null;
+
+// Initialize audio context on user interaction
+const initAudioContext = () => {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    // Resume the context if it's suspended
+    if (audioContext.state === "suspended") {
+      audioContext.resume();
+    }
+  }
+  return audioContext;
+};
+
 // Story related API calls
 export const storyApi = {
   start: async (sessionId) => {
@@ -129,22 +145,70 @@ export const storyApi = {
   },
 
   // Narration related API calls
-  narrate: async (text, sessionId) => {
+  playNarration: async (text, sessionId) => {
     try {
+      // Stop any existing narration
+      if (audioSource) {
+        audioSource.stop();
+        audioSource = null;
+      }
+
+      // Initialize audio context if needed
+      audioContext = initAudioContext();
+
       const response = await api.post(
         "/api/text-to-speech",
         {
           text,
+          voice_id: "21m00Tcm4TlvDq8ikWAM", // Rachel voice
         },
         {
           headers: getDefaultHeaders(sessionId),
         }
       );
-      return response.data;
+
+      if (!response.data.success) {
+        throw new Error("Failed to generate audio");
+      }
+
+      // Convert base64 to audio buffer
+      const audioData = atob(response.data.audio_base64);
+      const arrayBuffer = new ArrayBuffer(audioData.length);
+      const view = new Uint8Array(arrayBuffer);
+      for (let i = 0; i < audioData.length; i++) {
+        view[i] = audioData.charCodeAt(i);
+      }
+
+      // Decode audio data
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+      // Create and play audio source
+      audioSource = audioContext.createBufferSource();
+      audioSource.buffer = audioBuffer;
+      audioSource.connect(audioContext.destination);
+      audioSource.start(0);
+
+      // Return a promise that resolves when the audio finishes playing
+      return new Promise((resolve) => {
+        audioSource.onended = () => {
+          audioSource = null;
+          resolve();
+        };
+      });
     } catch (error) {
-      return handleApiError(error);
+      console.error("Error playing narration:", error);
+      throw error;
     }
   },
+
+  stopNarration: () => {
+    if (audioSource) {
+      audioSource.stop();
+      audioSource = null;
+    }
+  },
+
+  initAudioContext,
 };
 
 // WebSocket URL
@@ -154,6 +218,14 @@ export const universeApi = {
   generate: async () => {
     try {
       const response = await api.post("/api/universe/generate");
+      return response.data;
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+  getStyles: async () => {
+    try {
+      const response = await api.get("/api/universe/styles");
       return response.data;
     } catch (error) {
       return handleApiError(error);

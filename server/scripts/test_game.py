@@ -82,10 +82,17 @@ async def play_game(show_context: bool = False, auto_mode: bool = False, max_tur
         print(f"⏱️  Maximum turns: {max_turns}")
     print_separator()
     
-    # Generate universe
-    print("🌍 Generating universe...")
-    style, genre, epoch, macguffin = universe_generator._get_random_elements()
-    universe = await universe_generator.generate()
+    # Test universe generation
+    style, genre, epoch, macguffin, hero = universe_generator._get_random_elements()
+    print(f"\nGenerated universe elements:")
+    print(f"Style: {style['name']}")
+    print(f"Genre: {genre}")
+    print(f"Epoch: {epoch}")
+    print(f"MacGuffin: {macguffin}")
+    print(f"Hero: {hero}")
+
+    base_story = await universe_generator.generate()
+    print(f"\nGenerated base story:\n{base_story}")
     
     # Create session and game state
     session_id = str(uuid.uuid4())
@@ -94,21 +101,22 @@ async def play_game(show_context: bool = False, auto_mode: bool = False, max_tur
         style=style["name"],
         genre=genre,
         epoch=epoch,
-        base_story=universe
+        base_story=base_story
     )
     
-    # Create text generator for this session
+    # Create story generator
     story_generator.create_segment_generator(
         session_id=session_id,
         style=style,
         genre=genre,
         epoch=epoch,
-        base_story=universe,
-        macguffin=macguffin
+        base_story=base_story,
+        macguffin=macguffin,
+        hero=hero
     )
     
     # Display universe information
-    print_universe_info(style["name"], genre, epoch, universe)
+    print_universe_info(style["name"], genre, epoch, base_story)
     
     last_choice = None
     

@@ -5,12 +5,13 @@ import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import { Box, IconButton, LinearProgress, Tooltip } from "@mui/material";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { ErrorDisplay } from "../components/ErrorDisplay";
 import { LoadingScreen } from "../components/LoadingScreen";
-import { StoryChoices } from "../components/StoryChoices";
 import { TalkWithSarah } from "../components/TalkWithSarah";
+import { GameDebugPanel } from "../components/GameDebugPanel";
+import { UniverseSlotMachine } from "../components/UniverseSlotMachine";
 import { useGameSession } from "../hooks/useGameSession";
 import { useNarrator } from "../hooks/useNarrator";
 import { usePageSound } from "../hooks/usePageSound";
@@ -18,47 +19,71 @@ import { useStoryCapture } from "../hooks/useStoryCapture";
 import { useTransitionSound } from "../hooks/useTransitionSound";
 import { useWritingSound } from "../hooks/useWritingSound";
 import { ComicLayout } from "../layouts/ComicLayout";
-import { getNextLayoutType, LAYOUTS } from "../layouts/config";
-import { storyApi } from "../utils/api";
+import { storyApi, universeApi } from "../utils/api";
+import { GameProvider, useGame } from "../contexts/GameContext";
 
 // Constants
 const SOUND_ENABLED_KEY = "sound_enabled";
+const GAME_INITIALIZED_KEY = "game_initialized";
 
-// Function to convert text with ** to Chip elements
-const formatTextWithBold = (text, isInPanel = false) => {
-  if (!text) return "";
-  const parts = text.split(/(\*\*.*?\*\*)/g);
-  return parts.map((part, index) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return part.slice(2, -2);
-    }
-    return part;
-  });
-};
-
-// Function to strip bold markers from text for narration
-const stripBoldMarkers = (text) => {
-  return text.replace(/\*\*/g, "");
-};
-
-export function Game() {
+function GameContent() {
   const navigate = useNavigate();
+  const { universeId } = useParams();
+  const {
+    segments,
+    setSegments,
+    choices,
+    setChoices,
+    isLoading,
+    setIsLoading,
+    heroName,
+    setHeroName,
+    showChoices,
+    setShowChoices,
+    error,
+    setError,
+    gameState,
+    setGameState,
+    currentStory,
+    setCurrentStory,
+    universe,
+    setUniverse,
+    slotMachineState,
+    setSlotMachineState,
+    showSlotMachine,
+    setShowSlotMachine,
+    isInitialLoading,
+    setIsInitialLoading,
+    showLoadingMessages,
+    setShowLoadingMessages,
+    isTransitionLoading,
+    setIsTransitionLoading,
+    layoutCounter,
+    setLayoutCounter,
+    resetGame,
+    generateImagesForStory,
+  } = useGame();
+
   const storyContainerRef = useRef(null);
   const { downloadStoryImage } = useStoryCapture();
-  const [storySegments, setStorySegments] = useState([]);
-  const [currentChoices, setCurrentChoices] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showChoices, setShowChoices] = useState(true);
-  const [error, setError] = useState(null);
+  const [audioInitialized, setAudioInitialized] = useState(false);
   const [isSoundEnabled, setIsSoundEnabled] = useState(() => {
     const stored = localStorage.getItem(SOUND_ENABLED_KEY);
     return stored === null ? true : stored === "true";
   });
   const [loadingMessage, setLoadingMessage] = useState(0);
+  const [isDebugVisible, setIsDebugVisible] = useState(false);
+
   const messages = [
-    "waking up a sleepy AI...",
     "teaching robots to tell bedtime stories...",
     "bribing pixels to make pretty pictures...",
+    "calibrating the multiverse...",
+  ];
+  const transitionMessages = [
+    "Creating your universe...",
+    "Drawing the first scene...",
+    "Preparing your story...",
+    "Assembling the comic panels...",
   ];
 
   const { isNarratorSpeaking, playNarration, stopNarration } =
@@ -68,236 +93,189 @@ export function Game() {
   const playTransitionSound = useTransitionSound(isSoundEnabled);
   const {
     sessionId,
-    universe,
+    universe: gameUniverse,
     isLoading: isSessionLoading,
     error: sessionError,
   } = useGameSession();
 
-  // Jouer le son de transition une fois que la session est chargée
+  // Initialize audio after user interaction
   useEffect(() => {
-    if (!isSessionLoading && sessionId && !error && !sessionError) {
-      setTimeout(() => {
-        playTransitionSound();
-      }, 100);
+    const handleUserInteraction = () => {
+      if (!audioInitialized) {
+        // Create and resume audio context
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        audioCtx.resume().then(() => {
+          setAudioInitialized(true);
+          // Remove event listeners after initialization
+          window.removeEventListener("click", handleUserInteraction);
+          window.removeEventListener("keydown", handleUserInteraction);
+          window.removeEventListener("touchstart", handleUserInteraction);
+        });
+      }
+    };
+
+    window.addEventListener("click", handleUserInteraction);
+    window.addEventListener("keydown", handleUserInteraction);
+    window.addEventListener("touchstart", handleUserInteraction);
+
+    return () => {
+      window.removeEventListener("click", handleUserInteraction);
+      window.removeEventListener("keydown", handleUserInteraction);
+      window.removeEventListener("touchstart", handleUserInteraction);
+    };
+  }, [audioInitialized]);
+
+  // Modify the transition sound effect to only play if audio is initialized
+  useEffect(() => {
+    if (
+      !isSessionLoading &&
+      sessionId &&
+      !error &&
+      !sessionError &&
+      audioInitialized
+    ) {
+      playTransitionSound();
     }
-  }, [isSessionLoading, sessionId, error, sessionError]);
+  }, [isSessionLoading, sessionId, error, sessionError, audioInitialized]);
+
+  // Jouer le son de transition quand on passe de la slot machine au jeu
+  useEffect(() => {
+    if (!isInitialLoading && audioInitialized) {
+      playTransitionSound();
+    }
+  }, [isInitialLoading, audioInitialized, playTransitionSound]);
 
   // Sauvegarder l'état du son dans le localStorage
   useEffect(() => {
     localStorage.setItem(SOUND_ENABLED_KEY, isSoundEnabled);
   }, [isSoundEnabled]);
 
-  // Start the story when session is ready
-  useEffect(() => {
-    if (sessionId && !isSessionLoading) {
-      handleStoryAction("restart");
-    }
-  }, [sessionId, isSessionLoading]);
-
   // Add effect for message rotation
   useEffect(() => {
-    if (isLoading && storySegments.length === 0) {
+    if (showLoadingMessages) {
       const interval = setInterval(() => {
         setLoadingMessage((prev) => (prev + 1) % messages.length);
       }, 3000);
       return () => clearInterval(interval);
     }
-  }, [isLoading, storySegments.length]);
+  }, [showLoadingMessages]);
+
+  // Handle keyboard events for debug panel
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      if (event.key.toLowerCase() === "d") {
+        setIsDebugVisible((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, []);
+
+  // Update game state when story segments change
+  useEffect(() => {
+    if (segments.length > 0) {
+      const lastSegment = segments[segments.length - 1];
+      setCurrentStory(lastSegment);
+      setGameState((prev) => ({
+        ...prev,
+        story_beat: segments.length - 1,
+        story_history: segments,
+      }));
+    }
+  }, [segments]);
+
+  // Initialize game state with universe info
+  useEffect(() => {
+    if (gameUniverse) {
+      setGameState({
+        universe_style: gameUniverse.style,
+        universe_genre: gameUniverse.genre,
+        universe_epoch: gameUniverse.epoch,
+        universe_macguffin: gameUniverse.macguffin,
+        hero_name: gameUniverse.hero_name || "the hero",
+        story_beat: 0,
+        story_history: [],
+      });
+    }
+  }, [gameUniverse]);
+
+  // Charger l'univers initial
+  useEffect(() => {
+    const loadUniverse = async () => {
+      setIsLoading(true);
+      try {
+        const universeData = await universeApi.generate();
+        console.log("Universe Data:", universeData);
+
+        // Mettre à jour la slot machine avec les données de l'univers
+        setSlotMachineState({
+          style: universeData.style.name,
+          genre: universeData.genre,
+          epoch: universeData.epoch,
+          activeIndex: 3, // Pour montrer que tous les slots sont remplis
+        });
+
+        setHeroName(universeData.hero_name);
+        setUniverse(universeData);
+
+        // Démarrer l'histoire
+        const response = await storyApi.start(universeData.session_id);
+        console.log("Initial Story Response:", response);
+
+        // Formater le segment avec le bon format
+        const formattedSegment = {
+          text: response.story_text,
+          rawText: response.story_text,
+          choices: response.choices || [],
+          isLoading: false,
+          images: [],
+          isDeath: response.is_death || false,
+          isVictory: response.is_victory || false,
+          time: response.time,
+          location: response.location,
+          session_id: universeData.session_id,
+        };
+
+        setSegments([formattedSegment]);
+        setChoices(response.choices);
+
+        // Générer les images pour le premier segment
+        if (response.image_prompts && response.image_prompts.length > 0) {
+          await generateImagesForStory(response.image_prompts, 0, [
+            formattedSegment,
+          ]);
+        }
+
+        // La slot machine sera cachée automatiquement via le callback onComplete
+        setShowSlotMachine(false);
+      } catch (error) {
+        console.error("Error loading universe:", error);
+        setError(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUniverse();
+    return () => resetGame(); // Nettoyer l'état quand on quitte
+  }, [universeId]);
+
+  // Gérer la transition vers le jeu
+  useEffect(() => {
+    if (isTransitionLoading) {
+      // Attendre 3 secondes avant de passer au jeu
+      const timer = setTimeout(() => {
+        setIsTransitionLoading(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isTransitionLoading]);
 
   const handleBack = () => {
     playPageSound();
     navigate("/tutorial");
-  };
-
-  const handleChoice = async (choiceId) => {
-    playPageSound();
-
-    setShowChoices(false); // Cacher les choix dès qu'on clique
-    // Si c'est l'option "Réessayer", on relance la dernière action
-    if (currentChoices.length === 1 && currentChoices[0].text === "Réessayer") {
-      // Supprimer le segment d'erreur
-      setStorySegments((prev) => prev.slice(0, -1));
-      // Réessayer la dernière action
-      await handleStoryAction(
-        "choice",
-        storySegments[storySegments.length - 2]?.choiceId || null
-      );
-      return;
-    }
-
-    // Ajouter le choix comme segment
-    const choice = currentChoices.find((c) => c.id === choiceId);
-    setStorySegments((prev) => [
-      ...prev,
-      {
-        text: choice.text,
-        rawText: stripBoldMarkers(choice.text),
-        isChoice: true,
-        choiceId: choiceId,
-      },
-    ]);
-
-    // Continuer l'histoire avec ce choix
-    await handleStoryAction("choice", choiceId);
-  };
-
-  const handleStoryAction = async (action, choiceId = null) => {
-    setIsLoading(true);
-    setShowChoices(false);
-    setError(null);
-    try {
-      if (isNarratorSpeaking) {
-        stopNarration();
-      }
-
-      // Pass sessionId to API calls
-      const storyData = await (action === "restart"
-        ? storyApi.start(sessionId)
-        : storyApi.makeChoice(choiceId, sessionId));
-
-      if (!storyData) {
-        throw new Error("Pas de données reçues du serveur");
-      }
-
-      // 2. Create new segment without images
-      const newSegment = {
-        text: formatTextWithBold(storyData.story_text, true),
-        rawText: stripBoldMarkers(storyData.story_text), // Store raw text for narration
-        isChoice: false,
-        isDeath: storyData.is_death,
-        isVictory: storyData.is_victory,
-        is_first_step: storyData.is_first_step,
-        is_last_step: storyData.is_last_step,
-        images: [],
-        isLoading: true, // Ajout d'un flag pour indiquer que le segment est en cours de chargement
-      };
-
-      playWritingSound();
-
-      // 3. Update segments
-      if (action === "restart") {
-        setStorySegments([newSegment]);
-      } else {
-        setStorySegments((prev) => [...prev, newSegment]);
-      }
-
-      // 4. Update choices
-      setCurrentChoices(storyData.choices || []);
-
-      // 5. Start narration of the new segment
-      await playNarration(newSegment.rawText);
-
-      // 6. Generate images in parallel
-      if (storyData.image_prompts && storyData.image_prompts.length > 0) {
-        await generateImagesForStory(
-          storyData.image_prompts,
-          action === "restart" ? 0 : storySegments.length,
-          action === "restart" ? [newSegment] : [...storySegments, newSegment]
-        );
-      } else {
-        // Si pas d'images, marquer le segment comme chargé
-        const updatedSegment = { ...newSegment, isLoading: false };
-        if (action === "restart") {
-          setStorySegments([updatedSegment]);
-        } else {
-          setStorySegments((prev) => [...prev.slice(0, -1), updatedSegment]);
-        }
-      }
-
-      // Réafficher les choix une fois tout chargé
-      setShowChoices(true);
-    } catch (error) {
-      console.error("Error in handleStoryAction:", error);
-      const errorMessage =
-        error.response?.data?.detail ||
-        error.message ||
-        "Le conteur d'histoires est temporairement indisponible. Veuillez réessayer dans quelques instants...";
-
-      setError(errorMessage);
-      await playNarration(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const generateImagesForStory = async (
-    imagePrompts,
-    segmentIndex,
-    currentSegments
-  ) => {
-    try {
-      let localSegments = [...currentSegments];
-      const images = Array(imagePrompts.length).fill(null);
-      let allImagesGenerated = false;
-
-      // Déterminer le layout en fonction du nombre d'images
-      const layoutType = getNextLayoutType(0, imagePrompts.length);
-
-      for (
-        let promptIndex = 0;
-        promptIndex < imagePrompts.length;
-        promptIndex++
-      ) {
-        let retryCount = 0;
-        const maxRetries = 3;
-        let success = false;
-
-        // Obtenir les dimensions pour ce panneau
-        const panelDimensions = LAYOUTS[layoutType].panels[promptIndex];
-
-        while (retryCount < maxRetries && !success) {
-          try {
-            const result = await storyApi.generateImage(
-              imagePrompts[promptIndex],
-              panelDimensions.width,
-              panelDimensions.height
-            );
-
-            if (!result) {
-              throw new Error("Pas de résultat de génération d'image");
-            }
-
-            if (result.success) {
-              images[promptIndex] = result.image_base64;
-
-              // Vérifier si toutes les images sont générées
-              allImagesGenerated = images.every((img) => img !== null);
-
-              // Ne mettre à jour le segment que si toutes les images sont générées
-              if (allImagesGenerated) {
-                localSegments[segmentIndex] = {
-                  ...localSegments[segmentIndex],
-                  images,
-                  isLoading: false,
-                };
-                setStorySegments([...localSegments]);
-              }
-              success = true;
-            } else {
-              console.warn(
-                `Failed to generate image ${promptIndex + 1}, attempt ${
-                  retryCount + 1
-                }`
-              );
-              retryCount++;
-            }
-          } catch (error) {
-            console.error(`Error generating image ${promptIndex + 1}:`, error);
-            retryCount++;
-          }
-        }
-
-        if (!success) {
-          console.error(
-            `Failed to generate image ${
-              promptIndex + 1
-            } after ${maxRetries} attempts`
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error in generateImagesForStory:", error);
-    }
   };
 
   const handleCaptureStory = async () => {
@@ -321,11 +299,52 @@ export function Game() {
         <LoadingScreen
           icon="universe"
           messages={[
-            "Creating a new universe...",
+            "Waking up sleepy AI...",
+            "Calibrating the multiverse...",
             "Gathering comic book inspiration...",
-            "Drawing the first panels...",
-            "Setting up the story...",
+            // "Creating a new universe...",
+            // "Drawing the first panels...",
+            // "Setting up the story...",
           ]}
+        />
+      </Box>
+    );
+  }
+
+  // Afficher la slot machine pendant le chargement initial
+  if (isInitialLoading) {
+    return (
+      <Box sx={{ width: "100%", height: "100vh", backgroundColor: "#1a1a1a" }}>
+        <UniverseSlotMachine
+          style={slotMachineState.style}
+          genre={slotMachineState.genre}
+          epoch={slotMachineState.epoch}
+          activeIndex={slotMachineState.activeIndex}
+          onComplete={() => {
+            setIsInitialLoading(false);
+            setIsTransitionLoading(true);
+          }}
+        />
+      </Box>
+    );
+  }
+
+  // Afficher l'écran de transition après la slot machine
+  if (isTransitionLoading) {
+    return (
+      <Box sx={{ width: "100%", height: "100vh", backgroundColor: "#1a1a1a" }}>
+        <LoadingScreen messages={transitionMessages} icon="story" />
+      </Box>
+    );
+  }
+
+  // Afficher les messages de chargement uniquement pendant le chargement initial
+  if (isLoading && showLoadingMessages && segments.length === 0) {
+    return (
+      <Box sx={{ width: "100%", height: "100vh", backgroundColor: "#1a1a1a" }}>
+        <LoadingScreen
+          messages={messages}
+          currentMessage={messages[loadingMessage]}
         />
       </Box>
     );
@@ -340,157 +359,102 @@ export function Game() {
       style={{ backgroundColor: "#121212", width: "100%" }}
     >
       <Box
-        ref={storyContainerRef}
         sx={{
           height: "100vh",
           width: "100vw",
-          backgroundColor: "#1a1a1a",
+          backgroundColor: "grey.900",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {isLoading && (
-          <LinearProgress
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 1000,
-              height: 8,
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              "& .MuiLinearProgress-bar": {
-                backgroundColor: "rgba(255, 255, 255, 0.8)",
-                backgroundImage:
-                  "linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.2) 100%)",
-              },
-            }}
-          />
-        )}
-
-        <Tooltip title="Back to tutorial">
-          <IconButton
-            onClick={handleBack}
-            sx={{
-              position: "absolute",
-              top: 16,
-              left: 16,
-              color: "white",
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-              "&:hover": {
-                backgroundColor: "rgba(0, 0, 0, 0.7)",
-              },
-              zIndex: 1000,
-            }}
-          >
-            <ArrowBackIcon />
-          </IconButton>
-        </Tooltip>
-
-        {error ? (
-          <ErrorDisplay
-            message={error}
-            onRetry={() => {
-              if (storySegments.length === 0) {
-                handleStoryAction("restart");
-              } else {
-                handleStoryAction(
-                  "choice",
-                  storySegments[storySegments.length - 1]?.choiceId || null
-                );
-              }
-            }}
-          />
-        ) : (
-          <>
-            {isLoading && storySegments.length === 0 ? (
-              <LoadingScreen
-                icon="story"
-                messages={[
-                  "Bringing the universe to life...",
-                  "Awakening the characters...",
-                  "Polishing the first scene...",
-                  "Preparing the adventure...",
-                  "Adding final touches to the world...",
-                ]}
-              />
-            ) : (
-              <>
-                <ComicLayout
-                  segments={storySegments}
-                  choices={currentChoices}
-                  onChoice={handleChoice}
-                  isLoading={isLoading}
-                  showScreenshot={storySegments.length > 0}
-                  onScreenshot={handleCaptureStory}
-                  isNarratorSpeaking={isNarratorSpeaking}
-                  stopNarration={stopNarration}
-                  playNarration={playNarration}
-                />
-
-                {showChoices && (
-                  <StoryChoices
-                    choices={currentChoices}
-                    onChoice={handleChoice}
-                    disabled={isLoading}
-                    isLastStep={
-                      storySegments.length > 0 &&
-                      storySegments[storySegments.length - 1].isLastStep
-                    }
-                    isGameOver={
-                      storySegments.length > 0 &&
-                      storySegments[storySegments.length - 1].isGameOver
-                    }
-                    containerRef={storyContainerRef}
-                  />
-                )}
-              </>
-            )}
-            <Box
-              sx={{
-                position: "fixed",
-                top: 16,
-                right: 16,
-                display: "flex",
-                gap: 1,
-                padding: 1,
-                borderRadius: 1,
-              }}
-            >
-              <Tooltip title="Save your story">
-                <IconButton
-                  id="screenshot-button"
-                  onClick={handleCaptureStory}
-                  sx={{
-                    color: "white",
-                    "&:hover": {
-                      backgroundColor: "rgba(0, 0, 0, 0.7)",
-                    },
-                  }}
-                >
-                  <PhotoCameraOutlinedIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip
-                title={isSoundEnabled ? "Couper le son" : "Activer le son"}
+        {/* Header controls */}
+        <Box
+          sx={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+            display: "flex",
+            justifyContent: "space-between",
+            p: 2,
+            // backgroundColor: "rgba(18, 18, 18, 0.8)",
+            // backdropFilter: "blur(8px)",
+          }}
+        >
+          <Box>
+            <Tooltip title="Retour au menu">
+              <IconButton
+                onClick={() => navigate("/tutorial")}
+                sx={{ color: "white" }}
               >
-                <IconButton
-                  onClick={() => setIsSoundEnabled(!isSoundEnabled)}
-                  sx={{
-                    color: "white",
-                    "&:hover": {
-                      backgroundColor: "rgba(0, 0, 0, 0.7)",
-                    },
-                  }}
-                >
-                  {isSoundEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </>
+                <ArrowBackIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Tooltip
+              title={isSoundEnabled ? "Désactiver le son" : "Activer le son"}
+            >
+              <IconButton
+                onClick={() => setIsSoundEnabled(!isSoundEnabled)}
+                sx={{ color: "white" }}
+              >
+                {isSoundEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Capturer l'histoire">
+              <IconButton
+                onClick={() => downloadStoryImage(storyContainerRef)}
+                sx={{ color: "white" }}
+              >
+                <PhotoCameraOutlinedIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+
+        {/* Main content */}
+        <Box
+          ref={storyContainerRef}
+          sx={{
+            height: "100%",
+            width: "100%",
+            position: "relative",
+            backgroundColor: "grey.900",
+          }}
+        >
+          {error ? (
+            <ErrorDisplay error={error} onRetry={resetGame} />
+          ) : showSlotMachine ? (
+            <UniverseSlotMachine state={slotMachineState} />
+          ) : (
+            <ComicLayout />
+          )}
+        </Box>
+
+        {isDebugVisible && (
+          <GameDebugPanel
+            gameState={gameState}
+            storySegments={segments}
+            currentChoices={choices}
+            showChoices={showChoices}
+            isLoading={isLoading}
+          />
         )}
+
+        {/* Sarah chat interface */}
+        <TalkWithSarah />
       </Box>
     </motion.div>
+  );
+}
+
+export function Game() {
+  return (
+    <GameProvider>
+      <GameContent />
+    </GameProvider>
   );
 }
 
