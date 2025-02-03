@@ -54,8 +54,17 @@ def get_chat_router(session_manager: SessionManager, story_generator):
                 )
                 previous_choice = "none"
             else:
+                # Pour les choix personnalisés, on les traite immédiatement
                 if chat_message.message == "custom_choice" and chat_message.custom_text:
                     previous_choice = chat_message.custom_text
+                    # On ajoute le choix à l'historique avant de générer le segment
+                    game_state.add_to_history(
+                        f"You decide to: {chat_message.custom_text}",
+                        previous_choice,
+                        [],  # pas d'image pour le choix
+                        game_state.current_time,
+                        game_state.current_location
+                    )
                 else:
                     previous_choice = f"Choice {chat_message.choice_id}" if chat_message.choice_id else "none"
 

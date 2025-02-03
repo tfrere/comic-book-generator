@@ -61,6 +61,9 @@ Dont be obvious. NEVER use "approach the ...", its too slow to be a choice.
 
 You can be original in your choices, but dont be too far from the story.
 Dont be too cliché. The choices should be realistically different.
+The choices should be the direct continuation of the story.
+The choices should be the direct continuation of the story.
+The choices should be the direct continuation of the story.
 
 - Each choice MUST be NO MORE than 6 words - this is a HARD limit
 You must return a JSON object with the following format:

@@ -103,17 +103,20 @@ class StoryGenerator:
             segment_generator = self.get_segment_generator(session_id)
             if not segment_generator:
                 raise ValueError("No story segment generator found for this session")
-
-            segment_response = await segment_generator.generate(
-                story_beat=game_state.story_beat,
-                current_time=game_state.current_time,
-                current_location=game_state.current_location,
-                previous_choice=previous_choice,
-                story_history=game_state.format_history(),
-                turn_before_end=self.turn_before_end,
-                is_winning_story=self.is_winning_story
-            )
-            story_text = segment_response.story_text
+            
+            if(game_state.story_beat == GameConfig.STORY_BEAT_INTRO):
+                story_text = game_state.universe_story
+            else:
+                segment_response = await segment_generator.generate(
+                    story_beat=game_state.story_beat,
+                    current_time=game_state.current_time,
+                    current_location=game_state.current_location,
+                    previous_choice=previous_choice,
+                    story_history=game_state.format_history(),
+                    turn_before_end=self.turn_before_end,
+                    is_winning_story=self.is_winning_story
+                )
+                story_text = segment_response.story_text
 
             # Then get metadata using the new story text
             metadata_response = await self.metadata_generator.generate(

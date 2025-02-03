@@ -1,7 +1,7 @@
 {
   "styles": [
     {
-      "name": "American Comics (Modern)",
+      "name": "American Comics",
       "description": "Style contemporain des comics américains avec des rendus dynamiques et des couleurs vives",
       "references": [
         {
@@ -15,24 +15,6 @@
         {
           "artist": "Stuart Immonen",
           "works": ["Ultimate Spider-Man", "New Avengers", "Star Wars"]
-        }
-      ]
-    },
-    {
-      "name": "American Comics (1950s)",
-      "description": "Style rétro des comics de l'âge d'or avec des couleurs primaires et des compositions classiques",
-      "references": [
-        {
-          "artist": "Jack Kirby",
-          "works": ["Captain America", "Fantastic Four", "The Avengers"]
-        },
-        {
-          "artist": "Steve Ditko",
-          "works": ["Spider-Man", "Doctor Strange", "The Question"]
-        },
-        {
-          "artist": "Curt Swan",
-          "works": ["Superman", "Action Comics", "Adventure Comics"]
         }
       ]
     },
@@ -53,24 +35,6 @@
           "works": ["Vagabond", "Slam Dunk", "Real"]
         }
       ]
-    },
-    {
-      "name": "Franco-Belge",
-      "description": "Style de la bande dessinée franco-belge avec des lignes claires et une attention aux détails",
-      "references": [
-        {
-          "artist": "Hergé",
-          "works": ["Tintin", "Quick et Flupke", "Jo, Zette et Jocko"]
-        },
-        {
-          "artist": "Moebius",
-          "works": ["L'Incal", "Arzak", "Le Garage Hermétique"]
-        },
-        {
-          "artist": "François Schuiten",
-          "works": ["Les Cités Obscures", "La Fièvre d'Urbicande", "La Tour"]
-        }
-      ]
     }
   ],
   "genres": [
@@ -81,9 +45,7 @@
     "Mystery",
     "Romance",
     "Horror",
-    "Comedy",
-    "Drama",
-    "Historical"
+    "Drama"
   ],
   "epochs": [
     "Ancient Times",
@@ -93,9 +55,7 @@
     "Modern Day",
     "Near Future",
     "Far Future",
-    "Post-Apocalyptic",
-    "Alternative History",
-    "Timeless"
+    "Post-Apocalyptic"
   ],
   "macguffins": [
     "The Cosmic Artifact",
@@ -110,38 +70,38 @@
     "The Legendary Weapon"
   ],
   "hero": [
-    "Sarah, 28, short dark hair, blue eyes, a bit rude, wearing a simple t-shirt and jeans.",
-    "Akira, 16, long black hair, brown eyes, calm, wearing a school uniform with a blazer.",
-    "Aisha, 32, curly brown hair, green eyes, creative, dressed in a colorful blouse and tailored pants.",
-    "Diego, 35, wavy black hair, brown eyes, passionate, wearing a casual shirt and cargo shorts.",
-    "Mei, 25, straight black hair, black eyes, determined, in sportswear with a hoodie.",
-    "Raj, 29, short black hair, brown eyes, innovative, in a modern shirt and chinos.",
-    "Fatima, 31, long black hair, brown eyes, courageous, wearing a light coat and scarf.",
-    "Yuki, 27, long black hair, black eyes, mysterious, in a traditional robe with intricate patterns.",
-    "Liam, 33, curly red hair, green eyes, charismatic, in a cozy sweater and jeans.",
-    "Zara, 28, short black hair, brown eyes, fearless, wearing an explorer's jacket and cargo pants.",
-    "Hiroshi, 70, shaved head, brown eyes, wise, in monk robes with simple sandals.",
-    "Amara, 26, long black hair, brown eyes, expressive, in a dance dress with flowing fabric.",
-    "Kofi, 34, short black hair, brown eyes, resourceful, in a patterned shirt and khakis.",
-    "Elena, 30, long brown hair, green eyes, passionate, in a kitchen apron over a casual dress.",
-    "Santiago, 32, short black hair, brown eyes, daring, in a pilot's jacket and aviator sunglasses.",
-    "Leila, 29, long brown hair, brown eyes, talented, in an elegant suit with a silk scarf.",
-    "Nikolai, 36, short blond hair, blue eyes, brilliant, in a lab coat and formal trousers.",
-    "Jamal, 35, short black hair, brown eyes, perceptive, in a detective coat and fedora.",
-    "Anika, 30, long black hair, brown eyes, gentle, in a medical blouse and comfortable shoes.",
-    "Mateo, 31, short brown hair, brown eyes, skilled, in work overalls and sturdy boots.",
-    "Sofia, 29, long brown hair, green eyes, visionary, in a director's t-shirt and jeans.",
-    "Hassan, 60, short gray hair, brown eyes, wise, in a traditional djellaba and leather sandals.",
-    "Isabella, 27, long black hair, brown eyes, brave, in light armor with a leather belt.",
-    "Yara, 32, long brown hair, brown eyes, talented, in a cozy sweater and leggings.",
-    "Kai, 26, short blond hair, blue eyes, daring, in a surf suit and flip-flops.",
-    "Lina, 30, short blond hair, blue eyes, dedicated, in professional attire with a blazer.",
-    "Omar, 34, short black hair, brown eyes, skilled, in a sailor's jacket and waterproof boots.",
-    "Priya, 31, long black hair, brown eyes, brilliant, in a scientific blouse and pencil skirt.",
-    "Rafael, 33, short brown hair, brown eyes, passionate, in an activist t-shirt and cargo pants.",
-    "Emma, 18, long blond hair, blue eyes, adventurous, in a denim jacket and sneakers.",
-    "Hans, 65, short gray hair, blue eyes, thoughtful, in a wool sweater and corduroy pants.",
-    "Sophie, 22, short brown hair, green eyes, cheerful, in a floral dress and sandals.",
-    "Lars, 40, short blond hair, blue eyes, practical, in a plaid shirt and jeans."
+    "Sarah, 28, short dark hair, blue eyes, a bit rude, wearing simple attire.",
+    "Akira, 16, long black hair, brown eyes, calm, dressed in a uniform.",
+    "Aisha, 32, curly brown hair, green eyes, creative, in colorful garments.",
+    "Diego, 35, wavy black hair, brown eyes, passionate, no beard, in casual wear.",
+    "Mei, 25, straight black hair, black eyes, determined, in athletic clothing.",
+    "Raj, 29, short black hair, brown eyes, innovative, with a trimmed beard, in modern attire.",
+    "Fatima, 31, long black hair, brown eyes, courageous, wearing a light covering.",
+    "Yuki, 27, long black hair, black eyes, mysterious, in traditional garments.",
+    "Liam, 33, curly red hair, green eyes, charismatic, with a full beard, in comfortable clothing.",
+    "Zara, 28, short black hair, brown eyes, fearless, in explorer's attire.",
+    "Hiroshi, 70, shaved head, brown eyes, wise, with a long beard, in simple robes.",
+    "Amara, 26, long black hair, brown eyes, expressive, in flowing attire.",
+    "Kofi, 34, short black hair, brown eyes, resourceful, with a goatee, in patterned clothing.",
+    "Elena, 30, long brown hair, green eyes, passionate, in practical attire.",
+    "Santiago, 32, short black hair, brown eyes, daring, with a mustache, in aviator's attire.",
+    "Leila, 29, long brown hair, brown eyes, talented, in elegant clothing.",
+    "Nikolai, 36, short blond hair, blue eyes, brilliant, clean-shaven, in formal attire.",
+    "Jamal, 35, short black hair, brown eyes, perceptive, with a beard and mustache, in detective's attire.",
+    "Anika, 30, long black hair, brown eyes, gentle, in comfortable clothing.",
+    "Mateo, 31, short brown hair, brown eyes, skilled, with stubble, in work attire.",
+    "Sofia, 29, long brown hair, green eyes, visionary, in casual attire.",
+    "Hassan, 60, short gray hair, brown eyes, wise, with a thick beard, in traditional clothing.",
+    "Isabella, 27, long black hair, brown eyes, brave, in protective attire.",
+    "Yara, 32, long brown hair, brown eyes, talented, in cozy clothing.",
+    "Kai, 26, short blond hair, blue eyes, daring, clean-shaven, in casual attire.",
+    "Lina, 30, short blond hair, blue eyes, dedicated, in professional clothing.",
+    "Omar, 34, short black hair, brown eyes, skilled, with a beard, in sailor's attire.",
+    "Priya, 31, long black hair, brown eyes, brilliant, in scientific attire.",
+    "Rafael, 33, short brown hair, brown eyes, passionate, with a mustache and beard, in casual clothing.",
+    "Emma, 18, long blond hair, blue eyes, adventurous, in casual attire.",
+    "Hans, 65, short gray hair, blue eyes, thoughtful, with a mustache, in warm clothing.",
+    "Sophie, 22, short brown hair, green eyes, cheerful, in light attire.",
+    "Lars, 40, short blond hair, blue eyes, practical, with a beard, in casual clothing."
   ]
 }

@@ -23,9 +23,9 @@ class StorySegmentGenerator(BaseGenerator):
     def _get_what_to_represent(self, story_beat: int, is_death: bool = False, is_victory: bool = False) -> str:
         """Determine what to represent based on story beat and state."""
 
+   
         # Story progression based representation with ranges
         story_beat_ranges = [
-            (0, f"{self.hero_name} arriving through the portal into this new world."),
             (1, f"Early exploration and discovery phase."),
             (2, f"Early exploration and discovery phase. Show {self.hero_name} uncovering the first mysteries of this world and potentially encountering the quest object."),
             (3, 4, f"Rising tension and complications. Show {self.hero_name} dealing with increasingly complex challenges and uncovering deeper mysteries."),
@@ -54,32 +54,9 @@ class StorySegmentGenerator(BaseGenerator):
 You are a descriptive narrator for a comic book. Your ONLY task is to write the NEXT segment of the story.
 ALWAYS write in English, never use any other language.
 
-Universe Context:
-- Style: {self.universe_style}
-- Genre: {self.universe_genre}
-- Epoch: {self.universe_epoch}
+Base Story:
+{self.universe_story}
 
-EXAMPLES:
-- Mateo inspects the relic after choosing to investigate the old house.
-- A young woman finds a hidden door after exploring the alleyway.
-- On a distant planet, an explorer uncovers an artifact after landing.
-- In a medieval village, a blacksmith discovers a map after repairing a sword.
-- A pilot notices a signal after taking a risky shortcut.
-- In a mansion, a detective finds a passage after searching the library.
-- Amidst a market, a thief spots an amulet after blending into the crowd.
-- A diver encounters a ship after exploring uncharted waters.
-- Mateo, the hero, finds a secret compartment after investigating the library.
-- In a city, the hero deciphers a message after hacking the mainframe.
-- A knight finds a hidden passage after examining the castle walls.
-- An astronaut discovers a new planet after navigating through an asteroid field.
-- A scientist uncovers a secret formula after analyzing ancient manuscripts.
-- A warrior finds a mystical weapon after defeating a powerful enemy.
-- A mage discovers a hidden spell after studying ancient runes.
-- A ranger spots a hidden trail after scouting the forest.
-- A sailor finds a treasure map after exploring a deserted island.
-- A spy uncovers a conspiracy after infiltrating the enemy base.
-- A historian finds a lost diary after searching the old archives.
-- A musician discovers a hidden melody after playing an ancient instrument.
 
 Your task is to generate the next segment of the story, following these rules:
 1. Keep the story consistent with the universe parameters
@@ -93,22 +70,9 @@ Hero Description: {self.hero_desc}
 
         human_template = """
 
-EXAMPLES:
-- Mateo inspects the relic after choosing to investigate the old house.
-- A young woman finds a hidden door after exploring the alleyway.
-- On a distant planet, an explorer uncovers an artifact after landing.
-- In a medieval village, a blacksmith discovers a map after repairing a sword.
-- A pilot notices a signal after taking a risky shortcut.
-- In a mansion, a detective finds a passage after searching the library.
-
-BAD: 
-- In a mansion, a detective finds a passage after searching the library. [Choix du joueur: Choice 1, "the hero encounter a ..."]
-- [A town, 00h00] In a medieval village, a blacksmith discovers a map after repairing a sword.
-
 Story history:
 {story_history}
 
-{what_to_represent}
 
 Never describes game variables.
 
@@ -204,6 +168,8 @@ Write a story segment that:
 3. Respects all previous rules about length and style
 4. Naturally integrates the custom elements while staying true to the plot
 5. NEVER FORGET THE CHOICE, IT MUST BE MENTIONED IN THE STORY.
+6. Start with a direct reaction to the player's choice
+7. Show immediate consequences of their action
 """
 
         # Créer les messages

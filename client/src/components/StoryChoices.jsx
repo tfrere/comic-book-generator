@@ -278,7 +278,7 @@ export function StoryChoices() {
             rows={isMobile ? 5 : 4}
             fullWidth
             variant="outlined"
-            placeholder="The hero encounters a dragon..."
+            placeholder="A dragon appears right above the hero...."
             value={customChoice}
             onChange={(e) => setCustomChoice(e.target.value)}
             sx={{

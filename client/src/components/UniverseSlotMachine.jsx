@@ -209,7 +209,7 @@ export const UniverseSlotMachine = ({
         }}
       >
         <SlotSection
-          label="In the style of..."
+          label="Told in"
           value={style}
           words={RANDOM_STYLES}
           delay={0}
@@ -217,7 +217,7 @@ export const UniverseSlotMachine = ({
           onComplete={() => handleSlotComplete(0)}
         />
         <SlotSection
-          label="the genre of..."
+          label="exploring"
           value={genre}
           words={RANDOM_GENRES}
           delay={1}
@@ -225,7 +225,7 @@ export const UniverseSlotMachine = ({
           onComplete={() => handleSlotComplete(1)}
         />
         <SlotSection
-          label="in the ..."
+          label="set in"
           value={epoch}
           words={RANDOM_EPOCHS}
           delay={2}
