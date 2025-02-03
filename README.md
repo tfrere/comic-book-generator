@@ -1,5 +1,5 @@
 ---
-title: IA Driven Interactive Comic Book
+title: IA Interactive Comic Book
 emoji: 💻
 colorFrom: red
 colorTo: blue
