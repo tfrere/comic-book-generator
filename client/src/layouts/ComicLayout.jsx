@@ -19,6 +19,7 @@ function LoadingPage() {
         height: "100%",
         aspectRatio: "0.7",
         flexShrink: 0,
+        overflow: "hidden",
       }}
     >
       <CircularProgress
@@ -36,8 +37,6 @@ function LoadingPage() {
 function ComicPage({ layout, layoutIndex, isLastPage, preloadedImages }) {
   const {
     handlePageLoaded,
-    choices,
-    onChoice,
     isLoading,
     isNarratorSpeaking,
     stopNarration,
@@ -208,24 +207,6 @@ function ComicPage({ layout, layoutIndex, isLastPage, preloadedImages }) {
           {layoutIndex + 1}
         </Box>
       </Box>
-      {isLastPage && (
-        <Box
-          sx={{
-            position: "absolute",
-            left: "100%",
-            top: "75%",
-            transform: "translateY(-50%)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-            width: "350px",
-            ml: 4,
-            backgroundColor: "transparent",
-          }}
-        >
-          <StoryChoices />
-        </Box>
-      )}
     </Box>
   );
 }
@@ -351,33 +332,15 @@ export function ComicLayout() {
   useEffect(() => {
     const loadedSegments = segments.filter((segment) => !segment.isLoading);
     const lastSegment = loadedSegments[loadedSegments.length - 1];
-    const hasNewSegment = lastSegment && !lastSegment.hasBeenRead;
 
-    if (scrollContainerRef.current && hasNewSegment) {
-      // Arrêter la narration en cours
-      stopNarration();
-
+    if (scrollContainerRef.current && lastSegment) {
       // Scroll to the right
       scrollContainerRef.current.scrollTo({
         left: scrollContainerRef.current.scrollWidth,
         behavior: "smooth",
       });
-
-      // Attendre que le scroll soit terminé avant de démarrer la narration
-      const timeoutId = setTimeout(() => {
-        if (lastSegment && lastSegment.text) {
-          playNarration(lastSegment.text);
-          // Marquer le segment comme lu
-          lastSegment.hasBeenRead = true;
-        }
-      }, 500);
-
-      return () => {
-        clearTimeout(timeoutId);
-        stopNarration();
-      };
     }
-  }, [segments, playNarration, stopNarration]);
+  }, [segments]);
 
   // Prevent back/forward navigation on trackpad horizontal scroll
   useEffect(() => {
@@ -415,8 +378,12 @@ export function ComicLayout() {
         gap: 4,
         height: "100%",
         width: "100%",
-        px: layouts[0]?.type === "COVER" ? "calc(50% - (90vh * 0.5 * 0.5))" : 0,
-        py: 8,
+        px: {
+          xs: 2, // 4 en mobile
+          sm: "calc(50% - 25vw)", // Valeur originale pour les écrans plus grands
+        },
+        pt: 4,
+        pb: 0,
         overflowX: "auto",
         overflowY: "hidden",
         "&::-webkit-scrollbar": {
@@ -440,9 +407,6 @@ export function ComicLayout() {
           preloadedImages={preloadedImages}
         />
       ))}
-      {isLoading && !layouts[layouts.length - 1]?.segments[0]?.is_last_step && (
-        <LoadingPage />
-      )}
     </Box>
   );
 }

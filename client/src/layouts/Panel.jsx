@@ -1,5 +1,34 @@
-import { Box, CircularProgress, Typography } from "@mui/material";
+import {
+  Box,
+  CircularProgress,
+  Typography,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { useEffect, useState, useRef } from "react";
+import { useGame } from "../contexts/GameContext";
+import { keyframes } from "@mui/system";
+
+// Animation de rotation complète
+const spinFull = keyframes`
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+`;
+
+// Animation de rotation légère pour le hover
+const spinHover = keyframes`
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(30deg);
+  }
+`;
 
 // Cache global pour les images déjà chargées
 const imageCache = new Map();
@@ -14,12 +43,15 @@ export function Panel({
   onImageLoad,
   imageId,
 }) {
+  const { regenerateImage } = useGame();
   const [imageLoaded, setImageLoaded] = useState(
     () => loadedImagesState.get(imageId) || false
   );
   const [imageDisplayed, setImageDisplayed] = useState(
     () => loadedImagesState.get(imageId) || false
   );
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isSpinning, setIsSpinning] = useState(false);
   const hasImage = segment?.images?.[panelIndex];
   const isFirstPanel = panelIndex === 0;
   const imgRef = useRef(null);
@@ -32,6 +64,38 @@ export function Panel({
       mountedRef.current = false;
     };
   }, []);
+
+  const handleRegenerate = async () => {
+    if (!segment?.imagePrompts?.[panelIndex]) return;
+
+    setIsRegenerating(true);
+    setIsSpinning(true);
+    try {
+      const newImageData = await regenerateImage(
+        segment.imagePrompts[panelIndex],
+        segment.session_id
+      );
+      if (newImageData) {
+        // Mettre à jour l'image dans le segment
+        segment.images[panelIndex] = newImageData;
+        // Réinitialiser l'état de chargement
+        setImageLoaded(false);
+        setImageDisplayed(false);
+        // Recharger l'image
+        if (imageCache.has(imageId)) {
+          URL.revokeObjectURL(imageCache.get(imageId));
+          imageCache.delete(imageId);
+        }
+        loadedImagesState.delete(imageId);
+      }
+    } finally {
+      setIsRegenerating(false);
+      // Laisser l'animation se terminer avant de réinitialiser
+      setTimeout(() => {
+        setIsSpinning(false);
+      }, 500);
+    }
+  };
 
   // Gérer le chargement initial de l'image
   useEffect(() => {
@@ -97,6 +161,9 @@ export function Panel({
         borderRadius: "4px",
         overflow: "hidden",
         position: "relative",
+        "&:hover .refresh-button": {
+          opacity: 1,
+        },
       }}
     >
       {hasImage && imageDataRef.current && (
@@ -109,14 +176,14 @@ export function Panel({
             height: "100%",
             objectFit: "cover",
             opacity: imageDisplayed ? 1 : 0,
-            transition: "opacity 0.5s ease-in-out",
+            transition: "opacity 0.25s ease-in-out",
             willChange: "opacity",
           }}
           loading="eager"
           decoding="sync"
         />
       )}
-      {(!hasImage || !imageDisplayed) && (
+      {(!hasImage || !imageDisplayed || isRegenerating) && (
         <Box
           sx={{
             width: "100%",
@@ -129,12 +196,43 @@ export function Panel({
             top: 0,
             left: 0,
             opacity: imageDisplayed ? 0 : 1,
-            transition: "opacity 0.5s ease-in-out",
+            transition: "opacity 0.25s ease-in-out",
           }}
         >
           <CircularProgress size={24} />
         </Box>
       )}
+      <Tooltip title="Regenerate this image" placement="top">
+        <IconButton
+          className="refresh-button"
+          onClick={handleRegenerate}
+          disabled={isRegenerating}
+          sx={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            opacity: 0,
+            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            "&:hover": {
+              backgroundColor: "rgba(0, 0, 0, 0.7)",
+              "& .MuiSvgIcon-root": {
+                animation: `${spinHover} 1s cubic-bezier(0.4, 0, 0.2, 1) infinite`,
+              },
+            },
+            "& .MuiSvgIcon-root": {
+              color: "white",
+              transition: "transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              animation: isSpinning
+                ? `${spinFull} 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite`
+                : "none",
+              willChange: "transform",
+            },
+          }}
+        >
+          <RefreshIcon />
+        </IconButton>
+      </Tooltip>
       {isFirstPanel && segment?.text && (
         <Box
           sx={{
@@ -146,7 +244,6 @@ export function Panel({
             background: "rgba(255, 255, 255, 0.95)",
             color: "black",
             textAlign: "center",
-            fontSize: "1rem",
             fontWeight: 500,
             borderRadius: "8px",
             display: "flex",
@@ -158,8 +255,9 @@ export function Panel({
           <Typography
             variant="body1"
             sx={{
+              fontSize: { xs: "0.775rem", sm: "1rem" }, // Responsive font size
               color: "black",
-              lineHeight: 1.4,
+              lineHeight: 1.2,
             }}
           >
             {segment.text}

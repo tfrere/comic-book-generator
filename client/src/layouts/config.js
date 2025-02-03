@@ -5,6 +5,7 @@ export const PANEL_SIZES = {
   LANDSCAPE: { width: 768, height: 512 },
   PANORAMIC: { width: 1024, height: 512 },
   COVER_SIZE: { width: 512, height: 768 },
+  SQUARE: { width: 512, height: 512 },
 };
 
 // Grid span helpers
@@ -50,24 +51,24 @@ export const LAYOUTS = {
     gridCols: 3,
     gridRows: 2,
     panels: [
-      { ...PANEL_SIZES.LANDSCAPE, gridColumn: GRID.TWO_THIRDS, gridRow: "1" }, // Wide landscape top left
+      { ...PANEL_SIZES.SQUARE, gridColumn: GRID.TWO_THIRDS, gridRow: "1" }, // Wide landscape top left
       { ...PANEL_SIZES.COLUMN, gridColumn: "3", gridRow: "1" }, // COLUMN top right
       { ...PANEL_SIZES.COLUMN, gridColumn: "1", gridRow: "2" }, // COLUMN bottom left
-      { ...PANEL_SIZES.LANDSCAPE, gridColumn: "2 / span 2", gridRow: "2" }, // Wide landscape bottom right
+      { ...PANEL_SIZES.SQUARE, gridColumn: "2 / span 2", gridRow: "2" }, // Wide landscape bottom right
     ],
   },
   LAYOUT_4: {
     gridCols: 2,
     gridRows: 3,
     panels: [
-      { ...PANEL_SIZES.LANDSCAPE, gridColumn: "1 / span 2", gridRow: "1" }, // Wide panoramic top
+      { ...PANEL_SIZES.PANORAMIC, gridColumn: "1 / span 2", gridRow: "1" }, // Wide panoramic top
       {
-        ...PANEL_SIZES.PORTRAIT,
+        ...PANEL_SIZES.COLUMN,
         gridColumn: "1",
         gridRow: GRID.FULL_HEIGHT_FROM_2,
       }, // Tall portrait left
-      { ...PANEL_SIZES.LANDSCAPE, gridColumn: "2", gridRow: "2" }, // Square middle right
-      { ...PANEL_SIZES.LANDSCAPE, gridColumn: "2", gridRow: "3" }, // Square bottom right
+      { ...PANEL_SIZES.SQUARE, gridColumn: "2", gridRow: "2" }, // Square middle right
+      { ...PANEL_SIZES.SQUARE, gridColumn: "2", gridRow: "3" }, // Square bottom right
     ],
   },
   LAYOUT_5: {
@@ -102,8 +103,8 @@ export const nonRandomLayouts = Object.keys(LAYOUTS).filter(
 export const LAYOUTS_BY_PANEL_COUNT = {
   1: ["COVER"],
   2: ["LAYOUT_7"],
-  3: ["LAYOUT_2", "LAYOUT_5"], //"LAYOUT_1",
-  4: ["LAYOUT_3", "LAYOUT_4"],
+  3: ["LAYOUT_2"], //"LAYOUT_5"
+  4: ["LAYOUT_3"], //, "LAYOUT_4"
 };
 
 // Helper functions for layout configuration

@@ -1,0 +1,72 @@
+import { IconButton, Tooltip } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import VolumeOffIcon from "@mui/icons-material/VolumeOff";
+import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import { useNavigate } from "react-router-dom";
+import { useSoundSystem } from "../contexts/SoundContext";
+import { storyApi } from "../utils/api";
+
+const SOUND_ENABLED_KEY = "sound_enabled";
+
+export function GameNavigation() {
+  const navigate = useNavigate();
+  const { isSoundEnabled, setIsSoundEnabled, playSound } = useSoundSystem();
+
+  const handleBack = () => {
+    playSound("page");
+    navigate("/");
+  };
+
+  const handleToggleSound = () => {
+    const newSoundState = !isSoundEnabled;
+    setIsSoundEnabled(newSoundState);
+    localStorage.setItem(SOUND_ENABLED_KEY, newSoundState);
+    storyApi.setSoundEnabled(newSoundState);
+  };
+
+  return (
+    <div style={{ position: "relative", zIndex: 1000 }}>
+      {window.location.pathname !== "/" && (
+        <Tooltip title="Back to home">
+          <IconButton
+            onClick={handleBack}
+            size="large"
+            sx={{
+              position: "fixed",
+              top: 24,
+              left: 24,
+              color: "white",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              "&:hover": {
+                backgroundColor: "rgba(0, 0, 0, 0.7)",
+              },
+              pointerEvents: "auto",
+            }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+        </Tooltip>
+      )}
+
+      <Tooltip title={isSoundEnabled ? "Mute sound" : "Unmute sound"}>
+        <IconButton
+          onClick={handleToggleSound}
+          sx={{
+            position: "fixed",
+            size: "large",
+            top: 24,
+            right: 24,
+            color: "white",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            "&:hover": {
+              backgroundColor: "rgba(0, 0, 0, 0.7)",
+            },
+            pointerEvents: "auto",
+          }}
+        >
+          {isSoundEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
+        </IconButton>
+      </Tooltip>
+    </div>
+  );
+}

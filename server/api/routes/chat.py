@@ -54,7 +54,10 @@ def get_chat_router(session_manager: SessionManager, story_generator):
                 )
                 previous_choice = "none"
             else:
-                previous_choice = f"Choice {chat_message.choice_id}" if chat_message.choice_id else "none"
+                if chat_message.message == "custom_choice" and chat_message.custom_text:
+                    previous_choice = chat_message.custom_text
+                else:
+                    previous_choice = f"Choice {chat_message.choice_id}" if chat_message.choice_id else "none"
 
             # Generate story segment
             llm_response = await story_generator.generate_story_segment(

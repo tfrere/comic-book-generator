@@ -1,7 +1,3 @@
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import PhotoCameraOutlinedIcon from "@mui/icons-material/PhotoCameraOutlined";
-import VolumeOffIcon from "@mui/icons-material/VolumeOff";
-import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import { Box, IconButton, LinearProgress, Tooltip } from "@mui/material";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
@@ -13,18 +9,30 @@ import { TalkWithSarah } from "../components/TalkWithSarah";
 import { GameDebugPanel } from "../components/GameDebugPanel";
 import { UniverseSlotMachine } from "../components/UniverseSlotMachine";
 import { useGameSession } from "../hooks/useGameSession";
-import { useNarrator } from "../hooks/useNarrator";
-import { usePageSound } from "../hooks/usePageSound";
 import { useStoryCapture } from "../hooks/useStoryCapture";
-import { useTransitionSound } from "../hooks/useTransitionSound";
-import { useWritingSound } from "../hooks/useWritingSound";
 import { ComicLayout } from "../layouts/ComicLayout";
 import { storyApi, universeApi } from "../utils/api";
 import { GameProvider, useGame } from "../contexts/GameContext";
+import { StoryChoices } from "../components/StoryChoices";
+import { useSoundSystem } from "../contexts/SoundContext";
+import { GameNavigation } from "../components/GameNavigation";
+import { RotatingMessage } from "../components/RotatingMessage";
 
 // Constants
 const SOUND_ENABLED_KEY = "sound_enabled";
 const GAME_INITIALIZED_KEY = "game_initialized";
+
+const TRANSITION_MESSAGES = [
+  "Opening the portal...",
+  "Take a deep breath...",
+  "Let's start...",
+];
+
+const SESSION_LOADING_MESSAGES = [
+  "Waking up sleepy AI...",
+  "Calibrating the multiverse...",
+  "Gathering comic book inspiration...",
+];
 
 function GameContent() {
   const navigate = useNavigate();
@@ -62,35 +70,18 @@ function GameContent() {
     setLayoutCounter,
     resetGame,
     generateImagesForStory,
+    isNarratorSpeaking,
+    playNarration,
+    stopNarration,
   } = useGame();
 
   const storyContainerRef = useRef(null);
   const { downloadStoryImage } = useStoryCapture();
   const [audioInitialized, setAudioInitialized] = useState(false);
-  const [isSoundEnabled, setIsSoundEnabled] = useState(() => {
-    const stored = localStorage.getItem(SOUND_ENABLED_KEY);
-    return stored === null ? true : stored === "true";
-  });
+  const { isSoundEnabled, setIsSoundEnabled, playSound } = useSoundSystem();
   const [loadingMessage, setLoadingMessage] = useState(0);
   const [isDebugVisible, setIsDebugVisible] = useState(false);
 
-  const messages = [
-    "teaching robots to tell bedtime stories...",
-    "bribing pixels to make pretty pictures...",
-    "calibrating the multiverse...",
-  ];
-  const transitionMessages = [
-    "Creating your universe...",
-    "Drawing the first scene...",
-    "Preparing your story...",
-    "Assembling the comic panels...",
-  ];
-
-  const { isNarratorSpeaking, playNarration, stopNarration } =
-    useNarrator(isSoundEnabled);
-  const playPageSound = usePageSound(isSoundEnabled);
-  const playWritingSound = useWritingSound(isSoundEnabled);
-  const playTransitionSound = useTransitionSound(isSoundEnabled);
   const {
     sessionId,
     universe: gameUniverse,
@@ -126,40 +117,18 @@ function GameContent() {
     };
   }, [audioInitialized]);
 
-  // Modify the transition sound effect to only play if audio is initialized
-  useEffect(() => {
-    if (
-      !isSessionLoading &&
-      sessionId &&
-      !error &&
-      !sessionError &&
-      audioInitialized
-    ) {
-      playTransitionSound();
-    }
-  }, [isSessionLoading, sessionId, error, sessionError, audioInitialized]);
-
   // Jouer le son de transition quand on passe de la slot machine au jeu
   useEffect(() => {
     if (!isInitialLoading && audioInitialized) {
-      playTransitionSound();
+      playSound("transition");
     }
-  }, [isInitialLoading, audioInitialized, playTransitionSound]);
+  }, [isInitialLoading, audioInitialized]);
 
   // Sauvegarder l'état du son dans le localStorage
   useEffect(() => {
     localStorage.setItem(SOUND_ENABLED_KEY, isSoundEnabled);
+    storyApi.setSoundEnabled(isSoundEnabled);
   }, [isSoundEnabled]);
-
-  // Add effect for message rotation
-  useEffect(() => {
-    if (showLoadingMessages) {
-      const interval = setInterval(() => {
-        setLoadingMessage((prev) => (prev + 1) % messages.length);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [showLoadingMessages]);
 
   // Handle keyboard events for debug panel
   useEffect(() => {
@@ -273,8 +242,76 @@ function GameContent() {
     }
   }, [isTransitionLoading]);
 
+  // Effet pour gérer le scroll et la narration des nouveaux segments
+  useEffect(() => {
+    const loadedSegments = segments.filter((segment) => !segment.isLoading);
+    const lastSegment = loadedSegments[loadedSegments.length - 1];
+    const hasNewSegment = lastSegment && !lastSegment.hasBeenRead;
+
+    if (storyContainerRef.current && hasNewSegment && !isNarratorSpeaking) {
+      // Arrêter la narration en cours
+      if (isSoundEnabled) {
+        stopNarration();
+      }
+
+      // Scroll to the right
+      storyContainerRef.current.scrollTo({
+        left: storyContainerRef.current.scrollWidth,
+        behavior: "smooth",
+      });
+
+      let isCleanedUp = false;
+
+      // Attendre que le scroll soit terminé avant de démarrer la narration
+      const timeoutId = setTimeout(() => {
+        if (isCleanedUp) return;
+
+        // Jouer le son d'écriture
+        playSound("writing");
+
+        // Démarrer la narration après un court délai
+        setTimeout(() => {
+          if (isCleanedUp) return;
+
+          if (
+            lastSegment &&
+            lastSegment.text &&
+            isSoundEnabled &&
+            !isNarratorSpeaking
+          ) {
+            playNarration(lastSegment.text);
+          }
+          // Marquer le segment comme lu
+          lastSegment.hasBeenRead = true;
+        }, 500);
+      }, 500);
+
+      return () => {
+        isCleanedUp = true;
+        clearTimeout(timeoutId);
+        if (isSoundEnabled) {
+          stopNarration();
+        }
+      };
+    }
+  }, [
+    segments,
+    playNarration,
+    stopNarration,
+    isSoundEnabled,
+    playSound,
+    isNarratorSpeaking,
+  ]);
+
+  // Effet pour arrêter la narration quand le son est désactivé
+  useEffect(() => {
+    if (!isSoundEnabled) {
+      stopNarration();
+    }
+  }, [isSoundEnabled, stopNarration]);
+
   const handleBack = () => {
-    playPageSound();
+    playSound("page");
     navigate("/tutorial");
   };
 
@@ -295,18 +332,26 @@ function GameContent() {
   // Show loading state while session is initializing
   if (isSessionLoading) {
     return (
-      <Box sx={{ width: "100%", height: "100vh", backgroundColor: "#1a1a1a" }}>
-        <LoadingScreen
-          icon="universe"
-          messages={[
-            "Waking up sleepy AI...",
-            "Calibrating the multiverse...",
-            "Gathering comic book inspiration...",
-            // "Creating a new universe...",
-            // "Drawing the first panels...",
-            // "Setting up the story...",
-          ]}
+      <Box
+        sx={{
+          width: "100%",
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          backgroundColor: "background.default",
+        }}
+      >
+        <LinearProgress
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+          }}
         />
+        <RotatingMessage messages={SESSION_LOADING_MESSAGES} isVisible={true} />
       </Box>
     );
   }
@@ -332,19 +377,28 @@ function GameContent() {
   // Afficher l'écran de transition après la slot machine
   if (isTransitionLoading) {
     return (
-      <Box sx={{ width: "100%", height: "100vh", backgroundColor: "#1a1a1a" }}>
-        <LoadingScreen messages={transitionMessages} icon="story" />
-      </Box>
-    );
-  }
-
-  // Afficher les messages de chargement uniquement pendant le chargement initial
-  if (isLoading && showLoadingMessages && segments.length === 0) {
-    return (
-      <Box sx={{ width: "100%", height: "100vh", backgroundColor: "#1a1a1a" }}>
-        <LoadingScreen
-          messages={messages}
-          currentMessage={messages[loadingMessage]}
+      <Box
+        sx={{
+          width: "100%",
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          backgroundColor: "background.default",
+        }}
+      >
+        <LinearProgress
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+          }}
+        />
+        <RotatingMessage
+          messages={TRANSITION_MESSAGES}
+          isVisible={isTransitionLoading}
         />
       </Box>
     );
@@ -367,53 +421,7 @@ function GameContent() {
           overflow: "hidden",
         }}
       >
-        {/* Header controls */}
-        <Box
-          sx={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 10,
-            display: "flex",
-            justifyContent: "space-between",
-            p: 2,
-            // backgroundColor: "rgba(18, 18, 18, 0.8)",
-            // backdropFilter: "blur(8px)",
-          }}
-        >
-          <Box>
-            <Tooltip title="Retour au menu">
-              <IconButton
-                onClick={() => navigate("/tutorial")}
-                sx={{ color: "white" }}
-              >
-                <ArrowBackIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Tooltip
-              title={isSoundEnabled ? "Désactiver le son" : "Activer le son"}
-            >
-              <IconButton
-                onClick={() => setIsSoundEnabled(!isSoundEnabled)}
-                sx={{ color: "white" }}
-              >
-                {isSoundEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Capturer l'histoire">
-              <IconButton
-                onClick={() => downloadStoryImage(storyContainerRef)}
-                sx={{ color: "white" }}
-              >
-                <PhotoCameraOutlinedIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-
+        <GameNavigation />
         {/* Main content */}
         <Box
           ref={storyContainerRef}
@@ -429,7 +437,39 @@ function GameContent() {
           ) : showSlotMachine ? (
             <UniverseSlotMachine state={slotMachineState} />
           ) : (
-            <ComicLayout />
+            <Box
+              sx={{
+                height: "100%",
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+              }}
+            >
+              <Box
+                sx={{
+                  height: "85%",
+                  width: "100%",
+                  overflow: "auto",
+                }}
+              >
+                <ComicLayout />
+              </Box>
+              <Box
+                sx={{
+                  height: "15%",
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  px: 2,
+                }}
+              >
+                <Box sx={{ width: "100%", maxWidth: "800px" }}>
+                  <StoryChoices />
+                </Box>
+              </Box>
+            </Box>
           )}
         </Box>
 

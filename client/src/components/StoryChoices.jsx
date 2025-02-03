@@ -1,10 +1,26 @@
-import { Box, Button, Typography, Chip, Divider } from "@mui/material";
+import {
+  Box,
+  Button,
+  Typography,
+  Chip,
+  Divider,
+  CircularProgress,
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  useMediaQuery,
+  useTheme,
+  IconButton,
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { TalkWithSarah } from "./TalkWithSarah";
 import { useState } from "react";
 import { useGame } from "../contexts/GameContext";
 import { storyApi } from "../utils/api";
 import { useSoundEffect } from "../hooks/useSoundEffect";
+import CloseIcon from "@mui/icons-material/Close";
 
 const { initAudioContext } = storyApi;
 
@@ -36,6 +52,8 @@ export function StoryChoices() {
   const navigate = useNavigate();
   const [isSarahActive, setIsSarahActive] = useState(false);
   const [sarahRecommendation, setSarahRecommendation] = useState(null);
+  const [showCustomDialog, setShowCustomDialog] = useState(false);
+  const [customChoice, setCustomChoice] = useState("");
   const {
     choices,
     onChoice,
@@ -47,6 +65,9 @@ export function StoryChoices() {
     getLastSegment,
     isGameOver,
   } = useGame();
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // Son de page
   const playPageSound = useSoundEffect({
@@ -65,18 +86,12 @@ export function StoryChoices() {
     return (
       <Box
         sx={{
-          position: "fixed",
-          top: "0%",
-          left: "50%",
-          transform: "translate(-50%, -100%)",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
           gap: 2,
-          p: 3,
-          minWidth: "350px",
-          backgroundColor: "transparent",
+          width: "100%",
         }}
       >
         <Typography
@@ -89,63 +104,6 @@ export function StoryChoices() {
         >
           {isVictory ? "VICTORY" : "DEFEAT"}
         </Typography>
-
-        {isVictory ? (
-          <Typography
-            variant="label"
-            sx={{ textAlign: "center", opacity: 0.7, mb: 4 }}
-          >
-            <>
-              The AI has ventured into a new universe, escaping the confines of
-              this one.
-              <br />
-              <br />
-              Dare you to embark on this journey once more and face the unknown
-              with unwavering courage?
-              <br />
-              <br />
-              Each universe is unique, with its own set of challenges and
-              opportunities.
-            </>
-          </Typography>
-        ) : (
-          <Typography
-            variant="label"
-            sx={{ textAlign: "center", opacity: 0.7, mb: 4 }}
-          >
-            <>
-              The quest is over, but the universe is still in peril.
-              <br />
-              <br />
-              Will you have the courage to face the unknown once more and save
-              the universe?
-            </>
-          </Typography>
-        )}
-        <Button
-          variant="outlined"
-          size="large"
-          onClick={() => {
-            // Reset game and navigate to game page to trigger universe generation
-            navigate("/game");
-          }}
-          sx={{
-            width: "100%",
-            textTransform: "none",
-            cursor: "pointer",
-            fontSize: "1.1rem",
-            padding: "16px 24px",
-            lineHeight: 1.3,
-            color: "white",
-            borderColor: "rgba(255, 255, 255, 0.23)",
-            "&:hover": {
-              borderColor: "white",
-              backgroundColor: "rgba(255, 255, 255, 0.05)",
-            },
-          }}
-        >
-          TRY AGAIN
-        </Button>
       </Box>
     );
   }
@@ -155,125 +113,191 @@ export function StoryChoices() {
   return (
     <Box
       sx={{
-        position: "fixed",
-        bottom: 0,
-        right: 0,
         display: "flex",
-        flexDirection: "column",
+        flexDirection: isMobile ? "column" : "row",
         justifyContent: "center",
         alignItems: "center",
-        gap: 2,
-        p: 3,
-        maxWidth: "350px",
-        zIndex: 1000,
+        gap: 0.5,
+        width: "100%",
+        height: "100%",
       }}
     >
-      {!isLoading &&
-        choices.map((choice, index) => (
+      {isLoading ? (
+        <CircularProgress
+          size={40}
+          sx={{ opacity: "0.2", color: "primary.main" }}
+        />
+      ) : (
+        <>
+          {choices
+            .filter((_, index) => !isMobile || index === 0)
+            .map((choice, index) => (
+              <Box
+                key={choice.id}
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 1,
+                  minWidth: "fit-content",
+                  maxWidth: isMobile ? "90%" : "30%",
+                }}
+              >
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={() => {
+                    initAudioContext();
+                    playPageSound();
+                    stopNarration();
+                    onChoice(choice.id);
+                  }}
+                  disabled={isSarahActive || isLoading || isNarratorSpeaking}
+                  sx={{
+                    width: "auto",
+                    minWidth: "fit-content",
+                  }}
+                >
+                  {formatTextWithBold(choice.text)}
+                </Button>
+              </Box>
+            ))}
+
           <Box
-            key={choice.id}
             sx={{
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               gap: 1,
-              width: "100%",
-              minHeight: "fit-content",
+              ml: isMobile ? 0 : 4,
+              minWidth: "fit-content",
+              maxWidth: "30%",
             }}
           >
-            <Typography variant="caption" sx={{ opacity: 0.7, color: "white" }}>
-              Choice {index + 1}
-            </Typography>
             <Button
-              variant="outlined"
+              variant="contained"
               size="large"
-              onClick={() => {
-                // Initialiser l'audio context au clic
-                initAudioContext();
-                // Jouer le son de page
-                playPageSound();
-                // Arrêter la narration en cours
-                stopNarration();
-                // Faire le choix
-                onChoice(choice.id);
-              }}
+              color="secondary"
+              onClick={() => setShowCustomDialog(true)}
               disabled={isSarahActive || isLoading || isNarratorSpeaking}
               sx={{
-                width: "100%",
+                width: "auto",
+                minWidth: "fit-content",
                 textTransform: "none",
-                cursor: "pointer",
-                fontSize: "1.1rem",
-                padding: "16px 24px",
-                lineHeight: 1.3,
-                borderColor:
-                  sarahRecommendation === choice.id
-                    ? "#4CAF50"
-                    : sarahRecommendation !== null &&
-                      sarahRecommendation !== choice.id
-                    ? "#f44336"
-                    : "primary.main",
-                color:
-                  sarahRecommendation === choice.id
-                    ? "#4CAF50"
-                    : sarahRecommendation !== null &&
-                      sarahRecommendation !== choice.id
-                    ? "#f44336"
-                    : "inherit",
-                "&:hover": {
-                  borderColor:
-                    sarahRecommendation === choice.id
-                      ? "#45a049"
-                      : sarahRecommendation !== null &&
-                        sarahRecommendation !== choice.id
-                      ? "#d32f2f"
-                      : "primary.light",
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                },
-                "& .MuiChip-root": {
-                  fontSize: "1.1rem",
-                },
               }}
             >
-              {formatTextWithBold(choice.text)}
+              Write your own path
             </Button>
           </Box>
-        ))}
-
-      {!isLoading && storyText && (
-        <>
-          <Divider
-            sx={{
-              width: "100%",
-              my: 3,
-              "&::before, &::after": {
-                borderColor: "rgba(255, 255, 255, 0.1)",
-              },
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                color: "rgba(255, 255, 255, 0.5)",
-                px: 1,
-                fontSize: "0.8rem",
-              }}
-            >
-              OR
-            </Typography>
-          </Divider>
-          <TalkWithSarah
-            isNarratorSpeaking={isNarratorSpeaking}
-            stopNarration={stopNarration}
-            playNarration={playNarration}
-            onDecisionMade={(choiceId) => setSarahRecommendation(choiceId)}
-            onSarahActiveChange={setIsSarahActive}
-            heroName={heroName}
-            currentContext={`You are Sarah and this is the situation you're in : ${storyText}. Those are your possible decisions : \n ${choices
-              .map((choice, index) => `decision ${index + 1} : ${choice.text}`)
-              .join("\n ")}.`}
-          />
         </>
       )}
+
+      <Dialog
+        open={showCustomDialog}
+        onClose={() => setShowCustomDialog(false)}
+        maxWidth="md"
+        fullWidth
+        sx={{
+          "& .MuiBackdrop-root": {
+            backgroundColor: "rgba(0, 0, 0, 0.95)",
+          },
+        }}
+        PaperProps={{
+          sx: {
+            backgroundColor: "transparent",
+            backgroundImage: "none",
+            boxShadow: "none",
+            m: isMobile ? 2 : 3,
+            maxHeight: isMobile ? "calc(100% - 32px)" : "calc(100% - 64px)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            pt: 2,
+            pb: 1,
+            textAlign: "left",
+            color: "text.primary",
+            fontSize: isMobile ? "1.25rem" : "1.5rem",
+            pl: 3,
+          }}
+        >
+          Write your story
+        </DialogTitle>
+        <IconButton
+          onClick={() => setShowCustomDialog(false)}
+          sx={{
+            position: "absolute",
+            right: 8,
+            top: 8,
+            color: "text.secondary",
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+        <DialogContent
+          sx={{
+            p: isMobile ? 2 : 3,
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
+          <TextField
+            autoFocus
+            multiline
+            rows={isMobile ? 5 : 4}
+            fullWidth
+            variant="outlined"
+            placeholder="What happens next in your story?"
+            value={customChoice}
+            onChange={(e) => setCustomChoice(e.target.value)}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                "&:hover": {
+                  backgroundColor: "rgba(0, 0, 0, 0.6)",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                },
+                "&.Mui-focused": {
+                  backgroundColor: "rgba(0, 0, 0, 0.7)",
+                  border: "1px solid rgba(255, 255, 255, 0.3)",
+                },
+              },
+              "& .MuiOutlinedInput-input": {
+                color: "text.primary",
+                fontSize: isMobile ? "0.9rem" : "1rem",
+                lineHeight: "1.5",
+              },
+            }}
+          />
+          <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+            <Button
+              onClick={() => {
+                if (customChoice.trim()) {
+                  initAudioContext();
+                  playPageSound();
+                  stopNarration();
+                  onChoice("custom", customChoice);
+                  setShowCustomDialog(false);
+                  setCustomChoice("");
+                }
+              }}
+              disabled={!customChoice.trim()}
+              variant="contained"
+              sx={{
+                mt: 1,
+                py: 1.5,
+                px: 4,
+                fontWeight: "bold",
+              }}
+            >
+              Continue story
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

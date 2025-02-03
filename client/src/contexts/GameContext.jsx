@@ -8,6 +8,9 @@ import {
 import { storyApi } from "../utils/api";
 import { getNextLayoutType, LAYOUTS } from "../layouts/config";
 
+// Constants
+const DISABLE_NARRATOR = true; // Désactive complètement le narrateur
+
 const GameContext = createContext(null);
 
 export function GameProvider({ children }) {
@@ -43,26 +46,18 @@ export function GameProvider({ children }) {
     setIsNarratorSpeaking(false);
   }, []);
 
-  const playNarration = useCallback(
-    async (text) => {
-      try {
-        // Si une narration est déjà en cours, l'arrêter
-        if (isNarratorSpeaking) {
-          stopNarration();
-          // Attendre un peu pour s'assurer que l'audio précédent est bien arrêté
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
+  const playNarration = useCallback(async (text) => {
+    if (DISABLE_NARRATOR) return; // Early return si le narrateur est désactivé
 
-        setIsNarratorSpeaking(true);
-        await storyApi.playNarration(text, universe?.session_id);
-        setIsNarratorSpeaking(false);
-      } catch (error) {
-        console.error("Error playing narration:", error);
-        setIsNarratorSpeaking(false);
-      }
-    },
-    [universe?.session_id, isNarratorSpeaking, stopNarration]
-  );
+    try {
+      setIsNarratorSpeaking(true);
+      await storyApi.playNarration(text);
+    } catch (error) {
+      console.error("Error playing narration:", error);
+    } finally {
+      setIsNarratorSpeaking(false);
+    }
+  }, []);
 
   // Effect pour arrêter la narration quand le composant est démonté
   useEffect(() => {
@@ -105,6 +100,7 @@ export function GameProvider({ children }) {
           ...localSegments[segmentIndex],
           layoutType,
           images: Array(imagePrompts.length).fill(null),
+          imagePrompts,
           isLoading: true,
         };
 
@@ -187,9 +183,32 @@ export function GameProvider({ children }) {
     [layoutCounter, setLayoutCounter, setSegments]
   );
 
+  const regenerateImage = async (prompt, session_id) => {
+    try {
+      if (!session_id) {
+        console.error("No session_id provided for image regeneration");
+        return null;
+      }
+
+      const response = await storyApi.generateImage(
+        prompt,
+        512,
+        512,
+        session_id
+      );
+      if (response.success && response.image_base64) {
+        return response.image_base64;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error regenerating image:", error);
+      return null;
+    }
+  };
+
   // Gestion des choix
   const handleChoice = useCallback(
-    async (choiceId) => {
+    async (choiceId, customText) => {
       if (isLoading) return;
 
       // Arrêter toute narration en cours avant de faire un nouveau choix
@@ -203,10 +222,15 @@ export function GameProvider({ children }) {
       setShowChoices(false);
 
       try {
-        const response = await storyApi.makeChoice(
-          choiceId,
-          universe?.session_id
-        );
+        let response;
+        if (choiceId === "custom") {
+          response = await storyApi.makeCustomChoice(
+            customText,
+            universe?.session_id
+          );
+        } else {
+          response = await storyApi.makeChoice(choiceId, universe?.session_id);
+        }
 
         // Mettre à jour les choix (mais ne pas les afficher encore)
         setChoices(response.choices);
@@ -337,6 +361,7 @@ export function GameProvider({ children }) {
     isPageLoaded: (pageIndex) => loadedPages.has(pageIndex),
     areAllPagesLoaded: (totalPages) => loadedPages.size === totalPages,
     generateImagesForStory,
+    regenerateImage,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

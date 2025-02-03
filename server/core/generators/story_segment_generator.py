@@ -76,14 +76,14 @@ IMPORTANT RULES FOR STORY TEXT:
 - DO NOT include any dialogue asking for decisions
 - Focus purely on describing what is happening in the current scene
 - Keep the text concise and impactful
-- MANDATORY: Each segment must be between 15 and 40 words, no exceptions
+- MANDATORY: Each segment must be between 15 and 20 words, no exceptions
 - Use every word purposefully to convey maximum meaning in minimum space
 
 Your task is to generate the next segment of the story, following these rules:
 1. Keep the story consistent with the universe parameters
 2. Each segment must advance the plot
 3. Never repeat previous descriptions or situations
-4. Keep segments concise and impactful (15-30 words)
+4. Keep segments concise and impactful (15-20 words)
 5. The MacGuffin should remain mysterious but central to the plot
 
 Hero Description: {self.hero_desc}
@@ -104,7 +104,7 @@ Story history:
 {what_to_represent}
 
 IT MUST BE THE DIRECT CONTINUATION OF THE CURRENT STORY.
-MANDATORY: Each segment must be between 15 and 30 words, keep it concise.
+MANDATORY: Each segment must be between 15 and 20 words, keep it concise.
 Be short.
 """
         return ChatPromptTemplate(
@@ -185,6 +185,18 @@ Be short.
         is_victory = True if is_end and not is_winning_story else False
 
         what_to_represent = self._get_what_to_represent(story_beat, is_death, is_victory)
+
+        # Si c'est un choix personnalisé, on l'utilise comme contexte pour générer la suite
+        if previous_choice and not previous_choice.startswith("Choice "):
+            what_to_represent = f"""
+Based on the player's custom choice: "{previous_choice}"
+
+Write a story segment that:
+1. Directly follows and incorporates the player's choice
+2. Maintains consistency with the universe and story
+3. Respects all previous rules about length and style
+4. Naturally integrates the custom elements while staying true to the plot
+"""
 
         # Créer les messages de base une seule fois
         messages = self.prompt.format_messages(

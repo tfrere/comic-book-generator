@@ -137,40 +137,50 @@ export function InfiniteBackground() {
         bottom: 0,
         overflow: "hidden",
         zIndex: 0,
-        transform: "rotate(-2deg) scale(1.1)",
-        transformOrigin: "center center",
-        "&::after": {
-          content: '""',
+      }}
+    >
+      <Box
+        sx={{
           position: "absolute",
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          background: "rgba(0, 0, 0, 0.85)",
-          backdropFilter: "blur(1px)",
-          WebkitBackdropFilter: "blur(1px)", // Pour Safari
-          zIndex: 1,
-        },
-      }}
-    >
-      <Row
-        imagePath="/bande-1.webp"
-        direction="left"
-        speed={1}
-        containerHeight={containerHeight}
-      />
-      <Row
-        imagePath="/bande-2.webp"
-        direction="right"
-        speed={0.8}
-        containerHeight={containerHeight}
-      />
-      <Row
-        imagePath="/bande-3.webp"
-        direction="left"
-        speed={1.2}
-        containerHeight={containerHeight}
-      />
+          transform: "rotate(-2deg) scale(1.1)",
+          transformOrigin: "center center",
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(1px)",
+            WebkitBackdropFilter: "blur(1px)", // Pour Safari
+            zIndex: 1,
+          },
+        }}
+      >
+        <Row
+          imagePath="/bande-1.webp"
+          direction="left"
+          speed={1}
+          containerHeight={containerHeight}
+        />
+        <Row
+          imagePath="/bande-2.webp"
+          direction="right"
+          speed={0.8}
+          containerHeight={containerHeight}
+        />
+        <Row
+          imagePath="/bande-3.webp"
+          direction="left"
+          speed={1.2}
+          containerHeight={containerHeight}
+        />
+      </Box>
     </Box>
   );
 }

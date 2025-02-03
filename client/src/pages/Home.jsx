@@ -1,17 +1,24 @@
-import { Box, Button, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Typography,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { usePageSound } from "../hooks/usePageSound";
+import { useSoundSystem } from "../contexts/SoundContext";
 import { BlinkingText } from "../components/BlinkingText";
 import { BookPages } from "../components/BookPages";
-import { InfiniteBackground } from "../components/InfiniteBackground";
 
 export function Home() {
   const navigate = useNavigate();
-  const playPageSound = usePageSound();
+  const { playSound } = useSoundSystem();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const handlePlay = () => {
-    playPageSound();
+    playSound("page");
     navigate("/tutorial");
   };
 
@@ -21,7 +28,12 @@ export function Home() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      style={{ width: "100%", height: "100vh", position: "relative" }}
+      style={{
+        width: "100%",
+        height: "100vh",
+        position: "relative",
+        overflow: "hidden",
+      }}
     >
       <Box
         sx={{
@@ -30,24 +42,38 @@ export function Home() {
           alignItems: "center",
           justifyContent: "center",
           minHeight: "100vh",
+          height: "100%",
           width: "100%",
           position: "relative",
+          overflow: "hidden",
         }}
       >
-        <InfiniteBackground />
-
         <Typography
           variant="h1"
-          sx={{ zIndex: 10, textAlign: "center", position: "relative" }}
+          sx={{
+            zIndex: 10,
+            textAlign: "center",
+            position: "relative",
+            fontSize: {
+              xs: "clamp(2.5rem, 8vw, 3.5rem)",
+              sm: "clamp(3.5rem, 10vw, 6rem)",
+            },
+            lineHeight: {
+              xs: 1.2,
+              sm: 1.1,
+            },
+          }}
         >
           interactive
           <br /> comic book
           <div
             style={{
               position: "absolute",
-              top: "-40px",
-              left: "-120px",
-              fontSize: "2.5rem",
+              top: isMobile ? "-20px" : "-40px",
+              left: isMobile ? "-40px" : "-120px",
+              fontSize: isMobile
+                ? "clamp(1rem, 4vw, 1.5rem)"
+                : "clamp(1.5rem, 3vw, 2.5rem)",
               transform: "rotate(-15deg)",
             }}
           >
@@ -61,8 +87,11 @@ export function Home() {
             zIndex: 10,
             textAlign: "center",
             mt: 2,
-            maxWidth: "30%",
+            maxWidth: isMobile ? "80%" : "50%",
             opacity: 0.8,
+            px: isMobile ? 2 : 0,
+            fontSize: "clamp(0.875rem, 2vw, 1.125rem)",
+            lineHeight: 1.6,
           }}
         >
           Experience a unique comic book where artificial intelligence brings
@@ -75,8 +104,8 @@ export function Home() {
           onClick={handlePlay}
           sx={{
             mt: 4,
-            fontSize: "1.2rem",
-            padding: "12px 36px",
+            fontSize: isMobile ? "1rem" : "1.2rem",
+            padding: isMobile ? "8px 24px" : "12px 36px",
             zIndex: 10,
           }}
         >

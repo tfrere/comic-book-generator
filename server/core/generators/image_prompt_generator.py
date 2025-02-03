@@ -119,6 +119,7 @@ do not have panels that look alike, each successive panel must be different,
 and explain the story like a storyboard.
 
 Dont put the hero name every time.
+Exactly between 1 and 4 panels. (mostly 2 or 3)
 
 {is_end}
 """

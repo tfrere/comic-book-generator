@@ -40,6 +40,7 @@ class StoryMetadataResponse(BaseModel):
 class ChatMessage(BaseModel):
     message: str
     choice_id: Optional[int] = None
+    custom_text: Optional[str] = None  # Pour le choix personnalisé
 
 class ImageGenerationRequest(BaseModel):
     prompt: str

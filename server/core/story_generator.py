@@ -89,63 +89,66 @@ class StoryGenerator:
         return self.segment_generators[session_id]
 
     async def generate_story_segment(self, session_id: str, game_state: GameState, previous_choice: str) -> StoryResponse:
-        """Generate a story segment."""
-        segment_generator = self.get_segment_generator(session_id)
-        story_history = game_state.format_history()
-        
-        # Generate story text first
-        segment_response = await segment_generator.generate(
-            story_beat=game_state.story_beat,
-            current_time=game_state.current_time,
-            current_location=game_state.current_location,
-            previous_choice=previous_choice,
-            story_history=story_history,
-            turn_before_end=self.turn_before_end,
-            is_winning_story=self.is_winning_story
-        )
+        try:
+            # On utilise toujours le générateur de segments, même pour un choix personnalisé
+            segment_generator = self.get_segment_generator(session_id)
+            if not segment_generator:
+                raise ValueError("No story segment generator found for this session")
 
-        # print(f"Generated story text: {segment_response}")
-        
-        # Then get metadata using the new story text
-        metadata_response = await self.metadata_generator.generate(
-            story_text=segment_response.story_text,
-            current_time=game_state.current_time,
-            current_location=game_state.current_location,
-            story_beat=game_state.story_beat,
-            turn_before_end=self.turn_before_end,
-            is_winning_story=self.is_winning_story,
-            story_history=story_history
-        )
-        # print(f"Generated metadata_response: {metadata_response}")
-        
-        # Generate image prompts
-        prompts_response = await self.image_prompt_generator.generate(
-            story_text=segment_response.story_text,
-            time=metadata_response.time,
-            location=metadata_response.location,
-            is_death=metadata_response.is_death,
-            is_victory=metadata_response.is_victory,
-            turn_before_end=self.turn_before_end,
-            is_winning_story=self.is_winning_story
-        )
-        # print(f"Generated image prompts: {prompts_response}")
-        
-        # Create choices
-        choices = [
-            Choice(id=i, text=choice_text)
-            for i, choice_text in enumerate(metadata_response.choices, 1)
-        ]
-        
-        response = StoryResponse(
-            story_text=segment_response.story_text,
-            choices=choices,
-            time=metadata_response.time,
-            location=metadata_response.location,
-            raw_choices=metadata_response.choices,
-            image_prompts=prompts_response.image_prompts,
-            is_first_step=(game_state.story_beat == GameConfig.STORY_BEAT_INTRO),
-            is_death=metadata_response.is_death,
-            is_victory=metadata_response.is_victory
-        )
-        
-        return response 
+            segment_response = await segment_generator.generate(
+                story_beat=game_state.story_beat,
+                current_time=game_state.current_time,
+                current_location=game_state.current_location,
+                previous_choice=previous_choice,
+                story_history=game_state.format_history(),
+                turn_before_end=self.turn_before_end,
+                is_winning_story=self.is_winning_story
+            )
+            story_text = segment_response.story_text
+
+            # Then get metadata using the new story text
+            metadata_response = await self.metadata_generator.generate(
+                story_text=story_text,
+                current_time=game_state.current_time,
+                current_location=game_state.current_location,
+                story_beat=game_state.story_beat,
+                turn_before_end=self.turn_before_end,
+                is_winning_story=self.is_winning_story,
+                story_history=game_state.format_history()
+            )
+            # print(f"Generated metadata_response: {metadata_response}")
+            
+            # Generate image prompts
+            prompts_response = await self.image_prompt_generator.generate(
+                story_text=story_text,
+                time=metadata_response.time,
+                location=metadata_response.location,
+                is_death=metadata_response.is_death,
+                is_victory=metadata_response.is_victory,
+                turn_before_end=self.turn_before_end,
+                is_winning_story=self.is_winning_story
+            )
+            # print(f"Generated image prompts: {prompts_response}")
+            
+            # Create choices
+            choices = [
+                Choice(id=i, text=choice_text)
+                for i, choice_text in enumerate(metadata_response.choices, 1)
+            ]
+            
+            response = StoryResponse(
+                story_text=story_text,
+                choices=choices,
+                time=metadata_response.time,
+                location=metadata_response.location,
+                raw_choices=metadata_response.choices,
+                image_prompts=prompts_response.image_prompts,
+                is_first_step=(game_state.story_beat == GameConfig.STORY_BEAT_INTRO),
+                is_death=metadata_response.is_death,
+                is_victory=metadata_response.is_victory
+            )
+            
+            return response 
+        except Exception as e:
+            print(f"Unexpected error in generate_story_segment: {str(e)}")
+            raise 

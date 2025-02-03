@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, useTheme, useMediaQuery } from "@mui/material";
 import { motion, useAnimation } from "framer-motion";
 
 // Animation timing configuration
@@ -24,6 +24,8 @@ const SlotReel = ({ words, isActive, finalValue, onComplete, delay = 0 }) => {
   const controls = useAnimation();
   const [reelItems, setReelItems] = useState([]);
   const [isVisible, setIsVisible] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     if (isActive) {
@@ -35,7 +37,7 @@ const SlotReel = ({ words, isActive, finalValue, onComplete, delay = 0 }) => {
       repeatedWords.push({ word: finalValue, id: "final" });
       setReelItems(repeatedWords);
 
-      const itemHeight = 80;
+      const itemHeight = isMobile ? 60 : 80;
       const totalHeight = repeatedWords.length * itemHeight;
 
       setTimeout(() => {
@@ -54,13 +56,13 @@ const SlotReel = ({ words, isActive, finalValue, onComplete, delay = 0 }) => {
           });
       }, delay * SLOT_START_DELAY * 1000);
     }
-  }, [isActive, finalValue, words, delay]);
+  }, [isActive, finalValue, words, delay, isMobile]);
 
   return (
     <Box
       ref={containerRef}
       sx={{
-        height: "80px",
+        height: isMobile ? "60px" : "80px",
         overflow: "hidden",
         position: "relative",
         backgroundColor: "#1a1a1a",
@@ -71,7 +73,7 @@ const SlotReel = ({ words, isActive, finalValue, onComplete, delay = 0 }) => {
           position: "absolute",
           left: 0,
           right: 0,
-          height: "40px",
+          height: isMobile ? "30px" : "40px",
           zIndex: 2,
           pointerEvents: "none",
         },
@@ -99,12 +101,12 @@ const SlotReel = ({ words, isActive, finalValue, onComplete, delay = 0 }) => {
           <Box
             key={id}
             sx={{
-              height: "80px",
+              height: isMobile ? "60px" : "80px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               color: id === "final" ? "primary.main" : "#fff",
-              fontSize: "1.5rem",
+              fontSize: isMobile ? "1.2rem" : "1.5rem",
               fontWeight: "bold",
               fontFamily: "'Inter', sans-serif",
               transform: id === "final" ? "scale(1.1)" : "scale(1)",
@@ -119,11 +121,14 @@ const SlotReel = ({ words, isActive, finalValue, onComplete, delay = 0 }) => {
 };
 
 const SlotSection = ({ label, value, delay, isActive, onComplete, words }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   return (
     <Box
       sx={{
         width: "100%",
-        marginBottom: "20px",
+        marginBottom: isMobile ? "12px" : "20px",
         opacity: 1,
       }}
     >
@@ -132,9 +137,9 @@ const SlotSection = ({ label, value, delay, isActive, onComplete, words }) => {
         sx={{
           display: "block",
           textAlign: "center",
-          mb: 1,
+          mb: isMobile ? 0.5 : 1,
           color: "rgba(255,255,255,0.5)",
-          fontSize: "0.8rem",
+          fontSize: isMobile ? "0.7rem" : "0.8rem",
           letterSpacing: "0.1em",
           textTransform: "uppercase",
         }}
@@ -159,6 +164,9 @@ export const UniverseSlotMachine = ({
   activeIndex = 0,
   onComplete,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const handleSlotComplete = (index) => {
     if (index === 2 && activeIndex >= 2) {
       setTimeout(() => {
@@ -176,17 +184,18 @@ export const UniverseSlotMachine = ({
         justifyContent: "center",
         alignItems: "center",
         background: "#1a1a1a",
-        p: 3,
+        p: isMobile ? 2 : 3,
       }}
     >
       <Typography
         variant="h5"
         sx={{
-          mb: 3,
+          mb: isMobile ? 2 : 3,
           color: "#fff",
           textAlign: "center",
           fontWeight: 300,
           letterSpacing: "0.1em",
+          fontSize: isMobile ? "1.2rem" : "1.5rem",
         }}
       >
         Finding a universe
@@ -196,10 +205,7 @@ export const UniverseSlotMachine = ({
         sx={{
           maxWidth: "500px",
           width: "100%",
-          p: 4,
-          //   backgroundColor: "rgba(0,0,0,0.2)",
-          //   borderRadius: 4,
-          //   border: "1px solid rgba(255,255,255,0.05)",
+          p: isMobile ? 2 : 4,
         }}
       >
         <SlotSection
@@ -219,7 +225,7 @@ export const UniverseSlotMachine = ({
           onComplete={() => handleSlotComplete(1)}
         />
         <SlotSection
-          label="the era of..."
+          label="in the ..."
           value={epoch}
           words={RANDOM_EPOCHS}
           delay={2}

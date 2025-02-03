@@ -1,5 +1,5 @@
 ---
-title: Sarah's Chronicles
+title: IA Driven Interactive Comic Book
 emoji: 💻
 colorFrom: red
 colorTo: blue
