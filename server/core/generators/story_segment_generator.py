@@ -102,7 +102,7 @@ EXAMPLES:
 - In a mansion, a detective finds a passage after searching the library.
 
 BAD: 
-- In a mansion, a detective finds a passage after searching the library. [Choix du joueur: Choice 1, "the hero encounter a dragon"]
+- In a mansion, a detective finds a passage after searching the library. [Choix du joueur: Choice 1, "the hero encounter a ..."]
 - [A town, 00h00] In a medieval village, a blacksmith discovers a map after repairing a sword.
 
 Story history:
@@ -203,6 +203,7 @@ Write a story segment that:
 2. Maintains consistency with the universe and story
 3. Respects all previous rules about length and style
 4. Naturally integrates the custom elements while staying true to the plot
+5. NEVER FORGET THE CHOICE, IT MUST BE MENTIONED IN THE STORY.
 """
 
         # Créer les messages

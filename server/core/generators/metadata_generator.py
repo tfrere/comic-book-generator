@@ -55,7 +55,7 @@ Current story segment:
 
 
 FOR CHOICES : NEVER propose to go back to the previous location or go back to the portal. NEVER.
-Dont be obvious 
+Dont be obvious. NEVER use "approach the ...", its too slow to be a choice.
 
 {is_end}
 
