@@ -10,7 +10,7 @@ import { useSoundSystem } from "../contexts/SoundContext";
 import { motion } from "framer-motion";
 import { GameNavigation } from "../components/GameNavigation";
 import { StyledText } from "../components/StyledText";
-import MouseOutlinedIcon from "@mui/icons-material/MouseOutlined";
+import CallSplitOutlinedIcon from "@mui/icons-material/CallSplitOutlined";
 import CreateOutlinedIcon from "@mui/icons-material/CreateOutlined";
 
 export function Tutorial() {
@@ -83,11 +83,11 @@ export function Tutorial() {
             lineHeight: 1.6,
           }}
         >
-          The game will create a unique comic book set in a distinct universe
-          for each playthrough.
+          Each story takes you on a journey through a unique universe.
           <br />
           <br />
-          At each step you can decide :
+          At every step, you will choose between two different options. until
+          you reach the end of the story
           <br />
           <br />
           <Box
@@ -111,7 +111,7 @@ export function Tutorial() {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  background: "rgba(255, 255, 255, 0.1)",
+                  background: "rgba(255, 255, 255, 0.05)",
                   backdropFilter: "blur(10px)",
                   WebkitBackdropFilter: "blur(10px)", // Pour Safari
                   borderRadius: "8px",
@@ -130,10 +130,15 @@ export function Tutorial() {
                   zIndex: 1,
                 }}
               >
-                <MouseOutlinedIcon
-                  sx={{ fontSize: 40, color: "primary.main", mb: 1 }}
+                <CallSplitOutlinedIcon
+                  sx={{
+                    fontSize: 40,
+                    color: "primary.text",
+                    mb: 1,
+                    transform: "rotate(90deg)", // Pour que la bifurcation soit horizontale
+                  }}
                 />
-                <Typography variant="subtitle1" sx={{ color: "primary.main" }}>
+                <Typography variant="subtitle1" sx={{ color: "primary.text" }}>
                   Make a choice
                 </Typography>
               </Box>
@@ -161,7 +166,7 @@ export function Tutorial() {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  background: "rgba(255, 255, 255, 0.1)",
+                  background: "rgba(255, 255, 255, 0.05)",
                   backdropFilter: "blur(10px)",
                   WebkitBackdropFilter: "blur(10px)", // Pour Safari
                   borderRadius: "8px",
@@ -181,9 +186,9 @@ export function Tutorial() {
                 }}
               >
                 <CreateOutlinedIcon
-                  sx={{ fontSize: 40, color: "primary.main", mb: 1 }}
+                  sx={{ fontSize: 40, color: "primary.text", mb: 1 }}
                 />
-                <Typography variant="subtitle1" sx={{ color: "primary.main" }}>
+                <Typography variant="subtitle1" sx={{ color: "primary.text" }}>
                   Write your own
                 </Typography>
               </Box>

@@ -216,7 +216,7 @@ export function Panel({
             transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
             backgroundColor: "rgba(0, 0, 0, 0.5)",
             "&:hover": {
-              backgroundColor: "rgba(0, 0, 0, 0.7)",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
               "& .MuiSvgIcon-root": {
                 animation: `${spinHover} 1s cubic-bezier(0.4, 0, 0.2, 1) infinite`,
               },

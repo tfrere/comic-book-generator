@@ -66,7 +66,7 @@ export function GameNavigation() {
         </Tooltip>
       )}
 
-      <Tooltip title="Capture story">
+      {/* <Tooltip title="Capture story">
         <IconButton
           onClick={handleCapture}
           sx={{
@@ -83,7 +83,7 @@ export function GameNavigation() {
         >
           <PhotoCameraOutlinedIcon />
         </IconButton>
-      </Tooltip>
+      </Tooltip> */}
 
       <Tooltip title={isSoundEnabled ? "Mute sound" : "Unmute sound"}>
         <IconButton
