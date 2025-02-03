@@ -17,7 +17,6 @@ class StorySegmentGenerator(BaseGenerator):
         self.universe_epoch = universe_epoch
         self.universe_story = universe_story
         self.universe_macguffin = universe_macguffin
-        self.max_retries = 5
         # Then call parent constructor which will create the prompt
         super().__init__(mistral_client, hero_name=hero_name, hero_desc=hero_desc)
 
@@ -90,7 +89,6 @@ Your task is to generate the next segment of the story, following these rules:
 
 Hero Description: {self.hero_desc}
 
-- MANDATORY: Each segment must be close to 15 words, no exceptions.
 """
 
         human_template = """
@@ -112,15 +110,12 @@ Story history:
 
 {what_to_represent}
 
-MANDATORY: Each segment must be close to 15 words, keep it concise.
-Be short. Never describes game variables.
+Never describes game variables.
 
 IT MUST BE THE DIRECT CONTINUATION OF THE CURRENT STORY.
 You MUST mention the previous situation and what is happening now with the new choice.
 Never propose choices or options. Never describe the game variables.
-
-MANDATORY: Each segment must be close to 15 words, keep it concise.
-Be short. Never describes game variables.
+LIMIT: 15 words.
 """
         return ChatPromptTemplate(
             messages=[
@@ -191,10 +186,7 @@ Be short. Never describes game variables.
         return 0 <= word_count <= 30
 
     async def generate(self, story_beat: int, current_time: str, current_location: str, previous_choice: str, story_history: str = "", turn_before_end: int = 0, is_winning_story: bool = False) -> StorySegmentResponse:
-        """Generate the next story segment with length validation and retry."""
-        retry_count = 0
-        last_attempt = None
-        
+        """Generate the next story segment."""
         is_end = True if story_beat == turn_before_end else False
         is_death = True if is_end and is_winning_story else False
         is_victory = True if is_end and not is_winning_story else False
@@ -211,10 +203,9 @@ Write a story segment that:
 2. Maintains consistency with the universe and story
 3. Respects all previous rules about length and style
 4. Naturally integrates the custom elements while staying true to the plot
-Close to 15 words.
 """
 
-        # Créer les messages de base une seule fois
+        # Créer les messages
         messages = self.prompt.format_messages(
             hero_description=self.hero_desc,
             FORMATTING_RULES=FORMATTING_RULES,
@@ -230,32 +221,6 @@ Close to 15 words.
             universe_macguffin=self.universe_macguffin
         )
 
-        current_messages = messages.copy()
-        
-        while retry_count < self.max_retries:
-            try:
-                story_text = await self.mistral_client.generate_text(current_messages)
-                word_count = len(story_text.split())
-                
-                if self._is_valid_length(story_text):
-                    return StorySegmentResponse(story_text=story_text)
-                
-                retry_count += 1
-                if retry_count < self.max_retries:
-                    # Créer un nouveau message avec le feedback sur la longueur
-                    if word_count > 15:
-                        feedback = f"The previous response was too long ({word_count} words). Here was your last attempt:\n\n{story_text}\n\nPlease generate a MUCH SHORTER story segment close to 15 words that continues from: {story_history}"
-                    
-                    # Réinitialiser les messages avec les messages de base
-                    current_messages = messages.copy()
-                    # Ajouter le feedback
-                    current_messages.append(HumanMessage(content=feedback))
-                    last_attempt = story_text
-                    continue
-                
-                raise ValueError(f"Failed to generate text of valid length after {self.max_retries} attempts. Last attempt had {word_count} words.")
-                
-            except Exception as e:
-                retry_count += 1
-                if retry_count >= self.max_retries:
-                    raise e 
+        # Générer le texte
+        story_text = await self.mistral_client.generate_text(messages)
+        return StorySegmentResponse(story_text=story_text) 

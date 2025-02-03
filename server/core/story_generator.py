@@ -26,7 +26,13 @@ class StoryGenerator:
             self.model_name = model_name
             self.turn_before_end = random.randint(GameConfig.MIN_SEGMENTS_BEFORE_END, GameConfig.MAX_SEGMENTS_BEFORE_END)
             self.is_winning_story = random.random() < GameConfig.WINNING_STORY_CHANCE
+            
+            # Client principal avec limite standard
             self.mistral_client = MistralClient(api_key=api_key, model_name=model_name)
+            
+            # Client spécifique pour les segments d'histoire avec limite plus basse
+            self.story_segment_client = MistralClient(api_key=api_key, model_name=model_name, max_tokens=50)
+            
             self.image_prompt_generator = None  # Will be initialized with the first universe style
             self.metadata_generator = None  # Will be initialized with hero description
             self.segment_generators: Dict[str, StorySegmentGenerator] = {}
@@ -65,7 +71,7 @@ class StoryGenerator:
             
             # Create a new StorySegmentGenerator with all universe parameters
             self.segment_generators[session_id] = StorySegmentGenerator(
-                self.mistral_client,
+                self.story_segment_client,
                 universe_style=style["name"],
                 universe_genre=genre,
                 universe_epoch=epoch,

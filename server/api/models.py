@@ -9,11 +9,10 @@ class Choice(BaseModel):
 class StorySegmentResponse(BaseModel):
     story_text: str = Field(description="The story text. No more than 30 words.")
 
-    @validator('story_text')
     def validate_story_text_length(cls, v):
         words = v.split()
-        if len(words) > 75:
-            raise ValueError('Story text must not exceed 50 words')
+        if len(words) > 40:
+            raise ValueError('Story text must not exceed 30 words')
         return v
 
 class StoryPromptsResponse(BaseModel):

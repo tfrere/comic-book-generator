@@ -31,17 +31,17 @@ logger = logging.getLogger(__name__)
 # Pricing: https://docs.mistral.ai/platform/pricing/
 
 class MistralClient:
-    def __init__(self, api_key: str, model_name: str = "mistral-large-latest"):
-        logger.info(f"Initializing MistralClient with model: {model_name}")
+    def __init__(self, api_key: str, model_name: str = "mistral-large-latest", max_tokens: int = 1000):
+        logger.info(f"Initializing MistralClient with model: {model_name}, max_tokens: {max_tokens}")
         self.model = ChatMistralAI(
             mistral_api_key=api_key,
             model=model_name,
-            max_tokens=1000
+            max_tokens=max_tokens
         )
         self.fixing_model = ChatMistralAI(
             mistral_api_key=api_key,
             model=model_name,
-            max_tokens=1000
+            max_tokens=max_tokens
         )
         
         # Pour gérer le rate limit
