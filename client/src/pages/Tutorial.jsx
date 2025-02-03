@@ -88,7 +88,7 @@ export function Tutorial() {
           the opportunity to write the next part of the story yourself.
           <br />
           <br />
-          It's your turn to write your own story.
+          It's an experimental game. Enjoy!
         </Typography>
 
         <Button

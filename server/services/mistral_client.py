@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # Pricing: https://docs.mistral.ai/platform/pricing/
 
 class MistralClient:
-    def __init__(self, api_key: str, model_name: str = "mistral-small-latest"):
+    def __init__(self, api_key: str, model_name: str = "mistral-large-latest"):
         logger.info(f"Initializing MistralClient with model: {model_name}")
         self.model = ChatMistralAI(
             mistral_api_key=api_key,

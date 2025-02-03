@@ -50,7 +50,10 @@ class StoryGenerator:
                 self.mistral_client, 
                 artist_style=artist_style,
                 hero_name=hero_name,
-                hero_desc=hero_desc
+                hero_desc=hero_desc,
+                universe_style=style["name"],
+                universe_genre=genre,
+                universe_epoch=epoch
             )
 
             # Create a new MetadataGenerator with hero description

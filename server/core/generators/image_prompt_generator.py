@@ -12,8 +12,8 @@ class ImagePromptResponse(BaseModel):
 class ImagePromptGenerator(BaseGenerator):
     """Generator for image prompts based on story text."""
 
-    def __init__(self, mistral_client, artist_style: str, hero_name: str = None, hero_desc: str = None):
-        super().__init__(mistral_client, hero_name=hero_name, hero_desc=hero_desc)
+    def __init__(self, mistral_client, artist_style: str, hero_name: str = None, hero_desc: str = None, universe_style: str = None, universe_genre: str = None, universe_epoch: str = None):
+        super().__init__(mistral_client, hero_name=hero_name, hero_desc=hero_desc, universe_style=universe_style, universe_genre=universe_genre, universe_epoch=universe_epoch)
         if not artist_style:
             raise ValueError("artist_style must be provided")
         self.artist_style = artist_style
@@ -28,6 +28,11 @@ class ImagePromptGenerator(BaseGenerator):
 
         You are a comic book panel description generator.
         Your role is to create vivid, cinematic descriptions for comic panels that will be turned into images.
+
+        Universe Context:
+        - Style: {self.universe_style}
+        - Genre: {self.universe_genre}
+        - Epoch: {self.universe_epoch}
 
         Hero description: {self.hero_desc}
 

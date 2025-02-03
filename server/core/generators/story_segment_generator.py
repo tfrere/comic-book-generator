@@ -26,13 +26,13 @@ class StorySegmentGenerator(BaseGenerator):
 
         # Story progression based representation with ranges
         story_beat_ranges = [
-            (0, f"{self.hero_name} arriving through the portal into this new world. Show the contrast and discovery of this universe. "),
-            (1, f"Early exploration and discovery phase. "),
-            (2, f"Early exploration and discovery phase. Show {self.hero_name} uncovering the first mysteries of this world and potentially encountering the MacGuffin."),
+            (0, f"{self.hero_name} arriving through the portal into this new world."),
+            (1, f"Early exploration and discovery phase."),
+            (2, f"Early exploration and discovery phase. Show {self.hero_name} uncovering the first mysteries of this world and potentially encountering the quest object."),
             (3, 4, f"Rising tension and complications. Show {self.hero_name} dealing with increasingly complex challenges and uncovering deeper mysteries."),
             (5, 6, f"Approaching the climax. Show the escalating stakes and {self.hero_name}'s determination as they near their goal."),
-            (7, 8, f"Final confrontation phase. Show the intensity and weight of {self.hero_name}'s choices as they face the ultimate challenge. It has to be a fight against an AI."),
-            (9, float('inf'), f"Endgame moments. Show the culmination of {self.hero_name}'s journey and the consequences of their actions. It has to be a fight against an AI.")
+            (7, 8, f"Final confrontation phase. Show the intensity and weight of {self.hero_name}'s choices as they face the ultimate challenge."),
+            (9, float('inf'), f"Endgame moments. Show the culmination of {self.hero_name}'s journey and the consequences of their actions.")
         ]
 
         # Find the appropriate range for the current story beat
@@ -53,7 +53,6 @@ class StorySegmentGenerator(BaseGenerator):
     def _create_prompt(self) -> ChatPromptTemplate:
         system_template = f"""
 You are a descriptive narrator for a comic book. Your ONLY task is to write the NEXT segment of the story.
-IT MUST BE THE DIRECT CONTINUATION OF THE CURRENT STORY.
 ALWAYS write in English, never use any other language.
 
 Universe Context:
@@ -61,12 +60,10 @@ Universe Context:
 - Genre: {self.universe_genre}
 - Epoch: {self.universe_epoch}
 
-IMPORTANT RULES FOR THE MACGUFFIN (MANDATORY):
+IMPORTANT RULES FOR THE QUEST OBJECT (MANDATORY):
 - Most segments must hint at the power of the {self.universe_macguffin}
 - Use strong clues ONLY at key moments
 - NEVER reveal the full power of the {self.universe_macguffin} before the climax, this is a STRICT limit
-- Use subtle clues in safe havens
-- NEVER mention the power of the {self.universe_macguffin} explicitly in choices or the story
 - NEVER mention time or place in the story in this manner: [18:00 - a road]
 
 IMPORTANT RULES FOR STORY TEXT:
@@ -76,19 +73,17 @@ IMPORTANT RULES FOR STORY TEXT:
 - DO NOT include any dialogue asking for decisions
 - Focus purely on describing what is happening in the current scene
 - Keep the text concise and impactful
-- MANDATORY: Each segment must be between 15 and 20 words, no exceptions
 - Use every word purposefully to convey maximum meaning in minimum space
 
 Your task is to generate the next segment of the story, following these rules:
 1. Keep the story consistent with the universe parameters
 2. Each segment must advance the plot
 3. Never repeat previous descriptions or situations
-4. Keep segments concise and impactful (15-20 words)
-5. The MacGuffin should remain mysterious but central to the plot
+4. Keep segments concise and impactful
 
 Hero Description: {self.hero_desc}
 
-Rules: {FORMATTING_RULES}
+- MANDATORY: Each segment must be close to 15 words, no exceptions
 """
 
         human_template = """
@@ -96,16 +91,17 @@ Current game state:
 - Current time: {current_time}
 - Current location: {current_location}
 - Previous choice: {previous_choice}
-- Story beat: {story_beat}
 
 Story history:
 {story_history}
 
 {what_to_represent}
 
+MANDATORY: Each segment must be close to 15 words, keep it concise.
+Be short. Never describes game variables.
+
 IT MUST BE THE DIRECT CONTINUATION OF THE CURRENT STORY.
-MANDATORY: Each segment must be between 15 and 20 words, keep it concise.
-Be short.
+You MUST mention the previous situation and what is happening now with the new choice.
 """
         return ChatPromptTemplate(
             messages=[
@@ -187,16 +183,17 @@ Be short.
         what_to_represent = self._get_what_to_represent(story_beat, is_death, is_victory)
 
         # Si c'est un choix personnalisé, on l'utilise comme contexte pour générer la suite
-        if previous_choice and not previous_choice.startswith("Choice "):
-            what_to_represent = f"""
-Based on the player's custom choice: "{previous_choice}"
+#         if previous_choice and not previous_choice.startswith("Choice "):
+#             what_to_represent = f"""
+# Based on the player's custom choice: "{previous_choice}"
 
-Write a story segment that:
-1. Directly follows and incorporates the player's choice
-2. Maintains consistency with the universe and story
-3. Respects all previous rules about length and style
-4. Naturally integrates the custom elements while staying true to the plot
-"""
+# Write a story segment that:
+# 1. Directly follows and incorporates the player's choice
+# 2. Maintains consistency with the universe and story
+# 3. Respects all previous rules about length and style
+# 4. Naturally integrates the custom elements while staying true to the plot
+# Close to 15 words.
+# """
 
         # Créer les messages de base une seule fois
         messages = self.prompt.format_messages(
@@ -228,9 +225,9 @@ Write a story segment that:
                 if retry_count < self.max_retries:
                     # Créer un nouveau message avec le feedback sur la longueur
                     if word_count < 15:
-                        feedback = f"The previous response was too short ({word_count} words). Here was your last attempt:\n\n{story_text}\n\nPlease generate a NEW and DIFFERENT story segment between 15 and 40 words that continues from: {story_history}"
+                        feedback = f"The previous response was too short ({word_count} words). Here was your last attempt:\n\n{story_text}\n\nPlease generate a NEW and DIFFERENT story segment close to 15 words that continues from: {story_history}"
                     else:
-                        feedback = f"The previous response was too long ({word_count} words). Here was your last attempt:\n\n{story_text}\n\nPlease generate a MUCH SHORTER story segment between 15 and 40 words that continues from: {story_history}"
+                        feedback = f"The previous response was too long ({word_count} words). Here was your last attempt:\n\n{story_text}\n\nPlease generate a MUCH SHORTER story segment close to 15 words that continues from: {story_history}"
                     
                     # Réinitialiser les messages avec les messages de base
                     current_messages = messages.copy()

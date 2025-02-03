@@ -222,7 +222,7 @@ export function StoryChoices() {
             pl: 3,
           }}
         >
-          Write your story
+          What happens next?
         </DialogTitle>
         <IconButton
           onClick={() => setShowCustomDialog(false)}
@@ -249,7 +249,7 @@ export function StoryChoices() {
             rows={isMobile ? 5 : 4}
             fullWidth
             variant="outlined"
-            placeholder="What happens next in your story?"
+            placeholder="The hero encounters a dragon..."
             value={customChoice}
             onChange={(e) => setCustomChoice(e.target.value)}
             sx={{
@@ -293,7 +293,7 @@ export function StoryChoices() {
                 fontWeight: "bold",
               }}
             >
-              Continue story
+              Validate
             </Button>
           </Box>
         </DialogContent>

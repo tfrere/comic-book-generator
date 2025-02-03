@@ -10,13 +10,16 @@ class BaseGenerator:
     
     debug_mode = False  # Class attribute for debug mode
     
-    def __init__(self, mistral_client: MistralClient, hero_name: str = None, hero_desc: str = None, is_universe_generator: bool = False):
+    def __init__(self, mistral_client: MistralClient, hero_name: str = None, hero_desc: str = None, is_universe_generator: bool = False, universe_style: str = None, universe_genre: str = None, universe_epoch: str = None):
         self.mistral_client = mistral_client
         if not is_universe_generator:
             if hero_name is None or hero_desc is None:
                 raise ValueError("hero_name and hero_desc must be provided for non-universe generators")
             self.hero_name = hero_name
             self.hero_desc = hero_desc
+            self.universe_style = universe_style
+            self.universe_genre = universe_genre
+            self.universe_epoch = universe_epoch
         self.prompt = self._create_prompt()
     
     @classmethod
