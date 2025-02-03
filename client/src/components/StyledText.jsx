@@ -1,31 +1,45 @@
-import { Typography } from "@mui/material";
+import { Box, Chip } from "@mui/material";
+import { useGame } from "../contexts/GameContext";
 
 /**
  * A component that renders text with styled words (bold, italic, etc.)
  * It automatically handles spacing between words and styled segments
  */
-export const StyledText = ({
-  text,
-  variant = "body1",
-  component,
-  ...props
-}) => {
-  // Split the text into segments, preserving spaces
-  const segments = text.split(/(<strong>.*?<\/strong>)/).filter(Boolean);
+export function StyledText({ text, ...props }) {
+  const { heroName } = useGame();
+
+  if (!text || !heroName) return text;
+
+  const parts = text.split(new RegExp(`(${heroName})`, "i"));
 
   return (
-    <Typography variant={variant} component={component} {...props}>
-      {segments.map((segment, index) => {
-        if (segment.startsWith("<strong>")) {
-          // Extract the text between <strong> tags and wrap it in <strong>
-          const content = segment.replace(/<\/?strong>/g, "");
-          return <strong key={index}>{content}</strong>;
+    <Box component="span" sx={{ display: "inline", ...props.sx }}>
+      {parts.map((part, index) => {
+        if (part.toLowerCase() === heroName.toLowerCase()) {
+          return (
+            <Chip
+              key={index}
+              label={part}
+              size="small"
+              sx={{
+                mx: 0.1,
+                height: "auto",
+                padding: "0px 2px",
+                "& .MuiChip-label": {
+                  padding: "0 2px",
+                  fontSize: "inherit",
+                  lineHeight: "inherit",
+                  fontWeight: "900",
+                },
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+              }}
+            />
+          );
         }
-        // Return regular text segments as is
-        return segment;
+        return part;
       })}
-    </Typography>
+    </Box>
   );
-};
+}
 
 export default StyledText;

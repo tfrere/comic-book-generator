@@ -88,7 +88,7 @@ export function Tutorial() {
           the opportunity to write the next part of the story yourself.
           <br />
           <br />
-          It's an experimental game. Enjoy!
+          Think of it more as a lucid dream than a traditional game. Enjoy!
         </Typography>
 
         <Button

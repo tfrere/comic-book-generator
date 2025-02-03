@@ -129,7 +129,7 @@ export function StoryChoices() {
         />
       ) : (
         <>
-          {choices
+          {/* {choices
             .filter((_, index) => !isMobile || index === 0)
             .map((choice, index) => (
               <Box
@@ -161,7 +161,36 @@ export function StoryChoices() {
                   {formatTextWithBold(choice.text)}
                 </Button>
               </Box>
-            ))}
+            ))} */}
+
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1,
+              minWidth: "fit-content",
+              maxWidth: isMobile ? "90%" : "30%",
+            }}
+          >
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => {
+                initAudioContext();
+                playPageSound();
+                stopNarration();
+                onChoice(choices[0].id);
+              }}
+              disabled={isSarahActive || isLoading || isNarratorSpeaking}
+              sx={{
+                width: "auto",
+                minWidth: "fit-content",
+              }}
+            >
+              {formatTextWithBold(choices[0].text)}
+            </Button>
+          </Box>
 
           <Box
             sx={{

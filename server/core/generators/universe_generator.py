@@ -16,7 +16,8 @@ class UniverseGenerator(BaseGenerator):
     def _create_prompt(self) -> ChatPromptTemplate:
 
         system_template = """You are a creative writing assistant specialized in comic book universes.
-Your task is to rewrite a story while keeping its exact structure and beats, but transposing it into a different universe."""
+Your task is to rewrite a story while keeping its exact structure and beats, but transposing it into a different universe.
+"""
 
         human_template = """Transform the following story into a new universe with these parameters:
 - Visual style: {style_name} (inspired by artists like {artists} with works such as {works})
@@ -51,6 +52,7 @@ The story must be atmospheric, magical, and focus on adventure and discovery. Ea
 
 YOU HAVE. TOREWRITE THE STORY. ( one text including the constant part and the variable part )
 YOU ONLY HAVE TO RIGHT AN INTRODUCTION. SETUP THE STORY AND DEFINE CLEARLY SARASH'S MISSION.
+
 """
 
         return ChatPromptTemplate(

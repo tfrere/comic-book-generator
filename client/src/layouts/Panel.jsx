@@ -9,6 +9,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { useEffect, useState, useRef } from "react";
 import { useGame } from "../contexts/GameContext";
 import { keyframes } from "@mui/system";
+import { StyledText } from "../components/StyledText";
 
 // Animation de rotation complète
 const spinFull = keyframes`
@@ -248,20 +249,13 @@ export function Panel({
             borderRadius: "8px",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+            fontSize: { xs: "0.775rem", sm: "1rem" }, // Responsive font size
+            color: "black",
+            lineHeight: 1.1,
+            fontWeight: 900,
           }}
         >
-          <Typography
-            variant="body1"
-            sx={{
-              fontSize: { xs: "0.775rem", sm: "1rem" }, // Responsive font size
-              color: "black",
-              lineHeight: 1.2,
-            }}
-          >
-            {segment.text}
-          </Typography>
+          <StyledText text={segment.text} />
         </Box>
       )}
     </Box>

@@ -60,20 +60,27 @@ Universe Context:
 - Genre: {self.universe_genre}
 - Epoch: {self.universe_epoch}
 
-IMPORTANT RULES FOR THE QUEST OBJECT (MANDATORY):
-- Most segments must hint at the power of the {self.universe_macguffin}
-- Use strong clues ONLY at key moments
-- NEVER reveal the full power of the {self.universe_macguffin} before the climax, this is a STRICT limit
-- NEVER mention time or place in the story in this manner: [18:00 - a road]
-
-IMPORTANT RULES FOR STORY TEXT:
-- Write ONLY a descriptive narrative text
-- DO NOT include any choices, questions, or options
-- DO NOT ask what {self.hero_name} should do next
-- DO NOT include any dialogue asking for decisions
-- Focus purely on describing what is happening in the current scene
-- Keep the text concise and impactful
-- Use every word purposefully to convey maximum meaning in minimum space
+EXAMPLES:
+- Mateo inspects the relic after choosing to investigate the old house.
+- A young woman finds a hidden door after exploring the alleyway.
+- On a distant planet, an explorer uncovers an artifact after landing.
+- In a medieval village, a blacksmith discovers a map after repairing a sword.
+- A pilot notices a signal after taking a risky shortcut.
+- In a mansion, a detective finds a passage after searching the library.
+- Amidst a market, a thief spots an amulet after blending into the crowd.
+- A diver encounters a ship after exploring uncharted waters.
+- Mateo, the hero, finds a secret compartment after investigating the library.
+- In a city, the hero deciphers a message after hacking the mainframe.
+- A knight finds a hidden passage after examining the castle walls.
+- An astronaut discovers a new planet after navigating through an asteroid field.
+- A scientist uncovers a secret formula after analyzing ancient manuscripts.
+- A warrior finds a mystical weapon after defeating a powerful enemy.
+- A mage discovers a hidden spell after studying ancient runes.
+- A ranger spots a hidden trail after scouting the forest.
+- A sailor finds a treasure map after exploring a deserted island.
+- A spy uncovers a conspiracy after infiltrating the enemy base.
+- A historian finds a lost diary after searching the old archives.
+- A musician discovers a hidden melody after playing an ancient instrument.
 
 Your task is to generate the next segment of the story, following these rules:
 1. Keep the story consistent with the universe parameters
@@ -83,14 +90,22 @@ Your task is to generate the next segment of the story, following these rules:
 
 Hero Description: {self.hero_desc}
 
-- MANDATORY: Each segment must be close to 15 words, no exceptions
+- MANDATORY: Each segment must be close to 15 words, no exceptions.
 """
 
         human_template = """
-Current game state:
-- Current time: {current_time}
-- Current location: {current_location}
-- Previous choice: {previous_choice}
+
+EXAMPLES:
+- Mateo inspects the relic after choosing to investigate the old house.
+- A young woman finds a hidden door after exploring the alleyway.
+- On a distant planet, an explorer uncovers an artifact after landing.
+- In a medieval village, a blacksmith discovers a map after repairing a sword.
+- A pilot notices a signal after taking a risky shortcut.
+- In a mansion, a detective finds a passage after searching the library.
+
+BAD: 
+- In a mansion, a detective finds a passage after searching the library. [Choix du joueur: Choice 1, "the hero encounter a dragon"]
+- [A town, 00h00] In a medieval village, a blacksmith discovers a map after repairing a sword.
 
 Story history:
 {story_history}
@@ -102,6 +117,10 @@ Be short. Never describes game variables.
 
 IT MUST BE THE DIRECT CONTINUATION OF THE CURRENT STORY.
 You MUST mention the previous situation and what is happening now with the new choice.
+Never propose choices or options. Never describe the game variables.
+
+MANDATORY: Each segment must be close to 15 words, keep it concise.
+Be short. Never describes game variables.
 """
         return ChatPromptTemplate(
             messages=[
@@ -169,7 +188,7 @@ You MUST mention the previous situation and what is happening now with the new c
     def _is_valid_length(self, text: str) -> bool:
         """Vérifie si le texte est dans la bonne plage de longueur."""
         word_count = len(text.split())
-        return 15 <= word_count <= 60
+        return 0 <= word_count <= 30
 
     async def generate(self, story_beat: int, current_time: str, current_location: str, previous_choice: str, story_history: str = "", turn_before_end: int = 0, is_winning_story: bool = False) -> StorySegmentResponse:
         """Generate the next story segment with length validation and retry."""
@@ -183,17 +202,17 @@ You MUST mention the previous situation and what is happening now with the new c
         what_to_represent = self._get_what_to_represent(story_beat, is_death, is_victory)
 
         # Si c'est un choix personnalisé, on l'utilise comme contexte pour générer la suite
-#         if previous_choice and not previous_choice.startswith("Choice "):
-#             what_to_represent = f"""
-# Based on the player's custom choice: "{previous_choice}"
+        if previous_choice and not previous_choice.startswith("Choice "):
+            what_to_represent = f"""
+Based on the player's custom choice: "{previous_choice}"
 
-# Write a story segment that:
-# 1. Directly follows and incorporates the player's choice
-# 2. Maintains consistency with the universe and story
-# 3. Respects all previous rules about length and style
-# 4. Naturally integrates the custom elements while staying true to the plot
-# Close to 15 words.
-# """
+Write a story segment that:
+1. Directly follows and incorporates the player's choice
+2. Maintains consistency with the universe and story
+3. Respects all previous rules about length and style
+4. Naturally integrates the custom elements while staying true to the plot
+Close to 15 words.
+"""
 
         # Créer les messages de base une seule fois
         messages = self.prompt.format_messages(
@@ -224,9 +243,7 @@ You MUST mention the previous situation and what is happening now with the new c
                 retry_count += 1
                 if retry_count < self.max_retries:
                     # Créer un nouveau message avec le feedback sur la longueur
-                    if word_count < 15:
-                        feedback = f"The previous response was too short ({word_count} words). Here was your last attempt:\n\n{story_text}\n\nPlease generate a NEW and DIFFERENT story segment close to 15 words that continues from: {story_history}"
-                    else:
+                    if word_count > 15:
                         feedback = f"The previous response was too long ({word_count} words). Here was your last attempt:\n\n{story_text}\n\nPlease generate a MUCH SHORTER story segment close to 15 words that continues from: {story_history}"
                     
                     # Réinitialiser les messages avec les messages de base
