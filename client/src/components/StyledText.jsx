@@ -4,13 +4,17 @@ import { useGame } from "../contexts/GameContext";
 /**
  * A component that renders text with styled words (bold, italic, etc.)
  * It automatically handles spacing between words and styled segments
+ * It also removes any text enclosed in [ ] or ( )
  */
 export function StyledText({ text, ...props }) {
   const { heroName } = useGame();
 
   if (!text || !heroName) return text;
 
-  const parts = text.split(new RegExp(`(${heroName})`, "i"));
+  // Remove text enclosed in [ ] or ( )
+  const cleanedText = text.replace(/\[.*?\]|\(.*?\)/g, "");
+
+  const parts = cleanedText.split(new RegExp(`(${heroName})`, "i"));
 
   return (
     <Box component="span" sx={{ display: "inline", ...props.sx }}>
