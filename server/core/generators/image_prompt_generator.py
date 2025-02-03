@@ -2,7 +2,7 @@ from typing import List
 from pydantic import BaseModel, Field
 from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 import json
-
+import random
 from core.generators.base_generator import BaseGenerator
 
 class ImagePromptResponse(BaseModel):
@@ -67,25 +67,21 @@ class ImagePromptGenerator(BaseGenerator):
         "[shot type] [scene description]"
 
         EXAMPLES:
-        - "low angle shot of a mysterious figure checking an object in a dark corridor"
-        - "wide shot of a ruined cityscape at sunset, silhouette of a lone traveler in the foreground"
-        - "Dutch angle close-up of a determined face illuminated by the glow of an object"
-        - "over shoulder shot of a character looking at an ancient map spread out on a table"
-        - "close-up of eyes reflecting the flames of a nearby fire"
-        - "wide shot of a dense forest with a figure barely visible among the trees"
-        - "high angle shot of a character standing at the edge of a cliff, looking down at a vast ocean"
-        - "medium shot of a person walking through a bustling marketplace, with various vendors and colorful stalls"
-        - "low angle shot of a character standing in front of a towering ancient statue, looking up in awe"
-        - "close-up of fingers tracing the carvings on an ancient artifact"
-        - "wide shot of a stormy sky with lightning illuminating a determined silhouette"
-        - "close-up of an ancient compass, its needle spinning wildly"
-        - "over shoulder shot of a mysterious figure watching from the shadows"
-        - "medium shot of a group of travelers gathered around a campfire, sharing stories"
-        - "Dutch angle shot of a clock tower striking midnight, casting long shadows"
-        - "close-up of a hand gripping a sword hilt, ready for battle"
-        - "wide shot of a bustling port with ships coming and going, seagulls circling above"
-        - "high angle shot of a chessboard mid-game, pieces scattered in strategic positions"
-        - "medium shot of two characters in a heated argument, tension visible in their expressions"
+        - "medium shot of a bustling marketplace, vibrant colors and lively chatter"
+        - "close-up of a mysterious figure's eyes, reflecting a hidden agenda"
+        - "wide shot of a serene lake at dawn, mist rising from the water"
+        - "Dutch angle of a character sprinting through a narrow alley, urgency in every step"
+        - "over shoulder shot of a child peering into a forbidden book, curiosity in their eyes"
+        - "low angle shot of a towering skyscraper, clouds swirling around its peak"
+        - "high angle shot of a chessboard mid-game, pieces poised for a decisive move"
+        - "close-up of a hand reaching for a glowing orb, anticipation in the air"
+        - "wide shot of a desert landscape, a lone figure trudging through the sand"
+        - "medium shot of a character standing in a rain-soaked street, determination etched on their face"
+        - "Dutch angle of a clock tower striking midnight, shadows stretching across the square"
+        - "over shoulder shot of a detective examining a crime scene, clues scattered around"
+        - "close-up of a flower blooming in a crack in the pavement, symbolizing hope"
+        - "wide shot of a stormy sea, waves crashing against a rocky shore"
+        - "medium shot of a group of friends laughing around a campfire, warmth in their expressions"
 
         Always maintain consistency with {self.hero_name}'s appearance and the style.
 
@@ -122,11 +118,13 @@ Story text: {story_text}
 Generate panel descriptions that capture the key moments of this scene.
 do not have panels that look alike, each successive panel must be different,
 and explain the story like a storyboard.
+SHOW, DONT TELL. DESCRIBE THE PANELS, be specific, put names on things.
 
 Dont put the hero name every time.
-Exactly between 1 and 4 panels. (mostly 2 or 3)
+{how_many_panels} panels
 
 {is_end}
+
 """
 
         return ChatPromptTemplate(
@@ -230,7 +228,14 @@ Exactly between 1 and 4 panels. (mostly 2 or 3)
             ImagePromptResponse containing the generated and formatted image prompts
         """
 
-        is_end="Must have between 2 and 4 prompts, MANDATORY."
+        how_many_panels = 2
+        # Générer un nombre aléatoire de panneaux entre 1 et 4
+        if is_death or is_victory:
+            how_many_panels = 1
+        else:
+            how_many_panels = random.choices([1, 2, 3, 4], weights=[0.05, 0.3, 0.4, 0.25], k=1)[0]
+
+        is_end=""
         if is_death:
             is_end = f"This is the death of {self.hero_name}. just one panel, MANDATORY."
         elif is_victory:
@@ -243,6 +248,7 @@ Exactly between 1 and 4 panels. (mostly 2 or 3)
             is_death=is_death,
             is_victory=is_victory,
             is_end=is_end,
+            how_many_panels=how_many_panels,
         )
         
         # Format each prompt with metadata

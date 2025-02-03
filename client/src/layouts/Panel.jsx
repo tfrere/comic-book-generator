@@ -43,6 +43,7 @@ export function Panel({
   totalImagesInPage,
   onImageLoad,
   imageId,
+  showText,
 }) {
   const { regenerateImage } = useGame();
   const [imageLoaded, setImageLoaded] = useState(
@@ -54,7 +55,6 @@ export function Panel({
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
   const hasImage = segment?.images?.[panelIndex];
-  const isFirstPanel = panelIndex === 0;
   const imgRef = useRef(null);
   const imageDataRef = useRef(null);
   const mountedRef = useRef(true);
@@ -234,7 +234,7 @@ export function Panel({
           <RefreshIcon />
         </IconButton>
       </Tooltip>
-      {isFirstPanel && segment?.text && (
+      {showText && segment?.text && (
         <Box
           sx={{
             position: "absolute",
@@ -248,7 +248,10 @@ export function Panel({
             fontWeight: 500,
             borderRadius: "8px",
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
+            gap: 1,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
             fontSize: { xs: "0.775rem", sm: "1rem" }, // Responsive font size
             color: "black",
             lineHeight: 1.1,

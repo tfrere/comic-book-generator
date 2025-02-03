@@ -21,17 +21,42 @@ export const LAYOUTS = {
     gridCols: 1,
     gridRows: 1,
     panels: [
-      { ...PANEL_SIZES.COVER_SIZE, gridColumn: "1", gridRow: "1" }, // Format portrait
+      {
+        ...PANEL_SIZES.COVER_SIZE,
+        gridColumn: "1",
+        gridRow: "1",
+        acceptText: true,
+      }, // Format portrait
     ],
   },
   LAYOUT_1: {
     gridCols: 2,
     gridRows: 2,
     panels: [
-      { ...PANEL_SIZES.LANDSCAPE, gridColumn: "1", gridRow: "1" }, // Landscape top left
-      { ...PANEL_SIZES.PORTRAIT, gridColumn: "2", gridRow: "1" }, // Portrait top right
-      { ...PANEL_SIZES.LANDSCAPE, gridColumn: "1", gridRow: "2" }, // Landscape middle left
-      { ...PANEL_SIZES.PORTRAIT, gridColumn: "2", gridRow: "2" }, // Portrait right
+      {
+        ...PANEL_SIZES.LANDSCAPE,
+        gridColumn: "1",
+        gridRow: "1",
+        acceptText: true,
+      }, // Landscape top left
+      {
+        ...PANEL_SIZES.PORTRAIT,
+        gridColumn: "2",
+        gridRow: "1",
+        acceptText: false,
+      }, // Portrait top right
+      {
+        ...PANEL_SIZES.LANDSCAPE,
+        gridColumn: "1",
+        gridRow: "2",
+        acceptText: true,
+      }, // Landscape middle left
+      {
+        ...PANEL_SIZES.PORTRAIT,
+        gridColumn: "2",
+        gridRow: "2",
+        acceptText: false,
+      }, // Portrait right
     ],
   },
   LAYOUT_2: {
@@ -42,45 +67,103 @@ export const LAYOUTS = {
         ...PANEL_SIZES.LANDSCAPE,
         gridColumn: GRID.TWO_THIRDS,
         gridRow: "1",
+        acceptText: true,
       }, // Large square top left
-      { ...PANEL_SIZES.PORTRAIT, gridColumn: "3", gridRow: "1" }, // Portrait top right
-      { ...PANEL_SIZES.LANDSCAPE, gridColumn: GRID.FULL_WIDTH, gridRow: "2" }, // Full width landscape bottom
+      {
+        ...PANEL_SIZES.PORTRAIT,
+        gridColumn: "3",
+        gridRow: "1",
+        acceptText: false,
+      }, // Portrait top right
+      {
+        ...PANEL_SIZES.LANDSCAPE,
+        gridColumn: GRID.FULL_WIDTH,
+        gridRow: "2",
+        acceptText: false,
+      }, // Full width landscape bottom
     ],
   },
   LAYOUT_3: {
     gridCols: 3,
     gridRows: 2,
     panels: [
-      { ...PANEL_SIZES.SQUARE, gridColumn: GRID.TWO_THIRDS, gridRow: "1" }, // Wide landscape top left
-      { ...PANEL_SIZES.COLUMN, gridColumn: "3", gridRow: "1" }, // COLUMN top right
-      { ...PANEL_SIZES.COLUMN, gridColumn: "1", gridRow: "2" }, // COLUMN bottom left
-      { ...PANEL_SIZES.SQUARE, gridColumn: "2 / span 2", gridRow: "2" }, // Wide landscape bottom right
+      {
+        ...PANEL_SIZES.SQUARE,
+        gridColumn: GRID.TWO_THIRDS,
+        gridRow: "1",
+        acceptText: true,
+      }, // Wide landscape top left
+      {
+        ...PANEL_SIZES.COLUMN,
+        gridColumn: "3",
+        gridRow: "1",
+        acceptText: false,
+      }, // COLUMN top right
+      {
+        ...PANEL_SIZES.COLUMN,
+        gridColumn: "1",
+        gridRow: "2",
+        acceptText: false,
+      }, // COLUMN bottom left
+      {
+        ...PANEL_SIZES.SQUARE,
+        gridColumn: "2 / span 2",
+        gridRow: "2",
+        acceptText: true,
+      }, // Wide landscape bottom right
     ],
   },
   LAYOUT_4: {
     gridCols: 2,
     gridRows: 3,
     panels: [
-      { ...PANEL_SIZES.PANORAMIC, gridColumn: "1 / span 2", gridRow: "1" }, // Wide panoramic top
+      {
+        ...PANEL_SIZES.PANORAMIC,
+        gridColumn: "1 / span 2",
+        gridRow: "1",
+        acceptText: true,
+      }, // Wide panoramic top
       {
         ...PANEL_SIZES.COLUMN,
         gridColumn: "1",
         gridRow: GRID.FULL_HEIGHT_FROM_2,
+        acceptText: false,
       }, // Tall portrait left
-      { ...PANEL_SIZES.SQUARE, gridColumn: "2", gridRow: "2" }, // Square middle right
-      { ...PANEL_SIZES.SQUARE, gridColumn: "2", gridRow: "3" }, // Square bottom right
+      {
+        ...PANEL_SIZES.SQUARE,
+        gridColumn: "2",
+        gridRow: "2",
+        acceptText: false,
+      }, // Square middle right
+      {
+        ...PANEL_SIZES.SQUARE,
+        gridColumn: "2",
+        gridRow: "3",
+        acceptText: false,
+      }, // Square bottom right
     ],
   },
   LAYOUT_5: {
     gridCols: 3,
     gridRows: 3,
     panels: [
-      { ...PANEL_SIZES.PANORAMIC, gridColumn: GRID.FULL_WIDTH, gridRow: "1" }, // Wide panoramic top
-      { ...PANEL_SIZES.COLUMN, gridColumn: "1", gridRow: "2 / span 2" }, // Tall portrait left
+      {
+        ...PANEL_SIZES.PANORAMIC,
+        gridColumn: GRID.FULL_WIDTH,
+        gridRow: "1",
+        acceptText: false,
+      }, // Wide panoramic top
+      {
+        ...PANEL_SIZES.COLUMN,
+        gridColumn: "1",
+        gridRow: "2 / span 2",
+        acceptText: false,
+      }, // Tall portrait left
       {
         ...PANEL_SIZES.POTRAIT,
         gridColumn: "2 / span 2",
         gridRow: "2 / span 2",
+        acceptText: true,
       }, // Large square right
     ],
   },
@@ -88,8 +171,18 @@ export const LAYOUTS = {
     gridCols: 1,
     gridRows: 2,
     panels: [
-      { ...PANEL_SIZES.LANDSCAPE, gridColumn: GRID.FULL_WIDTH, gridRow: "1" }, // Portrait top right
-      { ...PANEL_SIZES.LANDSCAPE, gridColumn: GRID.FULL_WIDTH, gridRow: "2" }, // Full width landscape bottom
+      {
+        ...PANEL_SIZES.LANDSCAPE,
+        gridColumn: GRID.FULL_WIDTH,
+        gridRow: "1",
+        acceptText: true,
+      }, // Portrait top right
+      {
+        ...PANEL_SIZES.LANDSCAPE,
+        gridColumn: GRID.FULL_WIDTH,
+        gridRow: "2",
+        acceptText: true,
+      }, // Full width landscape bottom
     ],
   },
 };
@@ -103,8 +196,8 @@ export const nonRandomLayouts = Object.keys(LAYOUTS).filter(
 export const LAYOUTS_BY_PANEL_COUNT = {
   1: ["COVER"],
   2: ["LAYOUT_7"],
-  3: ["LAYOUT_2"], //"LAYOUT_5"
-  4: ["LAYOUT_3"], //, "LAYOUT_4"
+  3: ["LAYOUT_2", "LAYOUT_5"], //"LAYOUT_5"
+  4: ["LAYOUT_3", "LAYOUT_4"], //, "LAYOUT_4"
 };
 
 // Helper functions for layout configuration

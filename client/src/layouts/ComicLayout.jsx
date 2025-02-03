@@ -50,6 +50,22 @@ function ComicPage({ layout, layoutIndex, isLastPage, preloadedImages }) {
     return total + (segment.images?.length || 0);
   }, 0);
 
+  // Sélectionner aléatoirement un panneau qui accepte le texte
+  const [selectedTextPanelIndex] = useState(() => {
+    const acceptingPanels = LAYOUTS[layout.type].panels
+      .slice(0, totalImages)
+      .map((panel, index) => ({ panel, index }))
+      .filter(({ panel }) => panel.acceptText);
+
+    if (acceptingPanels.length === 0) {
+      // Si aucun panneau n'accepte le texte, utiliser le premier panneau par défaut
+      return 0;
+    }
+    // Sélectionner un panneau aléatoire parmi ceux qui acceptent le texte
+    const randomIndex = Math.floor(Math.random() * acceptingPanels.length);
+    return acceptingPanels[randomIndex].index;
+  });
+
   // Son d'écriture
   const playWritingSound = useSoundEffect({
     basePath: "/sounds/drawing-",
@@ -136,6 +152,7 @@ function ComicPage({ layout, layoutIndex, isLastPage, preloadedImages }) {
       }}
     >
       <Box
+        data-comic-page
         sx={{
           display: "grid",
           gridTemplateColumns: `repeat(${LAYOUTS[layout.type].gridCols}, 1fr)`,
@@ -189,6 +206,7 @@ function ComicPage({ layout, layoutIndex, isLastPage, preloadedImages }) {
                   handleImageLoad(`page-${layoutIndex}-image-${panelIndex}`)
                 }
                 imageId={`page-${layoutIndex}-image-${panelIndex}`}
+                showText={panelIndex === selectedTextPanelIndex}
               />
             );
           })}

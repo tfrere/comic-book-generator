@@ -41,26 +41,31 @@ def print_universe_info(style: str, genre: str, epoch: str, base_story: str):
     print_separator("*")
 
 def print_story_step(step_number, story_text, image_prompts, generation_time: float, story_history: str = None, show_context: bool = False, model_name: str = None, is_death: bool = False, is_victory: bool = False):
-    print_separator("=")
-    print(f"📖 STEP {step_number}")
-    print(f"⏱️  Generation time: {generation_time:.2f}s (model: {model_name})")
-    print(f"💀 Death: {is_death}")
-    print(f"🏆 Victory: {is_victory}")
+    """Print a story step with formatting."""
+    print("\n" + "="*80)
+    print(f"Step {step_number}")
+    print("-"*80)
     
     if show_context and story_history:
-        print_separator("-")
-        print("📚 FULL CONTEXT:")
+        print("\nContext:")
+        print("-"*20)
         print(story_history)
+        print("-"*20 + "\n")
     
-    print_separator("-")
-    print("📜 STORY:")
+    print(f"Story ({generation_time:.2f}s):")
     print(story_text)
-    print_separator("-")
-    print("🎬 STORYBOARD:")
-    for i, prompt in enumerate(image_prompts, 1):
-        print(f"\nPanel {i}:")
-        print(f"  {prompt}")
-    print_separator("=")
+    
+    if image_prompts:
+        print("\nImage Prompts:")
+        for i, prompt in enumerate(image_prompts, 1):
+            print(f"{i}. {prompt}")
+    
+    if is_death:
+        print("\n💀 GAME OVER - You died!")
+    elif is_victory:
+        print("\n🏆 VICTORY - You won!")
+    
+    print("="*80)
 
 async def play_game(show_context: bool = False, auto_mode: bool = False, max_turns: int = 15):
     # Initialize components
@@ -133,10 +138,10 @@ async def play_game(show_context: bool = False, auto_mode: bool = False, max_tur
         story_history = ""
         if game_state.story_history:
             segments = []
-            for entry in game_state.story_history:
-                segment = entry['segment']
-                time_location = f"[{entry['time']} - {entry['location']}]"
-                image_descriptions = "\nVisual panels:\n" + "\n".join(f"- {prompt}" for prompt in entry['image_prompts'])
+            for story_response in game_state.story_history:
+                segment = story_response.story_text
+                time_location = f"[{story_response.time} - {story_response.location}]"
+                image_descriptions = "\nVisual panels:\n" + "\n".join(f"- {prompt}" for prompt in story_response.image_prompts)
                 segments.append(f"{time_location}\n{segment}{image_descriptions}")
             
             story_history = "\n\n---\n\n".join(segments)
@@ -199,13 +204,7 @@ async def play_game(show_context: bool = False, auto_mode: bool = False, max_tur
             
             # Update game state
             game_state.story_beat += 1
-            game_state.add_to_history(
-                response.story_text,
-                f"Choice {last_choice}",
-                response.image_prompts,
-                response.time,
-                response.location
-            )
+            # Le StoryResponse est déjà ajouté à l'historique dans generate_story_segment
             
         else:
             print("\n❌ Error: Invalid number of choices received from server")

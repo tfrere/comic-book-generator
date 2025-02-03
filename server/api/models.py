@@ -62,6 +62,7 @@ class UniverseResponse(BaseModel):
 
 # Complete story response combining all parts - preserved for API compatibility
 class StoryResponse(BaseModel):
+    previous_choice: str = Field(description="The previous choice made by the player")
     story_text: str = Field(description="The story text. No more than 15 words THIS IS MANDATORY.  Never mention story beat directly. ")
     choices: List[Choice]
     raw_choices: List[str] = Field(description="Raw choice texts from LLM before conversion to Choice objects")

@@ -1,10 +1,11 @@
 from core.constants import GameConfig
 from typing import List
+from api.models import StoryResponse
 
 class GameState:
     def __init__(self):
         self.story_beat = GameConfig.STORY_BEAT_INTRO
-        self.story_history = []
+        self.story_history: List[StoryResponse] = []
         self.current_time = GameConfig.STARTING_TIME
         self.current_location = GameConfig.STARTING_LOCATION
         # Universe information
@@ -50,27 +51,42 @@ class GameState:
         ])
 
     def format_history(self) -> str:
-        """Format story history for the prompt."""
+        """Format story history for the prompt.
+        Returns only the last 4 segments of the story (or less if not available)."""
         if not self.story_history:
             return ""
             
+        # Ne prendre que les 3 derniers segments
+        last_segments = self.story_history[-4:] if len(self.story_history) > 4 else self.story_history
+            
         segments = []
-        for entry in self.story_history:
-            segment = entry['segment']
-            if entry['player_choice']:
-                segment += f"\n[Choix du joueur: {entry['player_choice']}]"
-            segments.append(segment)
+        for story_response in last_segments:
+            # Commencer par le choix précédent s'il existe
+            segment_parts = []
+            if story_response.previous_choice and story_response.previous_choice != "none":
+                segment_parts.append(f"[Previous choice: {story_response.previous_choice}]")
+            
+            # Ajouter le texte de l'histoire
+            segment_parts.append(story_response.story_text)
+            
+            # Ajouter les choix disponibles s'ils existent
+            if story_response.choices:
+                choices_text = "\nAvailable choices were:"
+                for choice in story_response.choices:
+                    choices_text += f"\n- {choice.text}"
+                segment_parts.append(choices_text)
+            
+            # Joindre toutes les parties avec des sauts de ligne
+            segments.append("\n".join(segment_parts))
+        
+        # Ajouter une indication si on a tronqué l'historique
+        if len(self.story_history) > 4:
+            segments.insert(0, f"[...{len(self.story_history) - 4} earlier segments omitted...]")
         
         return "\n\n---\n\n".join(segments)
 
-    def add_to_history(self, segment_text: str, choice_made: str, image_prompts: List[str], time: str, location: str):
-        """Add a segment to history with essential information."""
-        self.story_history.append({
-            "segment": segment_text,
-            "player_choice": choice_made,
-            "time": time,
-            "location": location,
-            "image_prompts": image_prompts
-        })
-        self.current_time = time
-        self.current_location = location 
+    def add_to_history(self, story_response: StoryResponse):
+        """Add a story response to history."""
+        self.story_history.append(story_response)
+        self.current_time = story_response.time
+        self.current_location = story_response.location 

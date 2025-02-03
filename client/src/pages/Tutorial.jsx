@@ -10,6 +10,8 @@ import { useSoundSystem } from "../contexts/SoundContext";
 import { motion } from "framer-motion";
 import { GameNavigation } from "../components/GameNavigation";
 import { StyledText } from "../components/StyledText";
+import MouseOutlinedIcon from "@mui/icons-material/MouseOutlined";
+import CreateOutlinedIcon from "@mui/icons-material/CreateOutlined";
 
 export function Tutorial() {
   const navigate = useNavigate();
@@ -44,7 +46,8 @@ export function Tutorial() {
           justifyContent: "center",
           minHeight: "100vh",
           height: "100%",
-          width: "100%",
+          width: isMobile ? "90%" : "70%",
+          margin: "auto",
           position: "relative",
           overflow: "hidden",
         }}
@@ -84,11 +87,73 @@ export function Tutorial() {
           for each playthrough.
           <br />
           <br />
-          At every stage of the narrative, you will be presented with choices or
-          the opportunity to write the next part of the story yourself.
+          At each step you can decide to
           <br />
           <br />
-          Think of it more as a lucid dream than a traditional game. Enjoy!
+          <Box
+            sx={{
+              display: "flex",
+              gap: 4,
+              justifyContent: "center",
+              mb: 2,
+              alignItems: "center",
+            }}
+          >
+            <Box
+              sx={{
+                border: "1px solid rgba(255,255,255,0.3)",
+                borderRadius: "8px",
+                p: 2,
+                flex: 1,
+                maxWidth: "200px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 1,
+                backdropFilter: "blur(20px)",
+                backgroundColor: "rgba(255,255,255,0.05)",
+              }}
+            >
+              <MouseOutlinedIcon
+                sx={{ fontSize: 40, color: "primary.main", mb: 1 }}
+              />
+              <Typography variant="subtitle1" sx={{ color: "primary.main" }}>
+                Make a choice
+              </Typography>
+            </Box>
+            <Typography
+              variant="h6"
+              sx={{
+                color: "rgba(255,255,255,0.5)",
+                fontWeight: "bold",
+              }}
+            >
+              OR
+            </Typography>
+            <Box
+              sx={{
+                border: "1px solid rgba(255,255,255,0.3)",
+                borderRadius: "8px",
+                p: 2,
+                flex: 1,
+                maxWidth: "200px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 1,
+                backdropFilter: "blur(20px)",
+                backgroundColor: "rgba(255,255,255,0.05)",
+              }}
+            >
+              <CreateOutlinedIcon
+                sx={{ fontSize: 40, color: "primary.main", mb: 1 }}
+              />
+              <Typography variant="subtitle1" sx={{ color: "primary.main" }}>
+                Write your own
+              </Typography>
+            </Box>
+          </Box>
+          Until the end of the game
         </Typography>
 
         <Button

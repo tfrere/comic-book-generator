@@ -57,49 +57,45 @@ def get_chat_router(session_manager: SessionManager, story_generator):
                 # Pour les choix personnalisés, on les traite immédiatement
                 if chat_message.message == "custom_choice" and chat_message.custom_text:
                     previous_choice = chat_message.custom_text
-                    # On ajoute le choix à l'historique avant de générer le segment
-                    game_state.add_to_history(
-                        f"You decide to: {chat_message.custom_text}",
-                        previous_choice,
-                        [],  # pas d'image pour le choix
-                        game_state.current_time,
-                        game_state.current_location
+                    # On crée un StoryResponse pour le choix personnalisé
+                    custom_choice_response = StoryResponse(
+                        story_text=f"You decide to: {chat_message.custom_text}",
+                        choices=[
+                            Choice(id=1, text="Continue..."),  # Choix fictif pour validation
+                            Choice(id=2, text="Continue...")
+                        ],
+                        raw_choices=["Continue...", "Continue..."],
+                        time=game_state.current_time,
+                        location=game_state.current_location,
+                        image_prompts=["Character making a custom choice"],  # Prompt fictif pour validation
+                        is_first_step=False,
+                        is_death=False,
+                        is_victory=False,
+                        previous_choice=previous_choice
                     )
+                    game_state.add_to_history(custom_choice_response)
                 else:
-                    previous_choice = f"Choice {chat_message.choice_id}" if chat_message.choice_id else "none"
+                    # Si un choix a été fait, récupérer le texte du choix à partir de l'historique
+                    if chat_message.choice_id and len(game_state.story_history) > 0:
+                        last_story = game_state.story_history[-1]
+                        choice_index = chat_message.choice_id - 1
+                        if 0 <= choice_index < len(last_story.choices):
+                            previous_choice = last_story.choices[choice_index].text
+                        else:
+                            previous_choice = "none"
+                    else:
+                        previous_choice = "none"
 
             # Generate story segment
-            llm_response = await story_generator.generate_story_segment(
+            response = await story_generator.generate_story_segment(
                 session_id=x_session_id,
                 game_state=game_state,
                 previous_choice=previous_choice
             )
 
-            # Add segment to history
-            game_state.add_to_history(
-                llm_response.story_text,
-                previous_choice,
-                llm_response.image_prompts,
-                llm_response.time,
-                llm_response.location
-            )
-
             # Pour la première étape, on ne garde qu'un seul prompt d'image
-            if game_state.story_beat == 0 and len(llm_response.image_prompts) > 1:
-                llm_response.image_prompts = [llm_response.image_prompts[0]]
-            
-            # Prepare response
-            response = StoryResponse(
-                story_text=llm_response.story_text,
-                choices=llm_response.choices,
-                raw_choices=llm_response.raw_choices,
-                time=llm_response.time,
-                location=llm_response.location,
-                is_first_step=game_state.story_beat == 0,
-                image_prompts=llm_response.image_prompts,
-                is_death=llm_response.is_death,
-                is_victory=llm_response.is_victory
-            )
+            if game_state.story_beat == 0 and len(response.image_prompts) > 1:
+                response.image_prompts = [response.image_prompts[0]]
             
             # Increment story beat
             game_state.story_beat += 1

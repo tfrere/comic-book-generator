@@ -209,7 +209,7 @@ export const UniverseSlotMachine = ({
         }}
       >
         <SlotSection
-          label="Told in"
+          label=""
           value={style}
           words={RANDOM_STYLES}
           delay={0}

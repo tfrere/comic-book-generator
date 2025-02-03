@@ -17,7 +17,7 @@ class FluxClient:
                       prompt: str, 
                       width: int, 
                       height: int,
-                      num_inference_steps: int = 3,
+                      num_inference_steps: int = 5,
                       guidance_scale: float = 9.0) -> Optional[bytes]:
         """Génère une image à partir d'un prompt."""
         try:

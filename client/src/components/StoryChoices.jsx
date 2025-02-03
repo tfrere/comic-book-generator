@@ -112,6 +112,7 @@ export function StoryChoices() {
 
   return (
     <Box
+      data-story-choices
       sx={{
         display: "flex",
         flexDirection: isMobile ? "column" : "row",

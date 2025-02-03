@@ -49,7 +49,7 @@ class StoryGenerator:
                 artist = style["references"][0]["artist"]
                 
             # Create a detailed artist style string
-            artist_style = f"{artist}, {style['name']} style, {genre} in {epoch}"
+            artist_style = f"{style['name']}, {genre} in {epoch}"
             
             # Always create a new ImagePromptGenerator for each session with the correct artist and hero
             self.image_prompt_generator = ImagePromptGenerator(
@@ -128,7 +128,6 @@ class StoryGenerator:
                 is_winning_story=self.is_winning_story,
                 story_history=game_state.format_history()
             )
-            # print(f"Generated metadata_response: {metadata_response}")
             
             # Generate image prompts
             prompts_response = await self.image_prompt_generator.generate(
@@ -140,7 +139,6 @@ class StoryGenerator:
                 turn_before_end=self.turn_before_end,
                 is_winning_story=self.is_winning_story
             )
-            # print(f"Generated image prompts: {prompts_response}")
             
             # Create choices
             choices = [
@@ -151,16 +149,21 @@ class StoryGenerator:
             response = StoryResponse(
                 story_text=story_text,
                 choices=choices,
+                raw_choices=metadata_response.choices,
                 time=metadata_response.time,
                 location=metadata_response.location,
-                raw_choices=metadata_response.choices,
                 image_prompts=prompts_response.image_prompts,
                 is_first_step=(game_state.story_beat == GameConfig.STORY_BEAT_INTRO),
                 is_death=metadata_response.is_death,
-                is_victory=metadata_response.is_victory
+                is_victory=metadata_response.is_victory,
+                previous_choice=previous_choice
             )
             
-            return response 
+            # Add the response to game state history
+            game_state.add_to_history(response)
+            
+            return response
+            
         except Exception as e:
             print(f"Unexpected error in generate_story_segment: {str(e)}")
             raise 

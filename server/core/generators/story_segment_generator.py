@@ -60,7 +60,7 @@ Base Story:
 
 Your task is to generate the next segment of the story, following these rules:
 1. Keep the story consistent with the universe parameters
-2. Each segment must advance the plot
+2. Each segment must go forward in the story
 3. Never repeat previous descriptions or situations
 4. Keep segments concise and impactful
 
@@ -73,12 +73,14 @@ Hero Description: {self.hero_desc}
 Story history:
 {story_history}
 
-
 Never describes game variables.
 
 IT MUST BE THE DIRECT CONTINUATION OF THE CURRENT STORY.
 You MUST mention the previous situation and what is happening now with the new choice.
 Never propose choices or options. Never describe the game variables.
+The world is a dangerous place. The hero is in GREAT danger. he has great risk to die.
+If you fail a big battle, the hero is dead.
+
 LIMIT: 15 words.
 """
         return ChatPromptTemplate(
@@ -155,7 +157,9 @@ LIMIT: 15 words.
         is_death = True if is_end and is_winning_story else False
         is_victory = True if is_end and not is_winning_story else False
 
-        what_to_represent = self._get_what_to_represent(story_beat, is_death, is_victory)
+        what_to_represent = ""
+        # what_to_represent = self._get_what_to_represent(story_beat, is_death, is_victory)
+        # 
 
         # Si c'est un choix personnalisé, on l'utilise comme contexte pour générer la suite
         if previous_choice and not previous_choice.startswith("Choice "):
@@ -163,13 +167,13 @@ LIMIT: 15 words.
 Based on the player's custom choice: "{previous_choice}"
 
 Write a story segment that:
-1. Directly follows and incorporates the player's choice
-2. Maintains consistency with the universe and story
-3. Respects all previous rules about length and style
-4. Naturally integrates the custom elements while staying true to the plot
-5. NEVER FORGET THE CHOICE, IT MUST BE MENTIONED IN THE STORY.
-6. Start with a direct reaction to the player's choice
-7. Show immediate consequences of their action
+1. Respects all previous rules about length and style
+2. Ff you find a path to go in a special place, you have to travel there. 
+3. Directly follows and incorporates the player's choice
+4. Maintains consistency with the universe and story
+5. Naturally integrates the custom elements while staying true to the plot
+
+MANDATORY : Start with a direct reaction to the player's choice, Show immediate consequences of their action. Then go forward in the story.
 """
 
         # Créer les messages

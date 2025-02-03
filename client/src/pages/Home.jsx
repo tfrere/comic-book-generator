@@ -43,9 +43,9 @@ export function Home() {
           justifyContent: "center",
           minHeight: "100vh",
           height: "100%",
-          width: "100%",
+          width: isMobile ? "80%" : "40%", // Adjust the width of the containing block
+          margin: "auto",
           position: "relative",
-          overflow: "hidden",
         }}
       >
         <Typography
@@ -82,12 +82,11 @@ export function Home() {
         </Typography>
 
         <Typography
-          variant="body1"
+          variant="caption"
           sx={{
             zIndex: 10,
             textAlign: "center",
             mt: 2,
-            maxWidth: isMobile ? "80%" : "50%",
             opacity: 0.8,
             px: isMobile ? 2 : 0,
             fontSize: "clamp(0.875rem, 2vw, 1.125rem)",

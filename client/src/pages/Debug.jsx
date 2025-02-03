@@ -77,8 +77,10 @@ const Debug = () => {
       const initialHistoryEntry = {
         segment: response.story_text,
         player_choice: null,
+        available_choices: response.choices.map((choice) => choice.text),
         time: response.time,
         location: response.location,
+        previous_choice: response.previous_choice,
       };
 
       setGameState({
@@ -105,12 +107,14 @@ const Debug = () => {
       const response = await storyApi.makeChoice(choiceIndex + 1, sessionId);
       setCurrentStory(response);
 
-      // Construire l'entrée d'historique dans le même format que le serveur
+      // Construire l'entrée d'historique
       const historyEntry = {
         segment: response.story_text,
         player_choice: currentStory.choices[choiceIndex].text,
+        available_choices: currentStory.choices.map((choice) => choice.text),
         time: response.time,
         location: response.location,
+        previous_choice: response.previous_choice,
       };
 
       setGameState((prev) => ({
@@ -139,6 +143,70 @@ const Debug = () => {
         historyContainerRef.current.scrollHeight;
     }
   }, [gameState?.story_history]);
+
+  // Render history entries
+  const renderHistoryEntry = (entry, idx) => (
+    <Box
+      key={idx}
+      sx={{ mb: 2, p: 2, bgcolor: "background.paper", borderRadius: 1 }}
+    >
+      <Stack spacing={1}>
+        {/* Previous Choice (if any) */}
+        {entry.previous_choice && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              color: "text.secondary",
+            }}
+          >
+            <ArrowForwardIcon fontSize="small" />
+            <Typography variant="body2" sx={{ fontStyle: "italic" }}>
+              Choix précédent : {entry.previous_choice}
+            </Typography>
+          </Box>
+        )}
+
+        {/* Time and Location */}
+        <Box sx={{ display: "flex", gap: 2, color: "text.secondary" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <TimerIcon fontSize="small" />
+            <Typography variant="body2">{entry.time}</Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <LocationIcon fontSize="small" />
+            <Typography variant="body2">{entry.location}</Typography>
+          </Box>
+        </Box>
+
+        {/* Story Text */}
+        <Typography>{entry.segment}</Typography>
+
+        {/* Available Choices */}
+        {entry.available_choices && entry.available_choices.length > 0 && (
+          <Box sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Choix disponibles :
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 0.5 }}>
+              {entry.available_choices.map((choice, choiceIdx) => (
+                <Chip
+                  key={choiceIdx}
+                  label={choice}
+                  size="small"
+                  color={choice === entry.player_choice ? "primary" : "default"}
+                  variant={
+                    choice === entry.player_choice ? "filled" : "outlined"
+                  }
+                />
+              ))}
+            </Box>
+          </Box>
+        )}
+      </Stack>
+    </Box>
+  );
 
   if (error || sessionError) {
     return (
@@ -463,94 +531,9 @@ const Debug = () => {
                 }}
               >
                 {gameState.story_history.length > 0 ? (
-                  gameState.story_history.map((entry, idx) => (
-                    <Box
-                      key={idx}
-                      sx={{
-                        p: 1.5,
-                        borderBottom: 1,
-                        borderColor: "divider",
-                        "&:last-child": {
-                          borderBottom: 0,
-                        },
-                        backgroundColor:
-                          idx === gameState.story_history.length - 1
-                            ? "action.hover"
-                            : "inherit",
-                      }}
-                    >
-                      <Stack spacing={1}>
-                        {/* Story Text */}
-                        <Box
-                          sx={{
-                            backgroundColor: "background.paper",
-                            p: 1,
-                            borderRadius: 1,
-                            border: 1,
-                            borderColor: "divider",
-                          }}
-                        >
-                          <Typography variant="body2" color="text.primary">
-                            {entry.segment}
-                          </Typography>
-                        </Box>
-
-                        {/* Player Choice */}
-                        {entry.player_choice && (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 0.5,
-                              backgroundColor: "action.selected",
-                              p: 1,
-                              borderRadius: 1,
-                              ml: 2,
-                            }}
-                          >
-                            <ArrowForwardIcon
-                              fontSize="small"
-                              sx={{ color: "primary.main" }}
-                            />
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "text.primary",
-                                fontWeight: "medium",
-                              }}
-                            >
-                              {entry.player_choice}
-                            </Typography>
-                          </Box>
-                        )}
-
-                        {/* Metadata */}
-                        <Stack
-                          direction="row"
-                          spacing={2}
-                          sx={{
-                            color: "text.secondary",
-                            mt: 0.5,
-                            "& > span": {
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 0.5,
-                              fontSize: "0.75rem",
-                            },
-                          }}
-                        >
-                          <span>
-                            <TimerIcon fontSize="inherit" />
-                            {entry.time}
-                          </span>
-                          <span>
-                            <LocationIcon fontSize="inherit" />
-                            {entry.location}
-                          </span>
-                        </Stack>
-                      </Stack>
-                    </Box>
-                  ))
+                  gameState.story_history.map((entry, idx) =>
+                    renderHistoryEntry(entry, idx)
+                  )
                 ) : (
                   <Box sx={{ p: 2, textAlign: "center" }}>
                     <Typography variant="body2" color="text.secondary">

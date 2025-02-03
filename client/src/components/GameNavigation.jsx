@@ -2,8 +2,11 @@ import { IconButton, Tooltip } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import PhotoCameraOutlinedIcon from "@mui/icons-material/PhotoCameraOutlined";
 import { useNavigate } from "react-router-dom";
 import { useSoundSystem } from "../contexts/SoundContext";
+import { useStoryCapture } from "../hooks/useStoryCapture";
+import { useRef } from "react";
 import { storyApi } from "../utils/api";
 
 const SOUND_ENABLED_KEY = "sound_enabled";
@@ -11,6 +14,8 @@ const SOUND_ENABLED_KEY = "sound_enabled";
 export function GameNavigation() {
   const navigate = useNavigate();
   const { isSoundEnabled, setIsSoundEnabled, playSound } = useSoundSystem();
+  const { downloadStoryImage } = useStoryCapture();
+  const containerRef = useRef(null);
 
   const handleBack = () => {
     playSound("page");
@@ -24,8 +29,21 @@ export function GameNavigation() {
     storyApi.setSoundEnabled(newSoundState);
   };
 
+  const handleCapture = async () => {
+    playSound("page");
+    const container = document.querySelector(
+      "[data-comic-layout]"
+    )?.parentElement;
+    if (container) {
+      await downloadStoryImage(
+        { current: container },
+        `your-story-${Date.now()}.png`
+      );
+    }
+  };
+
   return (
-    <div style={{ position: "relative", zIndex: 1000 }}>
+    <div style={{ position: "relative", zIndex: 1000 }} ref={containerRef}>
       {window.location.pathname !== "/" && (
         <Tooltip title="Back to home">
           <IconButton
@@ -47,6 +65,25 @@ export function GameNavigation() {
           </IconButton>
         </Tooltip>
       )}
+
+      <Tooltip title="Capture story">
+        <IconButton
+          onClick={handleCapture}
+          sx={{
+            position: "fixed",
+            top: 24,
+            right: 88,
+            color: "white",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            "&:hover": {
+              backgroundColor: "rgba(0, 0, 0, 0.7)",
+            },
+            pointerEvents: "auto",
+          }}
+        >
+          <PhotoCameraOutlinedIcon />
+        </IconButton>
+      </Tooltip>
 
       <Tooltip title={isSoundEnabled ? "Mute sound" : "Unmute sound"}>
         <IconButton
