@@ -87,7 +87,7 @@ export function Tutorial() {
           for each playthrough.
           <br />
           <br />
-          At each step you can decide to
+          At each step you can decide :
           <br />
           <br />
           <Box
@@ -101,26 +101,44 @@ export function Tutorial() {
           >
             <Box
               sx={{
-                border: "1px solid rgba(255,255,255,0.3)",
-                borderRadius: "8px",
-                p: 2,
+                position: "relative",
                 flex: 1,
                 maxWidth: "200px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 1,
-                backdropFilter: "blur(20px)",
-                backgroundColor: "rgba(255,255,255,0.05)",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: "rgba(255, 255, 255, 0.1)",
+                  backdropFilter: "blur(10px)",
+                  WebkitBackdropFilter: "blur(10px)", // Pour Safari
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255,255,255,0.3)",
+                },
               }}
             >
-              <MouseOutlinedIcon
-                sx={{ fontSize: 40, color: "primary.main", mb: 1 }}
-              />
-              <Typography variant="subtitle1" sx={{ color: "primary.main" }}>
-                Make a choice
-              </Typography>
+              <Box
+                sx={{
+                  position: "relative",
+                  p: 2,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 1,
+                  zIndex: 1,
+                }}
+              >
+                <MouseOutlinedIcon
+                  sx={{ fontSize: 40, color: "primary.main", mb: 1 }}
+                />
+                <Typography variant="subtitle1" sx={{ color: "primary.main" }}>
+                  Make a choice
+                </Typography>
+              </Box>
             </Box>
+
             <Typography
               variant="h6"
               sx={{
@@ -130,30 +148,47 @@ export function Tutorial() {
             >
               OR
             </Typography>
+
             <Box
               sx={{
-                border: "1px solid rgba(255,255,255,0.3)",
-                borderRadius: "8px",
-                p: 2,
+                position: "relative",
                 flex: 1,
                 maxWidth: "200px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 1,
-                backdropFilter: "blur(20px)",
-                backgroundColor: "rgba(255,255,255,0.05)",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: "rgba(255, 255, 255, 0.1)",
+                  backdropFilter: "blur(10px)",
+                  WebkitBackdropFilter: "blur(10px)", // Pour Safari
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255,255,255,0.3)",
+                },
               }}
             >
-              <CreateOutlinedIcon
-                sx={{ fontSize: 40, color: "primary.main", mb: 1 }}
-              />
-              <Typography variant="subtitle1" sx={{ color: "primary.main" }}>
-                Write your own
-              </Typography>
+              <Box
+                sx={{
+                  position: "relative",
+                  p: 2,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 1,
+                  zIndex: 1,
+                }}
+              >
+                <CreateOutlinedIcon
+                  sx={{ fontSize: 40, color: "primary.main", mb: 1 }}
+                />
+                <Typography variant="subtitle1" sx={{ color: "primary.main" }}>
+                  Write your own
+                </Typography>
+              </Box>
             </Box>
           </Box>
-          Until the end of the game
         </Typography>
 
         <Button
