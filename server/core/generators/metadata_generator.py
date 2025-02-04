@@ -69,7 +69,7 @@ Current story segment:
 {is_end}
 
 The choice not have to be the most obvious one. or even the most logical one.
-It MUST have a relation to the context of the story but it can be a choice that doesn't make sense.
+It must have a relation to the context of the story but it can be a choice that doesn't make sense.
 
 - Each choice MUST be NO MORE than 6 words - this is a HARD limit
 You must return a JSON object with the following format:
@@ -81,6 +81,8 @@ You must return a JSON object with the following format:
     "choices": ["Choice 1", "Choice 2"]  # ALWAYS exactly two choices, each max 6 words
 }}}}
 
+NEVER proposes a choice that is not a direct continuation of the story.
+THE CHOICE HAVE TO REFERENCE THE CURRENT SEGMENT OF THE STORY.
 """
 
 

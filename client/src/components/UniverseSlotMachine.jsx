@@ -7,7 +7,7 @@ import { useSoundSystem } from "../contexts/SoundContext";
 const SLOT_ANIMATION_DURATION = 2; // Duration of each slot animation
 const SLOT_SPEED = 1; // Base speed of the slot animation (higher = faster)
 const TOTAL_ANIMATION_DURATION = 1; // Total duration for each slot reel in seconds
-const SLOT_START_DELAY = 2; // Delay between each slot start in seconds
+const SLOT_START_DELAY = 0.75; // Delay between each slot start in seconds
 
 // Random words for each category
 const RANDOM_STYLES = [

@@ -16,10 +16,16 @@ export function GameNavigation() {
   const { isSoundEnabled, setIsSoundEnabled, playSound } = useSoundSystem();
   const { downloadStoryImage } = useStoryCapture();
   const containerRef = useRef(null);
+  const location = window.location.pathname;
 
   const handleBack = () => {
     playSound("page");
-    navigate("/");
+    if (location === "/game") {
+      navigate("/");
+      window.location.reload();
+    } else {
+      navigate("/");
+    }
   };
 
   const handleToggleSound = () => {

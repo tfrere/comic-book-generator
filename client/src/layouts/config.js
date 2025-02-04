@@ -4,7 +4,7 @@ export const PANEL_SIZES = {
   COLUMN: { width: 512, height: 1024 },
   LANDSCAPE: { width: 768, height: 512 },
   PANORAMIC: { width: 1024, height: 512 },
-  COVER_SIZE: { width: 512, height: 768 },
+  COVER_SIZE: { width: 512, height: 1024 },
   SQUARE: { width: 512, height: 512 },
 };
 

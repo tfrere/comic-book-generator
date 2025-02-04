@@ -78,8 +78,8 @@ Never describes game variables.
 IT MUST BE THE DIRECT CONTINUATION OF THE CURRENT STORY.
 You MUST mention the previous situation and what is happening now with the new choice.
 Never propose choices or options. Never describe the game variables.
-The world is a dangerous place. The hero is in GREAT danger. he has great risk to die.
-If you fail a big battle, the hero is dead.
+
+{what_to_represent}
 
 LIMIT: 15 words.
 """
@@ -163,17 +163,8 @@ LIMIT: 15 words.
 
         # Si c'est un choix personnalisé, on l'utilise comme contexte pour générer la suite
         if previous_choice and not previous_choice.startswith("Choice "):
-            what_to_represent = f"""
-Based on the player's custom choice: "{previous_choice}"
-
-Write a story segment that:
-1. Respects all previous rules about length and style
-2. Ff you find a path to go in a special place, you have to travel there. 
-3. Directly follows and incorporates the player's choice
-4. Maintains consistency with the universe and story
-5. Naturally integrates the custom elements while staying true to the plot
-
-MANDATORY : Start with a direct reaction to the player's choice, Show immediate consequences of their action. Then go forward in the story.
+            what_to_represent = f"""Based on the player's custom choice: "{previous_choice}"
+MANDATORY : Start with a direct reaction to the player's choice, Show immediate consequences of their action.
 """
 
         # Créer les messages

@@ -25,6 +25,7 @@ class UniverseGenerator(BaseGenerator):
 - Historical epoch: {epoch}
 
 Describe the first segment of the story. in 30 words. Where is the main character, what is he doing? HE has to do something banal. You have to describe the first action.
+Always write a direction to the story. (a small strange thing must happen, as a start of the story)
 """
 
         return ChatPromptTemplate(
