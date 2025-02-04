@@ -1,8 +1,75 @@
-# React + Vite
+# Don't Look Up - Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend interface for the Don't Look Up narrative game, built with React and Vite.
 
-Currently, two official plugins are available:
+## 🛠️ Technologies
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- React 18
+- Vite
+- Material-UI (MUI)
+- Framer Motion
+- React Router
+- Context API
+
+## 📁 Project Structure
+
+```
+src/
+├── components/     # Reusable components
+│   ├── GameNavigation/    # Game navigation
+│   ├── StoryChoices/      # Choice interface
+│   └── TalkWithSarah/     # AI Assistant
+├── contexts/       # React contexts (Game, Sound)
+├── hooks/          # Custom hooks
+├── layouts/        # Layout components
+├── pages/          # Application pages
+└── utils/          # Utilities and API
+```
+
+## 🎮 Key Features
+
+- Interactive comic book interface
+- Choice system (predefined or custom)
+- Voice narration with controls
+- Sound effects and ambient music
+- AI Assistant "Sarah" for help
+- Responsive design
+
+## 🚀 Installation
+
+```bash
+# Install dependencies
+yarn install
+
+# Start development server
+yarn dev
+
+# Build for production
+yarn build
+```
+
+## 🔧 Configuration
+
+The client requires a running backend server. Configure the API URL in `src/utils/api.js`.
+
+## 📝 Testing
+
+```bash
+# Run tests
+yarn test
+
+# Run tests with coverage
+yarn test:coverage
+```
+
+## 🎨 Style and Linting
+
+The project uses ESLint and Prettier to maintain clean and consistent code.
+
+```bash
+# Check style
+yarn lint
+
+# Auto-fix issues
+yarn lint:fix
+```

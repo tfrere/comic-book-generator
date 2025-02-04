@@ -1,39 +1,59 @@
----
-title: IA Interactive Comic Book
-emoji: 💻
-colorFrom: red
-colorTo: blue
-sdk: docker
-pinned: false
----
+# Don't Look Up - Interactive AI Comic Book
 
-# START SERVER
+An interactive narrative game that generates unique stories in comic book form, powered by AI.
 
-poetry run uvicorn server:app --reload
+## 🌟 Features
 
-# START CLIENT
+- Unique story generation with Mistral AI
+- Interactive comic book interface
+- Predefined or custom choices
+- Voice narration
+- Responsive design (desktop & mobile)
 
-nvm use 20 ( osef si t'as déjà node 20+ )
-yarn ( ou npm install )
+## 🚀 Quick Start
 
-yarn dev ( ou npm run dev )
+### Prerequisites
 
-## Link of Presentation about the project
+- Node.js 20+
+- Python 3.10+
+- Poetry
+- Mistral API Key
 
-https://devpost.com/software/sarah-s-chronicles
+### Start the Server
 
-# subreddit
+```bash
+cd server
+poetry install
+poetry run dev
+```
 
-https://www.reddit.com/r/MistralAI/
-https://www.reddit.com/r/cursor/
-https://www.reddit.com/r/StableDiffusion/
-https://www.reddit.com/r/huggingface/
-https://news.ycombinator.com/
+### Start the Client
 
-# le generateur de poesie pourrait etre en systeme embarqué
+```bash
+cd client
+yarn install
+yarn dev
+```
 
-# genre on te prends une photo et ça te sort une poésie à la place
+## 📁 Project Structure
 
-# distributeur d'histoires
+```
+.
+├── client/        # React/Vite Frontend
+├── server/        # Python/FastAPI Backend
+└── finetuning/    # AI Training Scripts
+```
 
-#
+## 🔗 Useful Links
+
+- [Project Presentation](https://devpost.com/software/sarah-s-chronicles)
+- [API Documentation](/server/README.md)
+- [Client Documentation](/client/README.md)
+
+## 🤝 Contributing
+
+Contributions are welcome! Please check our contribution guidelines for more details.
+
+## 📄 License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.

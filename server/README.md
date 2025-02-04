@@ -1,109 +1,118 @@
 # Don't Look Up - Server
 
-Backend du jeu "Don't Look Up", un jeu narratif post-apocalyptique généré par IA.
+Backend for the Don't Look Up narrative game, powered by Mistral AI for story generation.
+
+## 🧠 Architecture
+
+The server is built around several specialized AI generators:
+
+### Generators
+
+- `UniverseGenerator`: Creates the universe and initial context
+- `StorySegmentGenerator`: Generates narrative segments
+- `MetadataGenerator`: Handles metadata (time, location, choices)
+- `ImagePromptGenerator`: Creates prompts for images
+
+### Services
+
+- `MistralService`: Interface with Mistral API
+- `GameStateManager`: Game state management
+- `AudioService`: Narration management
 
 ## 🛠️ Installation
 
-1. Assurez-vous d'avoir Python 3.10+ et Poetry installés
-2. Clonez le repository
-3. Installez les dépendances :
+1. Prerequisites:
+
+   ```bash
+   python 3.10+
+   poetry
+   ```
+
+2. Installation:
+
+   ```bash
+   cd server
+   poetry install
+   ```
+
+3. Configuration:
+   ```bash
+   cp .env.example .env
+   # Add your Mistral API key to .env
+   ```
+
+## 🚀 Usage
+
+### Start the Server
 
 ```bash
-cd server
-poetry install
+poetry run uvicorn server:app --reload
 ```
 
-4. Créez un fichier `.env` à la racine du dossier `server` avec :
-
-```env
-MISTRAL_API_KEY=votre_clé_api_mistral
-```
-
-## 🚀 Lancement du serveur
+### Game Testing
 
 ```bash
-poetry run dev
-```
-
-Le serveur démarrera sur `http://localhost:8000`
-
-## 🎮 Tests du jeu
-
-Le projet inclut un script de test qui permet de jouer au jeu en mode console et de tester la génération d'histoire.
-
-### Modes de lancement
-
-1. Mode interactif (normal) :
-
-```bash
+# Interactive mode
 poetry run test-game
-```
 
-2. Mode automatique (pour les tests) :
-
-```bash
+# Automatic mode
 poetry run test-game --auto
+
+# Automatic mode with parameters
+poetry run test-game --auto --max-turns 20 --show-context
 ```
 
-3. Mode automatique avec nombre de tours personnalisé :
-
-```bash
-poetry run test-game --auto --max-turns 20
-```
-
-4. Mode automatique avec affichage du contexte complet :
-
-```bash
-poetry run test-game --auto --show-context
-```
-
-### Codes de retour
-
-En mode automatique, le script retourne :
-
-- Code 0 : Victoire
-- Code 1 : Défaite, erreur ou timeout (> 15 tours par défaut)
-
-### Exemple d'utilisation dans un script
-
-```bash
-# Lancer 5 tests automatiques d'affilée
-for i in {1..5}; do
-    echo "Test run $i"
-    poetry run test-game --auto || echo "Test $i failed"
-done
-```
-
-## 📚 Structure du projet
+## 📁 Project Structure
 
 ```
 server/
-├── api/            # Routes et modèles FastAPI
-├── core/           # Logique métier et générateurs
-│   ├── generators/ # Générateurs (histoire, univers, etc.)
-│   └── prompts/    # Templates de prompts pour l'IA
-├── scripts/        # Scripts utilitaires
-└── services/       # Services externes (Mistral, etc.)
+├── api/            # FastAPI routes and models
+│   ├── models.py   # Pydantic models
+│   └── routes.py   # API endpoints
+├── core/           # Business logic
+│   ├── generators/ # AI generators
+│   └── prompts/    # Prompt templates
+├── services/       # External services
+└── scripts/        # Utility scripts
 ```
 
-## 🔄 Workflow de génération
+## 🔄 Generation Workflow
 
-1. Génération de l'univers (`UniverseGenerator`)
+1. **Initialization**
 
-   - Style graphique
-   - Genre
-   - Époque
-   - MacGuffin
-   - Histoire de base
+   - Universe creation
+   - Initial context definition
+   - Base story generation
 
-2. Génération des segments d'histoire (`StoryGenerator`)
+2. **Game Loop**
 
-   - Texte narratif
-   - Choix
-   - Prompts d'images
-   - Métadonnées (temps, lieu)
+   - Narrative segment generation
+   - Choice creation
+   - Metadata updates
+   - Image prompt generation
 
-3. Gestion de l'état du jeu (`GameState`)
-   - Progression de l'histoire
-   - Historique des choix
-   - État du monde
+3. **State Management**
+   - Progress tracking
+   - Choice history
+   - World state
+
+## 📝 API Endpoints
+
+- `POST /game/start`: Start a new game
+- `POST /game/choice`: Submit a choice
+- `GET /game/state`: Get current state
+- `POST /game/generate-image`: Generate an image
+- `POST /game/narrate`: Generate audio narration
+
+## 🧪 Testing
+
+```bash
+# Unit tests
+poetry run pytest
+
+# Coverage tests
+poetry run pytest --cov
+
+# Integration tests
+poetry run pytest tests/integration
+```
