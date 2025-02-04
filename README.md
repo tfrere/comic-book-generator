@@ -1,4 +1,4 @@
-# Don't Look Up - Interactive AI Comic Book
+# Comic Book Generator - Interactive AI Stories
 
 An interactive narrative game that generates unique stories in comic book form, powered by AI.
 

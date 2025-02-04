@@ -1,6 +1,6 @@
-# Don't Look Up - Client
+# Comic Book Generator - Client
 
-Frontend interface for the Don't Look Up narrative game, built with React and Vite.
+Frontend interface for the Comic Book Generator, built with React and Vite.
 
 ## 🛠️ Technologies
 

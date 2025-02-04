@@ -1,6 +1,6 @@
-# Don't Look Up - Server
+# Comic Book Generator - Server
 
-Backend for the Don't Look Up narrative game, powered by Mistral AI for story generation.
+Backend for the Comic Book Generator, powered by Mistral AI for story generation.
 
 ## 🧠 Architecture
 
@@ -46,7 +46,7 @@ The server is built around several specialized AI generators:
 ### Start the Server
 
 ```bash
-poetry run uvicorn server:app --reload
+poetry run dev
 ```
 
 ### Game Testing
