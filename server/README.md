@@ -36,9 +36,18 @@ The server is built around several specialized AI generators:
    ```
 
 3. Configuration:
+
    ```bash
    cp .env.example .env
    # Add your Mistral API key to .env
+   # Add your Hugging Face endpoint URL to .env
+   ```
+
+   Required environment variables:
+
+   ```env
+   MISTRAL_API_KEY=your_mistral_api_key
+   HF_API_ENDPOINT=your_huggingface_endpoint_url
    ```
 
 ## 🚀 Usage

@@ -18,6 +18,7 @@ An interactive narrative game that generates unique stories in comic book form, 
 - Python 3.10+
 - Poetry
 - Mistral API Key
+- Hugging Face Endpoint URL
 
 ### Start the Server
 
