@@ -13,6 +13,7 @@ import {
   useMediaQuery,
   useTheme,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { TalkWithSarah } from "./TalkWithSarah";
@@ -21,8 +22,23 @@ import { useGame } from "../contexts/GameContext";
 import { storyApi } from "../utils/api";
 import { useSoundEffect } from "../hooks/useSoundEffect";
 import CloseIcon from "@mui/icons-material/Close";
+import CasinoOutlinedIcon from "@mui/icons-material/CasinoOutlined";
 
 const { initAudioContext } = storyApi;
+
+// Phrases aléatoires WTF pour le placeholder
+const RANDOM_PLACEHOLDERS = [
+  "A dragon appears right above the hero...",
+  "Suddenly, all the trees start dancing the macarena...",
+  "A time-traveling pizza delivery guy shows up with a mysterious package...",
+  "The ground turns into jello and starts wobbling menacingly...",
+  "A choir of singing cats descends from the sky...",
+  "The hero's shadow detaches itself and starts doing stand-up comedy...",
+  "All the nearby rocks transform into vintage toasters...",
+  "A portal opens, and out steps the hero's evil twin made entirely of cheese...",
+  "The moon starts beatboxing an ominous rhythm...",
+  "Every nearby plant suddenly develops a British accent and starts having tea...",
+];
 
 // Function to convert text with ** to Chip elements
 const formatTextWithBold = (text) => {
@@ -54,6 +70,12 @@ export function StoryChoices() {
   const [sarahRecommendation, setSarahRecommendation] = useState(null);
   const [showCustomDialog, setShowCustomDialog] = useState(false);
   const [customChoice, setCustomChoice] = useState("");
+  const [currentPlaceholder] = useState(
+    () =>
+      RANDOM_PLACEHOLDERS[
+        Math.floor(Math.random() * RANDOM_PLACEHOLDERS.length)
+      ]
+  );
   const {
     choices,
     onChoice,
@@ -76,11 +98,25 @@ export function StoryChoices() {
     volume: 0.5,
   });
 
+  // Son de dé
+  const playDiceSound = useSoundEffect({
+    basePath: "/sounds/dice-",
+    numSounds: 3,
+    volume: 0.1,
+    enabled: true,
+  });
+
   const lastSegment = getLastSegment();
   const isLastStep = lastSegment?.is_last_step;
   const isDeath = lastSegment?.isDeath;
   const isVictory = lastSegment?.isVictory;
   const storyText = lastSegment?.rawText || "";
+
+  const getRandomPlaceholder = () => {
+    return RANDOM_PLACEHOLDERS[
+      Math.floor(Math.random() * RANDOM_PLACEHOLDERS.length)
+    ];
+  };
 
   if (isGameOver()) {
     return (
@@ -193,13 +229,26 @@ export function StoryChoices() {
             </Button>
           </Box>
 
+          <Typography
+            variant="h6"
+            sx={{
+              display: { xs: "none", sm: "block" },
+              color: "rgba(255,255,255,0.5)",
+              fontWeight: "bold",
+              fontSize: "1.2rem",
+              mx: 2,
+            }}
+          >
+            OR
+          </Typography>
+
           <Box
             sx={{
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               gap: 1,
-              ml: isMobile ? 0 : 4,
+              // ml: isMobile ? 0 : 4,
               minWidth: "fit-content",
               maxWidth: "30%",
             }}
@@ -216,7 +265,7 @@ export function StoryChoices() {
                 textTransform: "none",
               }}
             >
-              Write your own path
+              Write your own choice...
             </Button>
           </Box>
         </>
@@ -279,7 +328,7 @@ export function StoryChoices() {
             rows={isMobile ? 5 : 4}
             fullWidth
             variant="outlined"
-            placeholder="A dragon appears right above the hero...."
+            placeholder={currentPlaceholder}
             value={customChoice}
             onChange={(e) => setCustomChoice(e.target.value)}
             sx={{
@@ -302,7 +351,31 @@ export function StoryChoices() {
               },
             }}
           />
-          <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+          <Box
+            sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 1 }}
+          >
+            <Button
+              onClick={() => {
+                const randomChoice = getRandomPlaceholder();
+                setCustomChoice(randomChoice.slice(0, -3));
+                playDiceSound();
+              }}
+              variant="outlined"
+              sx={{
+                minWidth: "48px",
+                width: "48px",
+                height: "48px",
+                p: 0,
+                borderColor: "rgba(255, 255, 255, 0.23)",
+                color: "white",
+                "&:hover": {
+                  borderColor: "white",
+                  backgroundColor: "rgba(255, 255, 255, 0.08)",
+                },
+              }}
+            >
+              <CasinoOutlinedIcon />
+            </Button>
             <Button
               onClick={() => {
                 if (customChoice.trim()) {
@@ -317,7 +390,6 @@ export function StoryChoices() {
               disabled={!customChoice.trim()}
               variant="contained"
               sx={{
-                mt: 1,
                 py: 1.5,
                 px: 4,
                 fontWeight: "bold",

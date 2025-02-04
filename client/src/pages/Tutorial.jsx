@@ -93,17 +93,20 @@ export function Tutorial() {
           <Box
             sx={{
               display: "flex",
-              gap: 4,
+              gap: { xs: 1, sm: 4 },
               justifyContent: "center",
-              mb: 2,
+              mb: { xs: 1, sm: 2 },
               alignItems: "center",
+              flexDirection: { xs: "column", sm: "row" },
+              width: "100%",
             }}
           >
             <Box
               sx={{
                 position: "relative",
-                flex: 1,
-                maxWidth: "200px",
+                flex: { xs: "none", sm: 1 },
+                width: { xs: "50%", sm: "auto" },
+                maxWidth: { xs: "160px", sm: "200px" },
                 "&::before": {
                   content: '""',
                   position: "absolute",
@@ -113,32 +116,39 @@ export function Tutorial() {
                   bottom: 0,
                   background: "rgba(255, 255, 255, 0.05)",
                   backdropFilter: "blur(10px)",
-                  WebkitBackdropFilter: "blur(10px)", // Pour Safari
+                  WebkitBackdropFilter: "blur(10px)",
                   borderRadius: "8px",
-                  border: "1px solid rgba(255,255,255,0.3)",
+                  border: "1px solid",
+                  borderColor: "primary.main",
                 },
               }}
             >
               <Box
                 sx={{
                   position: "relative",
-                  p: 2,
+                  p: { xs: 1.5, sm: 2 },
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: 1,
+                  gap: 0.5,
                   zIndex: 1,
                 }}
               >
                 <CallSplitOutlinedIcon
                   sx={{
-                    fontSize: 40,
-                    color: "primary.text",
-                    mb: 1,
-                    transform: "rotate(90deg)", // Pour que la bifurcation soit horizontale
+                    fontSize: { xs: 28, sm: 40 },
+                    color: "primary.main",
+                    mb: 0.5,
+                    transform: "rotate(90deg)",
                   }}
                 />
-                <Typography variant="subtitle1" sx={{ color: "primary.text" }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    color: "primary.main",
+                    fontSize: { xs: "0.875rem", sm: "1rem" },
+                  }}
+                >
                   Make a choice
                 </Typography>
               </Box>
@@ -149,6 +159,8 @@ export function Tutorial() {
               sx={{
                 color: "rgba(255,255,255,0.5)",
                 fontWeight: "bold",
+                fontSize: { xs: "1rem", sm: "1.2rem" },
+                my: { xs: 0.25, sm: 0 },
               }}
             >
               OR
@@ -157,8 +169,9 @@ export function Tutorial() {
             <Box
               sx={{
                 position: "relative",
-                flex: 1,
-                maxWidth: "200px",
+                flex: { xs: "none", sm: 1 },
+                width: { xs: "50%", sm: "auto" },
+                maxWidth: { xs: "160px", sm: "200px" },
                 "&::before": {
                   content: '""',
                   position: "absolute",
@@ -168,27 +181,38 @@ export function Tutorial() {
                   bottom: 0,
                   background: "rgba(255, 255, 255, 0.05)",
                   backdropFilter: "blur(10px)",
-                  WebkitBackdropFilter: "blur(10px)", // Pour Safari
+                  WebkitBackdropFilter: "blur(10px)",
                   borderRadius: "8px",
-                  border: "1px solid rgba(255,255,255,0.3)",
+                  border: "1px solid",
+                  borderColor: "secondary.main",
                 },
               }}
             >
               <Box
                 sx={{
                   position: "relative",
-                  p: 2,
+                  p: { xs: 1.5, sm: 2 },
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: 1,
+                  gap: 0.5,
                   zIndex: 1,
                 }}
               >
                 <CreateOutlinedIcon
-                  sx={{ fontSize: 40, color: "primary.text", mb: 1 }}
+                  sx={{
+                    fontSize: { xs: 28, sm: 40 },
+                    color: "secondary.main",
+                    mb: 0.5,
+                  }}
                 />
-                <Typography variant="subtitle1" sx={{ color: "primary.text" }}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    color: "secondary.main",
+                    fontSize: { xs: "0.875rem", sm: "1rem" },
+                  }}
+                >
                   Write your own
                 </Typography>
               </Box>

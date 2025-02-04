@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Box, Typography, useTheme, useMediaQuery } from "@mui/material";
 import { motion, useAnimation } from "framer-motion";
+import { useSoundSystem } from "../contexts/SoundContext";
 
 // Animation timing configuration
 const SLOT_ANIMATION_DURATION = 2; // Duration of each slot animation
-const SLOT_SPEED = 0.5; // Base speed of the slot animation (higher = faster)
+const SLOT_SPEED = 1; // Base speed of the slot animation (higher = faster)
 const TOTAL_ANIMATION_DURATION = 1; // Total duration for each slot reel in seconds
 const SLOT_START_DELAY = 2; // Delay between each slot start in seconds
 
@@ -26,6 +27,9 @@ const SlotReel = ({ words, isActive, finalValue, onComplete, delay = 0 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { playSound } = useSoundSystem();
+  const lastPositionRef = useRef(0);
+  const itemHeightRef = useRef(0);
 
   useEffect(() => {
     if (isActive) {
@@ -38,6 +42,7 @@ const SlotReel = ({ words, isActive, finalValue, onComplete, delay = 0 }) => {
       setReelItems(repeatedWords);
 
       const itemHeight = isMobile ? 60 : 80;
+      itemHeightRef.current = itemHeight;
       const totalHeight = repeatedWords.length * itemHeight;
 
       setTimeout(() => {
@@ -49,6 +54,28 @@ const SlotReel = ({ words, isActive, finalValue, onComplete, delay = 0 }) => {
               duration: TOTAL_ANIMATION_DURATION / SLOT_SPEED,
               ease: [0.25, 0.1, 0.25, 1.0],
               times: [0, 1],
+              onUpdate: (latest) => {
+                // Calculer l'index du mot actuel basé sur la position
+                const currentPosition = Math.abs(latest);
+                const currentIndex = Math.floor(currentPosition / itemHeight);
+
+                // Si on a changé de mot, jouer le son
+                if (
+                  Math.floor(lastPositionRef.current / itemHeight) !==
+                  currentIndex
+                ) {
+                  // Vérifier si c'est le dernier mot (final)
+                  const isFinalWord = currentIndex === repeatedWords.length - 1;
+                  // Jouer le son approprié
+                  if (isFinalWord) {
+                    playSound("lock");
+                  } else {
+                    playSound("tick", "normal");
+                  }
+                }
+
+                lastPositionRef.current = currentPosition;
+              },
             },
           })
           .then(() => {
@@ -56,7 +83,11 @@ const SlotReel = ({ words, isActive, finalValue, onComplete, delay = 0 }) => {
           });
       }, delay * SLOT_START_DELAY * 1000);
     }
-  }, [isActive, finalValue, words, delay, isMobile]);
+
+    return () => {
+      lastPositionRef.current = 0;
+    };
+  }, [isActive, finalValue, words, delay, isMobile, playSound]);
 
   return (
     <Box

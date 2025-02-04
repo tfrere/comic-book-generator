@@ -35,6 +35,17 @@ const SOUNDS = {
     off: "/sounds/talky-walky-off.mp3",
     volume: 0.5,
   },
+  tick: {
+    files: Array.from({ length: 4 }, (_, i) => `/sounds/tick-${i + 1}.mp3`),
+    volume: {
+      normal: 0.05, // Volume normal à 50% du volume final
+      final: 0.4, // Volume final (comme avant)
+    },
+  },
+  lock: {
+    files: ["/sounds/lock-1.mp3"],
+    volume: 0.025,
+  },
 };
 
 const SoundContext = createContext(null);
@@ -69,7 +80,19 @@ export function SoundProvider({ children }) {
   // Initialiser tous les sons
   const soundInstances = {};
   Object.entries(SOUNDS).forEach(([category, config]) => {
-    if (Array.isArray(config.files)) {
+    if (category === "tick") {
+      // Initialisation spéciale pour les ticks avec volumes différents
+      soundInstances[category] = {
+        normal: config.files.map((file) => {
+          const [play] = useSound(file, { volume: config.volume.normal });
+          return play;
+        }),
+        final: config.files.map((file) => {
+          const [play] = useSound(file, { volume: config.volume.final });
+          return play;
+        }),
+      };
+    } else if (Array.isArray(config.files)) {
       // Pour les sons avec plusieurs variations
       soundInstances[category] = config.files.map((file) => {
         const [play] = useSound(file, { volume: config.volume });
@@ -102,7 +125,13 @@ export function SoundProvider({ children }) {
       if (!isSoundEnabled) return;
 
       try {
-        if (subCategory) {
+        if (category === "tick") {
+          // Pour les ticks avec volumes différents
+          const type = subCategory || "normal";
+          const sounds = soundInstances[category][type];
+          const randomIndex = Math.floor(Math.random() * sounds.length);
+          sounds[randomIndex]?.();
+        } else if (subCategory) {
           // Pour les sons avec sous-catégories (comme talkySarah.on)
           soundInstances[category][subCategory]?.();
         } else if (Array.isArray(soundInstances[category])) {
