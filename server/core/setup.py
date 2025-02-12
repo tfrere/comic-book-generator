@@ -5,7 +5,7 @@ from core.story_generator import StoryGenerator
 # Initialize generators with None - they will be set up when needed
 universe_generator = None
 
-def setup_game(api_key: str, model_name: str = "mistral-medium"):
+def setup_game(api_key: str, model_name: str = "mistral-small"):
     """Setup all game components with the provided API key."""
     global universe_generator
     

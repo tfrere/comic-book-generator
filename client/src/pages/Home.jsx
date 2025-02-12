@@ -4,16 +4,20 @@ import {
   Typography,
   useTheme,
   useMediaQuery,
+  Tooltip,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useSoundSystem } from "../contexts/SoundContext";
+import { useServiceStatus } from "../contexts/ServiceStatusContext";
 import { BlinkingText } from "../components/BlinkingText";
 import { BookPages } from "../components/BookPages";
+import { ServiceStatus } from "../components/ServiceStatus";
 
 export function Home() {
   const navigate = useNavigate();
   const { playSound } = useSoundSystem();
+  const { areServicesHealthy } = useServiceStatus();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -21,6 +25,24 @@ export function Home() {
     playSound("page");
     navigate("/tutorial");
   };
+
+  const playButton = (
+    <Button
+      color="primary"
+      size="large"
+      variant="contained"
+      onClick={handlePlay}
+      disabled={!areServicesHealthy()}
+      sx={{
+        mt: 4,
+        fontSize: isMobile ? "1rem" : "1.2rem",
+        padding: isMobile ? "8px 24px" : "12px 36px",
+        zIndex: 10,
+      }}
+    >
+      Play
+    </Button>
+  );
 
   return (
     <motion.div
@@ -35,6 +57,7 @@ export function Home() {
         overflow: "hidden",
       }}
     >
+      <ServiceStatus />
       <Box
         sx={{
           display: "flex",
@@ -43,7 +66,7 @@ export function Home() {
           justifyContent: "center",
           minHeight: "100vh",
           height: "100%",
-          width: isMobile ? "80%" : "40%", // Adjust the width of the containing block
+          width: isMobile ? "80%" : "40%",
           margin: "auto",
           position: "relative",
         }}
@@ -96,20 +119,16 @@ export function Home() {
           Experience a unique comic book where artificial intelligence brings
           your choices to life, shaping the narrative as you explore.
         </Typography>
-        <Button
-          color="primary"
-          size="large"
-          variant="contained"
-          onClick={handlePlay}
-          sx={{
-            mt: 4,
-            fontSize: isMobile ? "1rem" : "1.2rem",
-            padding: isMobile ? "8px 24px" : "12px 36px",
-            zIndex: 10,
-          }}
-        >
-          Play
-        </Button>
+        {areServicesHealthy() ? (
+          playButton
+        ) : (
+          <Tooltip
+            title="Services are currently unavailable. Please wait..."
+            arrow
+          >
+            <span>{playButton}</span>
+          </Tooltip>
+        )}
       </Box>
     </motion.div>
   );

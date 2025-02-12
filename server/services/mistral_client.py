@@ -47,7 +47,7 @@ class MistralValidationError(MistralAPIError):
     pass
 
 class MistralClient:
-    def __init__(self, api_key: str, model_name: str = "mistral-large-latest", max_tokens: int = 1000):
+    def __init__(self, api_key: str, model_name: str = "mistral-small-latest", max_tokens: int = 1000):
         logger.info(f"Initializing MistralClient with model: {model_name}, max_tokens: {max_tokens}")
         self.model = ChatMistralAI(
             mistral_api_key=api_key,
@@ -214,3 +214,17 @@ class MistralClient:
                 
                 logger.error(f"Failed after {self.max_retries} attempts. Last error: {last_error or str(e)}")
                 raise Exception(f"Failed after {self.max_retries} attempts. Last error: {last_error or str(e)}") 
+
+    async def check_health(self) -> bool:
+        """
+        Vérifie la disponibilité du service Mistral avec un appel simple sans retry.
+        
+        Returns:
+            bool: True si le service est disponible, False sinon
+        """
+        try:
+            response = await self.model.ainvoke([SystemMessage(content="Hi")])
+            return True
+        except Exception as e:
+            logger.error(f"Health check failed: {str(e)}")
+            raise 

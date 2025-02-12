@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field, validator
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, Union
 from core.constants import GameConfig
+import re
+from enum import Enum
 
 class Choice(BaseModel):
     id: int
@@ -82,3 +84,14 @@ class StoryResponse(BaseModel):
         if len(v) != 2:
             raise ValueError('Must have exactly 2 choices for story progression')
         return v
+
+class ServiceStatus(str, Enum):
+    HEALTHY = "healthy"
+    UNHEALTHY = "unhealthy"
+    INITIALIZING = "initializing"
+
+class HealthCheckResponse(BaseModel):
+    status: ServiceStatus
+    service: str
+    latency: Optional[float] = None
+    error: Optional[str] = None

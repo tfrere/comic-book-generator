@@ -10,10 +10,12 @@ from core.story_generator import StoryGenerator
 from core.setup import setup_game, get_universe_generator
 from core.session_manager import SessionManager
 from services.flux_client import FluxClient
+from services.mistral_client import MistralClient
 from api.routes.chat import get_chat_router
 from api.routes.image import get_image_router
 from api.routes.speech import get_speech_router
 from api.routes.universe import get_universe_router
+from api.routes.health import get_health_router
 
 # Load environment variables
 load_dotenv()
@@ -52,6 +54,7 @@ print("Creating global SessionManager")
 session_manager = SessionManager()
 story_generator = StoryGenerator(api_key=mistral_api_key)
 flux_client = FluxClient(api_key=HF_API_KEY)
+mistral_client = MistralClient(api_key=mistral_api_key)
 
 # Health check endpoint
 @app.get("/api/health")
@@ -65,6 +68,7 @@ app.include_router(get_chat_router(session_manager, story_generator), prefix="/a
 app.include_router(get_image_router(flux_client), prefix="/api")
 app.include_router(get_speech_router(), prefix="/api")
 app.include_router(get_universe_router(session_manager, story_generator), prefix="/api")
+app.include_router(get_health_router(mistral_client, flux_client), prefix="/api")
 
 @app.on_event("startup")
 async def startup_event():
